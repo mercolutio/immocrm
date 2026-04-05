@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
   // Eingeloggte Nutzer die /auth/* aufrufen → zum Dashboard
   if (user && isPublic) {
     const dashboardUrl = request.nextUrl.clone()
-    dashboardUrl.pathname = '/'
+    dashboardUrl.pathname = '/dashboard'
     return NextResponse.redirect(dashboardUrl)
   }
 

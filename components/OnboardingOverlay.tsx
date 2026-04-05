@@ -13,7 +13,7 @@ const STEPS: Step[] = [
   {
     id: "onb-btn-neu",
     title: "Ersten Kontakt anlegen",
-    description: "Klicken Sie auf „Neu", um Ihren ersten Kontakt, ein Objekt oder einen Deal anzulegen.",
+    description: 'Klicken Sie auf "Neu", um Ihren ersten Kontakt, ein Objekt oder einen Deal anzulegen.',
     position: "bottom",
   },
   {
@@ -76,7 +76,7 @@ export default function OnboardingOverlay({ onDone }: Props) {
   }
 
   function handleDone() {
-    window.history.replaceState({}, "", "/");
+    window.history.replaceState({}, "", "/dashboard");
     onDone();
   }
 
@@ -252,7 +252,7 @@ function getTooltipPos(rect: DOMRect, position: Step["position"], pad: number): 
       };
     case "right":
       return {
-        top: Math.max(rect.top + rect.height / 2 - 120, 16),
+        top: Math.min(Math.max(rect.top + rect.height / 2 - 120, 16), window.innerHeight - 320),
         left: rect.right + pad + 14,
       };
     case "left":
