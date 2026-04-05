@@ -15,7 +15,7 @@ export default async function DashboardPage() {
     .eq('user_id', user.id)
     .single()
 
-  const org = membership?.organizations as {
+  const org = membership?.organizations as unknown as {
     name: string
     plan: string
     trial_ends_at: string

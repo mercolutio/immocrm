@@ -13,7 +13,7 @@ const STEPS: Step[] = [
   {
     id: "onb-btn-neu",
     title: "Ersten Kontakt anlegen",
-    description: "Klicken Sie auf „Neu", um Ihren ersten Kontakt, ein Objekt oder einen Deal anzulegen.",
+    description: 'Klicken Sie auf \u201eNeu\u201c, um Ihren ersten Kontakt, ein Objekt oder einen Deal anzulegen.',
     position: "bottom",
   },
   {
