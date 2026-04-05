@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { registerUser } from "./actions";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -19,54 +20,28 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
 
-    const supabase = createClient();
+    // 1. Nutzer + Org via Server Action anlegen (Admin-Client, kein E-Mail-Versand)
+    const result = await registerUser(form);
+    if (result.error) {
+      setError(result.error);
+      setLoading(false);
+      return;
+    }
 
-    // 1. Nutzer registrieren
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // 2. Direkt einloggen
+    const supabase = createClient();
+    const { error: loginError } = await supabase.auth.signInWithPassword({
       email: form.email,
       password: form.password,
     });
 
-    if (authError || !authData.user) {
-      setError(authError?.message ?? "Registrierung fehlgeschlagen.");
+    if (loginError) {
+      setError("Konto erstellt, aber Login fehlgeschlagen: " + loginError.message);
       setLoading(false);
       return;
     }
 
-    // 2. Organisation anlegen
-    const slug = form.orgName
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-]/g, "");
-
-    const { data: org, error: orgError } = await supabase
-      .from("organizations")
-      .insert({ name: form.orgName, slug })
-      .select()
-      .single();
-
-    if (orgError || !org) {
-      setError("Organisation konnte nicht angelegt werden: " + orgError?.message);
-      setLoading(false);
-      return;
-    }
-
-    // 3. Nutzer als Owner eintragen
-    const { error: memberError } = await supabase
-      .from("organization_members")
-      .insert({
-        organization_id: org.id,
-        user_id: authData.user.id,
-        role: "owner",
-      });
-
-    if (memberError) {
-      setError("Mitgliedschaft konnte nicht erstellt werden: " + memberError.message);
-      setLoading(false);
-      return;
-    }
-
-    router.push("/dashboard");
+    router.push("/?welcome=1");
   }
 
   return (
