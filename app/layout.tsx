@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { DM_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+});
 
 export const metadata: Metadata = {
   title: "ImmoCRM",
@@ -15,8 +23,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="de">
-      <body className={inter.className}>{children}</body>
+    <html lang="de" className={`${dmSans.variable} ${playfair.variable}`}>
+      <body className={dmSans.className}>{children}</body>
     </html>
   );
 }

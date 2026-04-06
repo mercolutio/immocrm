@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
+import "./dashboard.css";
 
 export default function Dashboard() {
   const [qaOpen, setQaOpen] = useState(false);
@@ -16,7 +17,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <>
+    <div className="dashboard-layout">
       {/* SIDEBAR */}
       <aside className="sidebar">
         <div className="sb-logo">
@@ -621,6 +622,6 @@ export default function Dashboard() {
           }}
         />
       )}
-    </>
+    </div>
   );
 }
