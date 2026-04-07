@@ -35,14 +35,9 @@
   --amb-bg: rgba(180,83,9,0.08);
 }
 
-html, body { height: 100%; overflow: hidden; }
 body {
   font-family: var(--font-dm-sans, 'DM Sans'), sans-serif;
-  background: var(--bg);
-  color: var(--t1);
   -webkit-font-smoothing: antialiased;
-  display: flex;
-  height: 100vh;
 }
 
 /* SIDEBAR */
