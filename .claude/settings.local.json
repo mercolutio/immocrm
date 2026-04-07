@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(curl -s http://localhost:8000/rest/v1/ -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NDM2OTYwMDAsImV4cCI6MTkwMTQ2MjQwMH0.rJjF28QpMH98GXM54FR2Z_6l9ofuBWcbPPezbNTRrB4\")"
     ]
   }
 }
