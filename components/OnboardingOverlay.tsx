@@ -252,12 +252,12 @@ function getTooltipPos(rect: DOMRect, position: Step["position"], pad: number): 
       };
     case "right":
       return {
-        top: Math.max(rect.top + rect.height / 2 - 120, 16),
+        top: Math.min(Math.max(rect.top + rect.height / 2 - 120, 16), window.innerHeight - 276),
         left: rect.right + pad + 14,
       };
     case "left":
       return {
-        top: Math.max(rect.top + rect.height / 2 - 120, 16),
+        top: Math.min(Math.max(rect.top + rect.height / 2 - 120, 16), window.innerHeight - 276),
         right: window.innerWidth - rect.left + pad + 14,
       };
     case "top":
