@@ -9,7 +9,11 @@
       "Bash(grep -r \"organization\\\\|member\\\\|table\\\\|from\\(\" /Users/bilal/immocrm --include=\"*.ts\" --include=\"*.tsx\" ! -path \"*/node_modules/*\" ! -path \"*/.next/*\")",
       "Bash(npx shadcn@latest add input label select textarea dialog sheet table badge card separator dropdown-menu avatar tooltip skeleton form --yes)",
       "Bash(npx shadcn@latest add input label select textarea dialog sheet table badge card separator dropdown-menu avatar tooltip skeleton form)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:immocrm-murex.vercel.app)",
+      "Bash(gh run:*)",
+      "Bash(git remote:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
