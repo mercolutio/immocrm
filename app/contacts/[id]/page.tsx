@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase/client";
 import type { Contact, Note, Activity, ContactType, ContactSource } from "@/lib/types";
 import {
   CONTACT_TYPE_LABELS,
-  CONTACT_SOURCE_LABELS,
   CONTACT_TYPE_COLORS,
   CONTACT_TYPE_BG,
   ACTIVITY_TYPE_LABELS,
