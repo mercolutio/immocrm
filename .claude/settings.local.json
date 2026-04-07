@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(git pull:*)",
-      "Bash(curl -s http://localhost:8000/rest/v1/ -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NDM2OTYwMDAsImV4cCI6MTkwMTQ2MjQwMH0.rJjF28QpMH98GXM54FR2Z_6l9ofuBWcbPPezbNTRrB4\")"
+      "Bash(curl -s http://localhost:8000/rest/v1/ -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NDM2OTYwMDAsImV4cCI6MTkwMTQ2MjQwMH0.rJjF28QpMH98GXM54FR2Z_6l9ofuBWcbPPezbNTRrB4\")",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(grep -r \"organization\\\\|member\\\\|table\\\\|from\\(\" /Users/bilal/immocrm --include=\"*.ts\" --include=\"*.tsx\" ! -path \"*/node_modules/*\" ! -path \"*/.next/*\")",
+      "Bash(npx shadcn@latest add input label select textarea dialog sheet table badge card separator dropdown-menu avatar tooltip skeleton form --yes)",
+      "Bash(npx shadcn@latest add input label select textarea dialog sheet table badge card separator dropdown-menu avatar tooltip skeleton form)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
