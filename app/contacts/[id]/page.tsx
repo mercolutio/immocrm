@@ -152,9 +152,11 @@ export default function ContactDetailPage() {
     if (!body) return;
     setAddingNote(true);
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setAddingNote(false); return; }
     const { data } = await supabase
       .from("notes")
-      .insert({ contact_id: id, body })
+      .insert({ contact_id: id, body, user_id: user.id })
       .select()
       .single();
     if (data) {

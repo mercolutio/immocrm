@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -63,6 +63,7 @@ const EMPTY: NewContactForm = {
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 export default function ContactsPage() {
+  const router = useRouter();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -253,14 +254,15 @@ export default function ContactsPage() {
                 {filtered.map((c, i) => (
                   <tr
                     key={c.id}
+                    onClick={() => router.push(`/contacts/${c.id}`)}
                     style={{ borderBottom: i < filtered.length - 1 ? "1px solid var(--border)" : "none", cursor: "pointer", transition: "background 0.1s" }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg)")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
                     <td style={{ padding: "13px 18px" }}>
-                      <Link href={`/contacts/${c.id}`} style={{ fontWeight: 500, color: "var(--t1)", textDecoration: "none", fontSize: 14 }}>
+                      <span style={{ fontWeight: 500, color: "var(--t1)", fontSize: 14 }}>
                         {c.first_name} {c.last_name}
-                      </Link>
+                      </span>
                     </td>
                     <td style={{ padding: "13px 18px" }}>
                       <span style={{ display: "inline-flex", alignItems: "center", fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: CONTACT_TYPE_BG[c.type], color: CONTACT_TYPE_COLORS[c.type] }}>
