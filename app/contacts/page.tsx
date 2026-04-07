@@ -114,7 +114,10 @@ export default function ContactsPage() {
     setSaving(true);
     setFormError(null);
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setFormError("Nicht eingeloggt."); setSaving(false); return; }
     const { error } = await supabase.from("contacts").insert({
+      user_id: user.id,
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim(),
       email: form.email.trim() || null,
