@@ -10,7 +10,7 @@ Ziel: Bessere UX als onOffice/Propstack + tiefere KI-Integration.
 - Styling: Tailwind CSS + shadcn/ui
 - Payments: Stripe (Phase 2)
 - KI: Anthropic API (Phase 2)
-- Hosting: Hetzner (Phase 2)
+- Hosting: Vercel (Phase 2)
 
 ## Design-System
 - Primärfarbe (Accent): #C2692A
