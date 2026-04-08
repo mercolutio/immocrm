@@ -129,7 +129,6 @@ export default function ContactDetailPage() {
   const [searchProfiles, setSearchProfiles] = useState<SearchProfile[]>([]);
   const [spForms, setSpForms] = useState<Record<string, Partial<SearchProfile>>>({});
   const [spExpanded, setSpExpanded] = useState<Record<string, boolean>>({});
-  const [spSectionOpen, setSpSectionOpen] = useState(false);
   const [addingSp, setAddingSp] = useState(false);
 
   const [openForm, setOpenForm] = useState<"note" | "call" | "task" | "appointment" | null>(null);
@@ -172,7 +171,6 @@ export default function ContactDetailPage() {
       const forms: Record<string, Partial<SearchProfile>> = {};
       profiles.forEach((p) => { forms[p.id] = { ...p }; });
       setSpForms(forms);
-      if (profiles.length > 0) setSpSectionOpen(true);
       setLoading(false);
     }
     load();
@@ -557,7 +555,6 @@ export default function ContactDetailPage() {
                             setSearchProfiles((prev) => [...prev, data]);
                             setSpForms((prev) => ({ ...prev, [data.id]: { ...data } }));
                             setSpExpanded((prev) => ({ ...prev, [data.id]: true }));
-                            setSpSectionOpen(true);
                           }
                           setAddingSp(false);
                         }}
