@@ -541,15 +541,12 @@ export default function ContactDetailPage() {
                     <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
                     {/* Sektion Header */}
                     <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 0" }}>
-                      <button onClick={() => setSpSectionOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" strokeWidth="1.8" strokeLinecap="round" style={{ flexShrink: 0 }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)", whiteSpace: "nowrap" }}>
                           Suchprofile {searchProfiles.length > 0 ? `(${searchProfiles.length})` : ""}
                         </span>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round" style={{ marginLeft: "auto", transform: spSectionOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>
-                          <polyline points="6 9 12 15 18 9"/>
-                        </svg>
-                      </button>
+                      </div>
                       <button
                         disabled={addingSp}
                         onClick={async () => {
@@ -572,8 +569,7 @@ export default function ContactDetailPage() {
                     </div>
 
                     {/* Profil-Karten */}
-                    {spSectionOpen && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                         {searchProfiles.length === 0 && (
                           <div style={{ fontSize: 12, color: "var(--t3)", padding: "6px 0" }}>Noch keine Suchprofile</div>
                         )}
@@ -647,7 +643,6 @@ export default function ContactDetailPage() {
                           );
                         })}
                       </div>
-                    )}
                   </>
                 );
               })()}
