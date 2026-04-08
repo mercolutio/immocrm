@@ -287,15 +287,7 @@ export default function ContactDetailPage() {
           Kontakte
         </Link>
 
-        <div style={{ flex: 1 }}>
-          {loading ? (
-            <SkeletonBox w={200} h={19} />
-          ) : (
-            <div className="hdr-title">
-              {contact?.first_name} {contact?.last_name}
-            </div>
-          )}
-        </div>
+        <div style={{ flex: 1 }} />
 
         <div className="hdr-right">
           {/* 3-Punkte-Menü */}
@@ -607,20 +599,12 @@ export default function ContactDetailPage() {
                   const extraNotes = isNote ? null : (item as Extract<TimelineItem, { kind: "activity" }>).notes;
 
                   return (
-                    <div key={item.id} style={{ display: "flex", gap: 12, paddingBottom: i < timeline.length - 1 ? 16 : 0 }}>
-                      {/* Zeitstrahl */}
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 32, flexShrink: 0 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 9, background: "var(--card)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
-                          <ActivityIcon type={itemType} size={13} />
-                        </div>
-                        {i < timeline.length - 1 && (
-                          <div style={{ width: 1, flex: 1, background: "var(--border)", marginTop: 4 }} />
-                        )}
-                      </div>
-
-                      {/* Inhalt */}
-                      <div style={{ flex: 1, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px", minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <div key={item.id} style={{ paddingBottom: i < timeline.length - 1 ? 10 : 0 }}>
+                      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+                          <div style={{ width: 22, height: 22, borderRadius: 6, background: "var(--bg2)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
+                            <ActivityIcon type={itemType} size={11} />
+                          </div>
                           <span style={{ fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.07em" }}>{typeLabel}</span>
                           <span style={{ fontSize: 11, color: "var(--t3)", marginLeft: "auto" }}>{fmtDateTime(dateStr)}</span>
                         </div>
