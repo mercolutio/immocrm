@@ -126,10 +126,11 @@ export default function ContactDetailPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
 
-  const [searchProfile, setSearchProfile] = useState<SearchProfile | null>(null);
-  const [spForm, setSpForm] = useState<Partial<SearchProfile>>({});
-  const [spVisible, setSpVisible] = useState(false);
-  const [creatingSp, setCreatingSp] = useState(false);
+  const [searchProfiles, setSearchProfiles] = useState<SearchProfile[]>([]);
+  const [spForms, setSpForms] = useState<Record<string, Partial<SearchProfile>>>({});
+  const [spExpanded, setSpExpanded] = useState<Record<string, boolean>>({});
+  const [spSectionOpen, setSpSectionOpen] = useState(false);
+  const [addingSp, setAddingSp] = useState(false);
 
   const [openForm, setOpenForm] = useState<"note" | "call" | "task" | "appointment" | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -155,7 +156,7 @@ export default function ContactDetailPage() {
         supabase.from("notes").select("*").eq("contact_id", id).order("created_at", { ascending: false }),
         supabase.from("activities").select("*").eq("contact_id", id).order("happened_at", { ascending: false }),
         supabase.from("tasks").select("*").eq("contact_id", id).order("created_at", { ascending: false }),
-        supabase.from("search_profiles").select("*").eq("contact_id", id).maybeSingle(),
+        supabase.from("search_profiles").select("*").eq("contact_id", id).order("created_at", { ascending: true }),
       ]);
       if (cRes.error || !cRes.data) {
         setError(cRes.error?.message ?? "Kontakt nicht gefunden.");
@@ -166,11 +167,12 @@ export default function ContactDetailPage() {
       setNotes(nRes.data ?? []);
       setActivities(aRes.data ?? []);
       setTasks(tRes.data ?? []);
-      if (spRes.data) {
-        setSearchProfile(spRes.data);
-        setSpForm(spRes.data);
-        setSpVisible(true);
-      }
+      const profiles: SearchProfile[] = spRes.data ?? [];
+      setSearchProfiles(profiles);
+      const forms: Record<string, Partial<SearchProfile>> = {};
+      profiles.forEach((p) => { forms[p.id] = { ...p }; });
+      setSpForms(forms);
+      if (profiles.length > 0) setSpSectionOpen(true);
       setLoading(false);
     }
     load();
@@ -189,16 +191,28 @@ export default function ContactDetailPage() {
     setForm((f) => ({ ...f, ...patch }));
     setIsDirty(true);
   }
-  function updateSpForm(patch: Partial<SearchProfile>) {
-    setSpForm((f) => ({ ...f, ...patch }));
+  function updateSpField(profileId: string, patch: Partial<SearchProfile>) {
+    setSpForms((f) => ({ ...f, [profileId]: { ...f[profileId], ...patch } }));
     setIsDirty(true);
+  }
+
+  // ── Delete search profile ─────────────────────────────────────────────────
+  async function deleteSearchProfile(profileId: string) {
+    if (!confirm("Suchprofil wirklich löschen?")) return;
+    const supabase = createClient();
+    await supabase.from("search_profiles").delete().eq("id", profileId);
+    setSearchProfiles((prev) => prev.filter((p) => p.id !== profileId));
+    setSpForms((prev) => { const n = { ...prev }; delete n[profileId]; return n; });
+    setSpExpanded((prev) => { const n = { ...prev }; delete n[profileId]; return n; });
   }
 
   // ── Discard ───────────────────────────────────────────────────────────────
   function handleDiscard() {
     if (!contact) return;
     setForm(contact);
-    if (searchProfile) setSpForm(searchProfile);
+    const forms: Record<string, Partial<SearchProfile>> = {};
+    searchProfiles.forEach((p) => { forms[p.id] = { ...p }; });
+    setSpForms(forms);
     setIsDirty(false);
     setSaveError(null);
   }
@@ -240,30 +254,25 @@ export default function ContactDetailPage() {
 
     setContact((c) => ({ ...c!, ...form } as Contact));
 
-    // Suchprofil speichern (nur bei buyer / tenant / both)
-    const showSp = ["buyer", "tenant", "both"].includes(form.type ?? "");
-    if (showSp && spVisible) {
-      const spFields = {
-        type: spForm.type ?? "buy",
-        property_type: spForm.property_type ?? "apartment",
-        min_area: spForm.min_area ?? null,
-        max_area: spForm.max_area ?? null,
-        min_rooms: spForm.min_rooms ?? null,
-        max_rooms: spForm.max_rooms ?? null,
-        max_price: spForm.max_price ?? null,
-        cities: spForm.cities ?? null,
-        notes: spForm.notes ?? null,
-      };
-      if (searchProfile) {
-        await supabase.from("search_profiles").update(spFields).eq("id", searchProfile.id);
-      } else {
-        const { data: spData } = await supabase
-          .from("search_profiles")
-          .insert({ contact_id: id, ...spFields })
-          .select()
-          .single();
-        if (spData) setSearchProfile(spData);
-      }
+    // Suchprofile speichern (nur bei buyer / tenant / both)
+    if (["buyer", "tenant", "both"].includes(form.type ?? "") && searchProfiles.length > 0) {
+      await Promise.all(
+        searchProfiles.map((profile) => {
+          const f = spForms[profile.id] ?? {};
+          return supabase.from("search_profiles").update({
+            type: f.type ?? profile.type,
+            property_type: f.property_type ?? profile.property_type,
+            min_area: f.min_area ?? null,
+            max_area: f.max_area ?? null,
+            min_rooms: f.min_rooms ?? null,
+            max_rooms: f.max_rooms ?? null,
+            max_price: f.max_price ?? null,
+            cities: f.cities ?? null,
+            notes: f.notes ?? null,
+          }).eq("id", profile.id);
+        })
+      );
+      setSearchProfiles((prev) => prev.map((p) => ({ ...p, ...spForms[p.id] } as SearchProfile)));
     }
 
     setIsDirty(false);
@@ -517,93 +526,131 @@ export default function ContactDetailPage() {
                   placeholder="Persönliche Notizen…"
                 />
               </div>
-              {/* ── Suchprofil ── */}
-              {["buyer", "tenant", "both"].includes(form.type ?? "") && (
-                <>
-                  <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 8px" }} />
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" strokeWidth="1.8" strokeLinecap="round">
-                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    </svg>
-                    <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Suchprofil</span>
-                  </div>
-
-                  {!spVisible ? (
-                    <button
-                      onClick={async () => {
-                        setCreatingSp(true);
-                        const supabase = createClient();
-                        const { data } = await supabase
-                          .from("search_profiles")
-                          .insert({ contact_id: id, type: "buy", property_type: "apartment" })
-                          .select()
-                          .single();
-                        if (data) {
-                          setSearchProfile(data);
-                          setSpForm(data);
-                          setSpVisible(true);
-                        }
-                        setCreatingSp(false);
-                      }}
-                      disabled={creatingSp}
-                      style={{ display: "flex", alignItems: "center", gap: 6, height: 34, padding: "0 12px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 13, color: "var(--t2)", cursor: "pointer", fontFamily: "inherit" }}
-                    >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                      {creatingSp ? "Wird angelegt…" : "Suchprofil anlegen"}
-                    </button>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      <div>
-                        <label style={lbl}>Gesuchter Typ</label>
-                        <select style={{ ...inp, height: 36, cursor: "pointer" }} value={spForm.type ?? "buy"} onChange={(e) => updateSpForm({ type: e.target.value as SearchType })}>
-                          <option value="buy">Kaufen</option>
-                          <option value="rent">Mieten</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label style={lbl}>Immobilientyp</label>
-                        <select style={{ ...inp, height: 36, cursor: "pointer" }} value={spForm.property_type ?? "apartment"} onChange={(e) => updateSpForm({ property_type: e.target.value as PropertyType })}>
-                          <option value="apartment">Wohnung</option>
-                          <option value="house">Haus</option>
-                          <option value="land">Grundstück</option>
-                          <option value="commercial">Gewerbe</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label style={lbl}>Fläche (m²)</label>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Min" value={spForm.min_area ?? ""} onChange={(e) => updateSpForm({ min_area: e.target.value ? Number(e.target.value) : null })} />
-                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Max" value={spForm.max_area ?? ""} onChange={(e) => updateSpForm({ max_area: e.target.value ? Number(e.target.value) : null })} />
-                        </div>
-                      </div>
-                      <div>
-                        <label style={lbl}>Zimmer</label>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Min" value={spForm.min_rooms ?? ""} onChange={(e) => updateSpForm({ min_rooms: e.target.value ? Number(e.target.value) : null })} />
-                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Max" value={spForm.max_rooms ?? ""} onChange={(e) => updateSpForm({ max_rooms: e.target.value ? Number(e.target.value) : null })} />
-                        </div>
-                      </div>
-                      <div>
-                        <label style={lbl}>{spForm.type === "rent" ? "Max. Miete (€/Monat)" : "Max. Budget (€)"}</label>
-                        <input style={inp} type="number" placeholder="z.B. 450000" value={spForm.max_price ?? ""} onChange={(e) => updateSpForm({ max_price: e.target.value ? Number(e.target.value) : null })} />
-                      </div>
-                      <div>
-                        <label style={lbl}>Städte (kommasepariert)</label>
-                        <input
-                          style={inp}
-                          placeholder="z.B. München, Augsburg"
-                          value={spForm.cities ? spForm.cities.join(", ") : ""}
-                          onChange={(e) => updateSpForm({ cities: e.target.value ? e.target.value.split(",").map((s) => s.trim()).filter(Boolean) : null })}
-                        />
-                      </div>
-                      <div>
-                        <label style={lbl}>Notizen zum Suchprofil</label>
-                        <textarea style={{ ...inp, height: 70, padding: "8px 11px", resize: "none" }} placeholder="Weitere Wünsche…" value={spForm.notes ?? ""} onChange={(e) => updateSpForm({ notes: e.target.value || null })} />
-                      </div>
+              {/* ── Suchprofile ── */}
+              {["buyer", "tenant", "both"].includes(form.type ?? "") && (() => {
+                function spSummary(f: Partial<SearchProfile>): string {
+                  const parts: string[] = [];
+                  if (f.type) parts.push(f.type === "buy" ? "Kauf" : "Miete");
+                  if (f.property_type) parts.push({ apartment: "Wohnung", house: "Haus", land: "Grundstück", commercial: "Gewerbe" }[f.property_type] ?? "");
+                  if (f.cities?.length) parts.push(f.cities.slice(0, 2).join(", "));
+                  if (f.max_price) parts.push(`max. ${Number(f.max_price).toLocaleString("de-DE")}€`);
+                  return parts.filter(Boolean).join(" · ") || "Neues Suchprofil";
+                }
+                return (
+                  <>
+                    <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
+                    {/* Sektion Header */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 0" }}>
+                      <button onClick={() => setSpSectionOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>
+                          Suchprofile {searchProfiles.length > 0 ? `(${searchProfiles.length})` : ""}
+                        </span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round" style={{ marginLeft: "auto", transform: spSectionOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>
+                          <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                      </button>
+                      <button
+                        disabled={addingSp}
+                        onClick={async () => {
+                          setAddingSp(true);
+                          const supabase = createClient();
+                          const { data } = await supabase.from("search_profiles").insert({ contact_id: id, type: "buy", property_type: "apartment" }).select().single();
+                          if (data) {
+                            setSearchProfiles((prev) => [...prev, data]);
+                            setSpForms((prev) => ({ ...prev, [data.id]: { ...data } }));
+                            setSpExpanded((prev) => ({ ...prev, [data.id]: true }));
+                            setSpSectionOpen(true);
+                          }
+                          setAddingSp(false);
+                        }}
+                        style={{ display: "flex", alignItems: "center", gap: 4, height: 26, padding: "0 8px", background: "transparent", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--t2)", cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        {addingSp ? "…" : "Hinzufügen"}
+                      </button>
                     </div>
-                  )}
-                </>
-              )}
+
+                    {/* Profil-Karten */}
+                    {spSectionOpen && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {searchProfiles.length === 0 && (
+                          <div style={{ fontSize: 12, color: "var(--t3)", padding: "6px 0" }}>Noch keine Suchprofile</div>
+                        )}
+                        {searchProfiles.map((profile) => {
+                          const f = spForms[profile.id] ?? {};
+                          const isOpen = !!spExpanded[profile.id];
+                          return (
+                            <div key={profile.id} style={{ border: "1px solid var(--border)", borderRadius: 9, overflow: "hidden" }}>
+                              {/* Karten-Kopfzeile */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", background: "var(--bg2)", cursor: "pointer" }} onClick={() => setSpExpanded((prev) => ({ ...prev, [profile.id]: !prev[profile.id] }))}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}><polyline points="6 9 12 15 18 9"/></svg>
+                                <span style={{ fontSize: 12, color: "var(--t1)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{spSummary(f)}</span>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); deleteSearchProfile(profile.id); }}
+                                  style={{ width: 20, height: 20, border: "none", background: "none", cursor: "pointer", color: "var(--t3)", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4, flexShrink: 0, padding: 0 }}
+                                >
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                                </button>
+                              </div>
+
+                              {/* Karten-Felder */}
+                              {isOpen && (
+                                <div style={{ padding: "12px 10px", display: "flex", flexDirection: "column", gap: 10 }}>
+                                  <div style={{ display: "flex", gap: 8 }}>
+                                    <div style={{ flex: 1 }}>
+                                      <label style={lbl}>Typ</label>
+                                      <select style={{ ...inp, height: 34, cursor: "pointer" }} value={f.type ?? "buy"} onChange={(e) => updateSpField(profile.id, { type: e.target.value as SearchType })}>
+                                        <option value="buy">Kaufen</option>
+                                        <option value="rent">Mieten</option>
+                                      </select>
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                      <label style={lbl}>Immobilientyp</label>
+                                      <select style={{ ...inp, height: 34, cursor: "pointer" }} value={f.property_type ?? "apartment"} onChange={(e) => updateSpField(profile.id, { property_type: e.target.value as PropertyType })}>
+                                        <option value="apartment">Wohnung</option>
+                                        <option value="house">Haus</option>
+                                        <option value="land">Grundstück</option>
+                                        <option value="commercial">Gewerbe</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label style={lbl}>Fläche (m²)</label>
+                                    <div style={{ display: "flex", gap: 6 }}>
+                                      <input style={{ ...inp, width: "50%" }} type="number" placeholder="Min" value={f.min_area ?? ""} onChange={(e) => updateSpField(profile.id, { min_area: e.target.value ? Number(e.target.value) : null })} />
+                                      <input style={{ ...inp, width: "50%" }} type="number" placeholder="Max" value={f.max_area ?? ""} onChange={(e) => updateSpField(profile.id, { max_area: e.target.value ? Number(e.target.value) : null })} />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label style={lbl}>Zimmer</label>
+                                    <div style={{ display: "flex", gap: 6 }}>
+                                      <input style={{ ...inp, width: "50%" }} type="number" placeholder="Min" value={f.min_rooms ?? ""} onChange={(e) => updateSpField(profile.id, { min_rooms: e.target.value ? Number(e.target.value) : null })} />
+                                      <input style={{ ...inp, width: "50%" }} type="number" placeholder="Max" value={f.max_rooms ?? ""} onChange={(e) => updateSpField(profile.id, { max_rooms: e.target.value ? Number(e.target.value) : null })} />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label style={lbl}>{f.type === "rent" ? "Max. Miete (€/Mo.)" : "Max. Budget (€)"}</label>
+                                    <input style={inp} type="number" placeholder="z.B. 450000" value={f.max_price ?? ""} onChange={(e) => updateSpField(profile.id, { max_price: e.target.value ? Number(e.target.value) : null })} />
+                                  </div>
+                                  <div>
+                                    <label style={lbl}>Städte</label>
+                                    <input style={inp} placeholder="München, Augsburg" value={f.cities ? f.cities.join(", ") : ""} onChange={(e) => updateSpField(profile.id, { cities: e.target.value ? e.target.value.split(",").map((s) => s.trim()).filter(Boolean) : null })} />
+                                  </div>
+                                  <div>
+                                    <label style={lbl}>Notizen</label>
+                                    <textarea style={{ ...inp, height: 60, padding: "7px 10px", resize: "none" }} placeholder="Weitere Wünsche…" value={f.notes ?? ""} onChange={(e) => updateSpField(profile.id, { notes: e.target.value || null })} />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
 
               <div style={{ fontSize: 11, color: "var(--t3)", lineHeight: 1.6 }}>
                 Erstellt {contact ? fmtDate(contact.created_at) : "—"}<br />
