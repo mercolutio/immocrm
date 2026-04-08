@@ -98,7 +98,7 @@ function ActivityIcon({ type, size = 13 }: { type: string; size?: number }) {
   }
 }
 
-type ActiveTab = "note" | "call" | "task" | "appointment";
+type ActiveTab = "all" | "note" | "call" | "task" | "appointment";
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 export default function ContactDetailPage() {
@@ -126,7 +126,7 @@ export default function ContactDetailPage() {
   const [addingNote, setAddingNote] = useState(false);
   const [archiving, setArchiving] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>("note");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("all");
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
@@ -531,9 +531,10 @@ export default function ContactDetailPage() {
 
             {/* Tab-Leiste */}
             <div style={{ display: "flex", gap: 6, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: 5, flexShrink: 0 }}>
-              {(["note", "call", "task", "appointment"] as ActiveTab[]).map((tab) => {
-                const labels: Record<ActiveTab, string> = { note: "Notiz", call: "Anruf", task: "Aufgabe", appointment: "Termin" };
+              {(["all", "note", "call", "task", "appointment"] as ActiveTab[]).map((tab) => {
+                const labels: Record<ActiveTab, string> = { all: "Alle", note: "Notiz", call: "Anruf", task: "Aufgabe", appointment: "Termin" };
                 const icons: Record<ActiveTab, React.ReactNode> = {
+                  all: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
                   note: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
                   call: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>,
                   task: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>,
@@ -553,35 +554,37 @@ export default function ContactDetailPage() {
               })}
             </div>
 
-            {/* Eingabe-Panel */}
-            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", flexShrink: 0 }}>
-              {activeTab === "note" ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <textarea
-                    style={{ ...inp, height: 80, padding: "8px 11px", resize: "none" }}
-                    placeholder="Notiz hinzufügen…"
-                    value={newNote}
-                    onChange={(e) => setNewNote(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAddNote(); }}
-                  />
-                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                    <button
-                      onClick={handleAddNote}
-                      disabled={addingNote || !newNote.trim()}
-                      style={{ height: 34, padding: "0 16px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", opacity: !newNote.trim() ? 0.5 : 1 }}
-                    >
-                      {addingNote ? "…" : "Notiz speichern"}
-                    </button>
+            {/* Eingabe-Panel — nur bei spezifischen Tabs */}
+            {activeTab !== "all" && (
+              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", flexShrink: 0 }}>
+                {activeTab === "note" ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <textarea
+                      style={{ ...inp, height: 80, padding: "8px 11px", resize: "none" }}
+                      placeholder="Notiz hinzufügen…"
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAddNote(); }}
+                    />
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <button
+                        onClick={handleAddNote}
+                        disabled={addingNote || !newNote.trim()}
+                        style={{ height: 34, padding: "0 16px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", opacity: !newNote.trim() ? 0.5 : 1 }}
+                      >
+                        {addingNote ? "…" : "Notiz speichern"}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div style={{ padding: "12px 0", textAlign: "center", fontSize: 13, color: "var(--t3)" }}>
-                  {activeTab === "call" && "Anruf protokollieren — kommt bald"}
-                  {activeTab === "task" && "Aufgabe erstellen — kommt bald"}
-                  {activeTab === "appointment" && "Termin anlegen — kommt bald"}
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div style={{ padding: "12px 0", textAlign: "center", fontSize: 13, color: "var(--t3)" }}>
+                    {activeTab === "call" && "Anruf protokollieren — kommt bald"}
+                    {activeTab === "task" && "Aufgabe erstellen — kommt bald"}
+                    {activeTab === "appointment" && "Termin anlegen — kommt bald"}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Timeline */}
             <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
@@ -670,16 +673,6 @@ export default function ContactDetailPage() {
               }
             />
 
-            <LinkSection
-              title="Aufgaben"
-              count={0}
-              icon={
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                  <polyline points="9 11 12 14 22 4"/>
-                  <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-                </svg>
-              }
-            />
           </div>
 
         </div>
