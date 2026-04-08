@@ -1,6 +1,8 @@
 export type ContactType = 'buyer' | 'seller' | 'both' | 'tenant' | 'landlord'
 export type ContactSource = 'website' | 'referral' | 'portal' | 'cold' | 'other'
 export type ActivityType = 'call' | 'email' | 'viewing' | 'meeting' | 'note'
+export type PropertyType = 'apartment' | 'house' | 'land' | 'commercial'
+export type SearchType = 'buy' | 'rent'
 
 export const CONTACT_TYPE_LABELS: Record<ContactType, string> = {
   buyer: 'Käufer',
@@ -55,6 +57,22 @@ export interface Contact {
   source: ContactSource
   notes: string | null
   is_archived: boolean
+}
+
+export interface SearchProfile {
+  id: string
+  created_at: string
+  updated_at: string
+  contact_id: string
+  type: SearchType
+  property_type: PropertyType
+  min_area: number | null
+  max_area: number | null
+  min_rooms: number | null
+  max_rooms: number | null
+  max_price: number | null
+  cities: string[] | null
+  notes: string | null
 }
 
 export interface Note {

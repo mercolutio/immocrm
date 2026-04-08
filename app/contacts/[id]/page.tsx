@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/lib/supabase/client";
-import type { Contact, Note, Activity, ActivityType, ContactType, ContactSource } from "@/lib/types";
+import type { Contact, Note, Activity, ActivityType, ContactType, ContactSource, SearchProfile, PropertyType, SearchType } from "@/lib/types";
 import {
   CONTACT_TYPE_LABELS,
   CONTACT_TYPE_COLORS,
@@ -117,6 +117,11 @@ export default function ContactDetailPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
+  const [searchProfile, setSearchProfile] = useState<SearchProfile | null>(null);
+  const [spForm, setSpForm] = useState<Partial<SearchProfile>>({});
+  const [spVisible, setSpVisible] = useState(false);
+  const [creatingSp, setCreatingSp] = useState(false);
+
   const [newNote, setNewNote] = useState("");
   const [addingNote, setAddingNote] = useState(false);
   const [archiving, setArchiving] = useState(false);
@@ -128,10 +133,11 @@ export default function ContactDetailPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const [cRes, nRes, aRes] = await Promise.all([
+      const [cRes, nRes, aRes, spRes] = await Promise.all([
         supabase.from("contacts").select("*").eq("id", id).single(),
         supabase.from("notes").select("*").eq("contact_id", id).order("created_at", { ascending: false }),
         supabase.from("activities").select("*").eq("contact_id", id).order("happened_at", { ascending: false }),
+        supabase.from("search_profiles").select("*").eq("contact_id", id).maybeSingle(),
       ]);
       if (cRes.error || !cRes.data) {
         setError(cRes.error?.message ?? "Kontakt nicht gefunden.");
@@ -141,6 +147,11 @@ export default function ContactDetailPage() {
       }
       setNotes(nRes.data ?? []);
       setActivities(aRes.data ?? []);
+      if (spRes.data) {
+        setSearchProfile(spRes.data);
+        setSpForm(spRes.data);
+        setSpVisible(true);
+      }
       setLoading(false);
     }
     load();
@@ -169,11 +180,40 @@ export default function ContactDetailPage() {
       .eq("id", id);
     if (error) {
       setSaveError(error.message);
-    } else {
-      setContact((c) => ({ ...c!, ...form } as Contact));
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setSaving(false);
+      return;
     }
+
+    setContact((c) => ({ ...c!, ...form } as Contact));
+
+    // Suchprofil speichern (nur bei buyer / tenant / both)
+    const showSp = ["buyer", "tenant", "both"].includes(form.type ?? "");
+    if (showSp && spVisible) {
+      const spFields = {
+        type: spForm.type ?? "buy",
+        property_type: spForm.property_type ?? "apartment",
+        min_area: spForm.min_area ?? null,
+        max_area: spForm.max_area ?? null,
+        min_rooms: spForm.min_rooms ?? null,
+        max_rooms: spForm.max_rooms ?? null,
+        max_price: spForm.max_price ?? null,
+        cities: spForm.cities ?? null,
+        notes: spForm.notes ?? null,
+      };
+      if (searchProfile) {
+        await supabase.from("search_profiles").update(spFields).eq("id", searchProfile.id);
+      } else {
+        const { data: spData } = await supabase
+          .from("search_profiles")
+          .insert({ contact_id: id, ...spFields })
+          .select()
+          .single();
+        if (spData) setSearchProfile(spData);
+      }
+    }
+
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
     setSaving(false);
   }
 
@@ -386,6 +426,94 @@ export default function ContactDetailPage() {
                   placeholder="Persönliche Notizen…"
                 />
               </div>
+              {/* ── Suchprofil ── */}
+              {["buyer", "tenant", "both"].includes(form.type ?? "") && (
+                <>
+                  <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 8px" }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" strokeWidth="1.8" strokeLinecap="round">
+                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Suchprofil</span>
+                  </div>
+
+                  {!spVisible ? (
+                    <button
+                      onClick={async () => {
+                        setCreatingSp(true);
+                        const supabase = createClient();
+                        const { data } = await supabase
+                          .from("search_profiles")
+                          .insert({ contact_id: id, type: "buy", property_type: "apartment" })
+                          .select()
+                          .single();
+                        if (data) {
+                          setSearchProfile(data);
+                          setSpForm(data);
+                          setSpVisible(true);
+                        }
+                        setCreatingSp(false);
+                      }}
+                      disabled={creatingSp}
+                      style={{ display: "flex", alignItems: "center", gap: 6, height: 34, padding: "0 12px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 13, color: "var(--t2)", cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      {creatingSp ? "Wird angelegt…" : "Suchprofil anlegen"}
+                    </button>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div>
+                        <label style={lbl}>Gesuchter Typ</label>
+                        <select style={{ ...inp, height: 36, cursor: "pointer" }} value={spForm.type ?? "buy"} onChange={(e) => setSpForm((f) => ({ ...f, type: e.target.value as SearchType }))}>
+                          <option value="buy">Kaufen</option>
+                          <option value="rent">Mieten</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={lbl}>Immobilientyp</label>
+                        <select style={{ ...inp, height: 36, cursor: "pointer" }} value={spForm.property_type ?? "apartment"} onChange={(e) => setSpForm((f) => ({ ...f, property_type: e.target.value as PropertyType }))}>
+                          <option value="apartment">Wohnung</option>
+                          <option value="house">Haus</option>
+                          <option value="land">Grundstück</option>
+                          <option value="commercial">Gewerbe</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={lbl}>Fläche (m²)</label>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Min" value={spForm.min_area ?? ""} onChange={(e) => setSpForm((f) => ({ ...f, min_area: e.target.value ? Number(e.target.value) : null }))} />
+                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Max" value={spForm.max_area ?? ""} onChange={(e) => setSpForm((f) => ({ ...f, max_area: e.target.value ? Number(e.target.value) : null }))} />
+                        </div>
+                      </div>
+                      <div>
+                        <label style={lbl}>Zimmer</label>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Min" value={spForm.min_rooms ?? ""} onChange={(e) => setSpForm((f) => ({ ...f, min_rooms: e.target.value ? Number(e.target.value) : null }))} />
+                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Max" value={spForm.max_rooms ?? ""} onChange={(e) => setSpForm((f) => ({ ...f, max_rooms: e.target.value ? Number(e.target.value) : null }))} />
+                        </div>
+                      </div>
+                      <div>
+                        <label style={lbl}>{spForm.type === "rent" ? "Max. Miete (€/Monat)" : "Max. Budget (€)"}</label>
+                        <input style={inp} type="number" placeholder="z.B. 450000" value={spForm.max_price ?? ""} onChange={(e) => setSpForm((f) => ({ ...f, max_price: e.target.value ? Number(e.target.value) : null }))} />
+                      </div>
+                      <div>
+                        <label style={lbl}>Städte (kommasepariert)</label>
+                        <input
+                          style={inp}
+                          placeholder="z.B. München, Augsburg"
+                          value={spForm.cities ? spForm.cities.join(", ") : ""}
+                          onChange={(e) => setSpForm((f) => ({ ...f, cities: e.target.value ? e.target.value.split(",").map((s) => s.trim()).filter(Boolean) : null }))}
+                        />
+                      </div>
+                      <div>
+                        <label style={lbl}>Notizen zum Suchprofil</label>
+                        <textarea style={{ ...inp, height: 70, padding: "8px 11px", resize: "none" }} placeholder="Weitere Wünsche…" value={spForm.notes ?? ""} onChange={(e) => setSpForm((f) => ({ ...f, notes: e.target.value || null }))} />
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
               <div style={{ fontSize: 11, color: "var(--t3)", lineHeight: 1.6 }}>
                 Erstellt {contact ? fmtDate(contact.created_at) : "—"}<br />
                 Geändert {contact ? fmtDate(contact.updated_at) : "—"}
