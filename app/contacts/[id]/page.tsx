@@ -694,9 +694,9 @@ export default function ContactDetailPage() {
       {/* ── Unsaved Changes Floating Card ── */}
       <style>{`
         @keyframes pulse-ring {
-          0%   { transform: scale(1);   opacity: 0.6; }
-          70%  { transform: scale(1.9); opacity: 0; }
-          100% { transform: scale(1.9); opacity: 0; }
+          0%   { transform: scale(1);   opacity: 0.8; }
+          60%  { transform: scale(2.8); opacity: 0; }
+          100% { transform: scale(2.8); opacity: 0; }
         }
       `}</style>
       <div style={{
@@ -719,7 +719,7 @@ export default function ContactDetailPage() {
         minWidth: 340,
       }}>
         {/* Pulsierender Kreis */}
-        <div style={{ position: "relative", width: 10, height: 10, flexShrink: 0 }}>
+        <div style={{ position: "relative", width: 8, height: 8, flexShrink: 0 }}>
           <div style={{
             position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(255,255,255,0.5)",
             animation: "pulse-ring 1.6s ease-out infinite",
