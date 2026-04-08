@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/lib/supabase/client";
-import type { Contact, Note, Activity, ActivityType, ContactType, ContactSource, SearchProfile, PropertyType, SearchType } from "@/lib/types";
+import type { Contact, Note, Activity, ActivityType, ContactType, ContactSource, SearchProfile, PropertyType, SearchType, Task, TaskPriority } from "@/lib/types";
 import {
   CONTACT_TYPE_LABELS,
   CONTACT_TYPE_COLORS,
@@ -99,6 +99,8 @@ function ActivityIcon({ type, size = 13 }: { type: string; size?: number }) {
       return <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
     case "note":
       return <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
+    case "task":
+      return <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>;
     default:
       return <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>;
   }
@@ -115,6 +117,7 @@ export default function ContactDetailPage() {
   const [contact, setContact] = useState<Contact | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -147,10 +150,11 @@ export default function ContactDetailPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const [cRes, nRes, aRes, spRes] = await Promise.all([
+      const [cRes, nRes, aRes, tRes, spRes] = await Promise.all([
         supabase.from("contacts").select("*").eq("id", id).single(),
         supabase.from("notes").select("*").eq("contact_id", id).order("created_at", { ascending: false }),
         supabase.from("activities").select("*").eq("contact_id", id).order("happened_at", { ascending: false }),
+        supabase.from("tasks").select("*").eq("contact_id", id).order("created_at", { ascending: false }),
         supabase.from("search_profiles").select("*").eq("contact_id", id).maybeSingle(),
       ]);
       if (cRes.error || !cRes.data) {
@@ -161,6 +165,7 @@ export default function ContactDetailPage() {
       }
       setNotes(nRes.data ?? []);
       setActivities(aRes.data ?? []);
+      setTasks(tRes.data ?? []);
       if (spRes.data) {
         setSearchProfile(spRes.data);
         setSpForm(spRes.data);
@@ -311,27 +316,47 @@ export default function ContactDetailPage() {
         .select().single();
       if (data) setActivities((a) => [data, ...a]);
     } else if (openForm === "task") {
-      await supabase
+      const { data } = await supabase
         .from("tasks")
-        .insert({ contact_id: id, user_id: user.id, title: fTitle.trim(), due_date: fDatetime ? fDatetime + ":00" : null, priority: fPriority });
+        .insert({ contact_id: id, user_id: user.id, title: fTitle.trim(), due_date: fDatetime ? fDatetime + ":00" : null, priority: fPriority })
+        .select().single();
+      if (data) setTasks((t) => [data, ...t]);
     }
 
     setOpenForm(null);
     setSubmitting(false);
   }
 
-  // ── Timeline items (notes + activities merged, sorted by date desc) ────────
+  // ── Timeline items ────────────────────────────────────────────────────────
   type TimelineItem =
     | { kind: "note"; id: string; body: string; created_at: string }
-    | { kind: "activity"; id: string; type: ActivityType; summary: string; notes?: string | null; happened_at: string };
+    | { kind: "activity"; id: string; type: ActivityType; summary: string; notes?: string | null; happened_at: string }
+    | { kind: "task"; id: string; title: string; priority: TaskPriority; due_date: string | null; created_at: string };
 
-  const timeline: TimelineItem[] = [
+  const CALL_RESULT_LABELS: Record<string, string> = {
+    reached: "Erreicht",
+    not_reached: "Nicht erreicht",
+    callback: "Rückruf vereinbart",
+  };
+  const PRIORITY_LABELS: Record<TaskPriority, string> = { low: "Niedrig", medium: "Mittel", high: "Hoch" };
+
+  const allTimeline: TimelineItem[] = [
     ...notes.map((n) => ({ kind: "note" as const, id: n.id, body: n.body, created_at: n.created_at })),
     ...activities.map((a) => ({ kind: "activity" as const, id: a.id, type: a.type, summary: a.summary, notes: a.notes, happened_at: a.happened_at })),
+    ...tasks.map((t) => ({ kind: "task" as const, id: t.id, title: t.title, priority: t.priority, due_date: t.due_date, created_at: t.created_at })),
   ].sort((a, b) => {
-    const dateA = a.kind === "note" ? a.created_at : a.happened_at;
-    const dateB = b.kind === "note" ? b.created_at : b.happened_at;
+    const dateA = a.kind === "activity" ? a.happened_at : a.created_at;
+    const dateB = b.kind === "activity" ? b.happened_at : b.created_at;
     return new Date(dateB).getTime() - new Date(dateA).getTime();
+  });
+
+  const timeline = allTimeline.filter((item) => {
+    if (activeTab === "all") return true;
+    if (activeTab === "note") return item.kind === "note";
+    if (activeTab === "call") return item.kind === "activity" && item.type === "call";
+    if (activeTab === "appointment") return item.kind === "activity" && item.type === "meeting";
+    if (activeTab === "task") return item.kind === "task";
+    return true;
   });
 
   // ── Avatar initials ────────────────────────────────────────────────────────
@@ -729,12 +754,33 @@ export default function ContactDetailPage() {
                 </div>
               ) : (
                 timeline.map((item, i) => {
+                  if (item.kind === "task") {
+                    return (
+                      <div key={item.id} style={{ paddingBottom: i < timeline.length - 1 ? 10 : 0 }}>
+                        <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+                            <div style={{ width: 22, height: 22, borderRadius: 6, background: "var(--bg2)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
+                              <ActivityIcon type="task" size={11} />
+                            </div>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Aufgabe</span>
+                            <span style={{ fontSize: 11, color: "var(--t3)", marginLeft: "auto" }}>{fmtDateTime(item.created_at)}</span>
+                          </div>
+                          <div style={{ fontSize: 13, color: "var(--t1)", lineHeight: 1.6 }}>{item.title}</div>
+                          <div style={{ display: "flex", gap: 8, marginTop: 5 }}>
+                            <span style={{ fontSize: 11, color: "var(--t3)" }}>Priorität: {PRIORITY_LABELS[item.priority]}</span>
+                            {item.due_date && <span style={{ fontSize: 11, color: "var(--t3)" }}>· Fällig: {fmtDateTime(item.due_date)}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
                   const isNote = item.kind === "note";
                   const dateStr = isNote ? item.created_at : (item as Extract<TimelineItem, { kind: "activity" }>).happened_at;
                   const typeLabel = isNote ? "Notiz" : ACTIVITY_TYPE_LABELS[(item as Extract<TimelineItem, { kind: "activity" }>).type] ?? "Aktivität";
                   const itemType = isNote ? "note" : (item as Extract<TimelineItem, { kind: "activity" }>).type;
                   const content = isNote ? (item as Extract<TimelineItem, { kind: "note" }>).body : (item as Extract<TimelineItem, { kind: "activity" }>).summary;
-                  const extraNotes = isNote ? null : (item as Extract<TimelineItem, { kind: "activity" }>).notes;
+                  const rawExtra = isNote ? null : (item as Extract<TimelineItem, { kind: "activity" }>).notes;
+                  const extraNotes = rawExtra ? (CALL_RESULT_LABELS[rawExtra] ?? rawExtra) : null;
 
                   return (
                     <div key={item.id} style={{ paddingBottom: i < timeline.length - 1 ? 10 : 0 }}>

@@ -3,6 +3,7 @@ export type ContactSource = 'website' | 'referral' | 'portal' | 'cold' | 'other'
 export type ActivityType = 'call' | 'email' | 'viewing' | 'meeting' | 'note'
 export type PropertyType = 'apartment' | 'house' | 'land' | 'commercial'
 export type SearchType = 'buy' | 'rent'
+export type TaskPriority = 'low' | 'medium' | 'high'
 
 export const CONTACT_TYPE_LABELS: Record<ContactType, string> = {
   buyer: 'Käufer',
@@ -73,6 +74,19 @@ export interface SearchProfile {
   max_price: number | null
   cities: string[] | null
   notes: string | null
+}
+
+export interface Task {
+  id: string
+  created_at: string
+  updated_at: string
+  user_id: string
+  contact_id: string | null
+  title: string
+  description: string | null
+  due_date: string | null
+  is_done: boolean
+  priority: TaskPriority
 }
 
 export interface Note {
