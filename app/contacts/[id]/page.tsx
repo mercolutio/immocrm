@@ -47,6 +47,12 @@ function fmtDate(s: string) {
 function fmtDateTime(s: string) {
   return new Date(s).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
+function nowLocalISO() {
+  const d = new Date();
+  d.setSeconds(0, 0);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
 
 // ─── Verknüpfungs-Sektion ───────────────────────────────────────────────────
 function LinkSection({
@@ -122,8 +128,16 @@ export default function ContactDetailPage() {
   const [spVisible, setSpVisible] = useState(false);
   const [creatingSp, setCreatingSp] = useState(false);
 
-  const [newNote, setNewNote] = useState("");
-  const [addingNote, setAddingNote] = useState(false);
+  const [openForm, setOpenForm] = useState<"note" | "call" | "task" | "appointment" | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [fNote, setFNote] = useState("");
+  const [fTitle, setFTitle] = useState("");
+  const [fDatetime, setFDatetime] = useState("");
+  const [fCallResult, setFCallResult] = useState("reached");
+  const [fPriority, setFPriority] = useState<"low" | "medium" | "high">("medium");
+  const [fApptNote, setFApptNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
   const [archiving, setArchiving] = useState(false);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("all");
@@ -156,6 +170,14 @@ export default function ContactDetailPage() {
     }
     load();
   }, [id]);
+
+  // ── Dropdown außen schließen ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!showDropdown) return;
+    const handler = () => setShowDropdown(false);
+    window.addEventListener("click", handler, { capture: true });
+    return () => window.removeEventListener("click", handler, { capture: true });
+  }, [showDropdown]);
 
   // ── Dirty helpers ─────────────────────────────────────────────────────────
   function updateForm(patch: Partial<Contact>) {
@@ -252,24 +274,50 @@ export default function ContactDetailPage() {
     router.push("/contacts");
   }
 
-  // ── Add note ──────────────────────────────────────────────────────────────
-  async function handleAddNote() {
-    const body = newNote.trim();
-    if (!body) return;
-    setAddingNote(true);
+  // ── Open form helper ──────────────────────────────────────────────────────
+  function openFormFor(type: "note" | "call" | "task" | "appointment") {
+    setFNote(""); setFTitle(""); setFDatetime(nowLocalISO());
+    setFCallResult("reached"); setFPriority("medium"); setFApptNote("");
+    setOpenForm(type);
+    setShowDropdown(false);
+  }
+
+  // ── Submit activity form ──────────────────────────────────────────────────
+  async function handleSubmitForm() {
+    if (!openForm) return;
+    if (openForm === "note" && !fNote.trim()) return;
+    if ((openForm === "task" || openForm === "appointment") && !fTitle.trim()) return;
+    setSubmitting(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setAddingNote(false); return; }
-    const { data } = await supabase
-      .from("notes")
-      .insert({ contact_id: id, body, user_id: user.id })
-      .select()
-      .single();
-    if (data) {
-      setNotes((n) => [data, ...n]);
-      setNewNote("");
+    if (!user) { setSubmitting(false); return; }
+
+    if (openForm === "note") {
+      const { data } = await supabase
+        .from("notes")
+        .insert({ contact_id: id, body: fNote.trim(), user_id: user.id })
+        .select().single();
+      if (data) setNotes((n) => [data, ...n]);
+    } else if (openForm === "call") {
+      const { data } = await supabase
+        .from("activities")
+        .insert({ contact_id: id, user_id: user.id, type: "call", summary: fNote.trim() || "Anruf", happened_at: fDatetime + ":00", notes: fCallResult })
+        .select().single();
+      if (data) setActivities((a) => [data, ...a]);
+    } else if (openForm === "appointment") {
+      const { data } = await supabase
+        .from("activities")
+        .insert({ contact_id: id, user_id: user.id, type: "meeting", summary: fTitle.trim(), happened_at: fDatetime + ":00", notes: fApptNote.trim() || null })
+        .select().single();
+      if (data) setActivities((a) => [data, ...a]);
+    } else if (openForm === "task") {
+      await supabase
+        .from("tasks")
+        .insert({ contact_id: id, user_id: user.id, title: fTitle.trim(), due_date: fDatetime ? fDatetime + ":00" : null, priority: fPriority });
     }
-    setAddingNote(false);
+
+    setOpenForm(null);
+    setSubmitting(false);
   }
 
   // ── Timeline items (notes + activities merged, sorted by date desc) ────────
@@ -543,60 +591,133 @@ export default function ContactDetailPage() {
           {/* ── MITTLERE SPALTE: Aktivitäten ── */}
           <div style={{ ...colStyle, flex: 1, padding: "18px 20px", background: "var(--bg)", display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
 
-            {/* Tab-Leiste */}
-            <div style={{ display: "flex", gap: 6, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: 5, flexShrink: 0 }}>
-              {(["all", "note", "call", "task", "appointment"] as ActiveTab[]).map((tab) => {
-                const labels: Record<ActiveTab, string> = { all: "Alle", note: "Notiz", call: "Anruf", task: "Aufgabe", appointment: "Termin" };
-                const icons: Record<ActiveTab, React.ReactNode> = {
-                  all: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
-                  note: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
-                  call: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>,
-                  task: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>,
-                  appointment: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
-                };
-                const isActive = activeTab === tab;
-                return (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, borderRadius: 7, border: "none", fontSize: 13, fontWeight: isActive ? 500 : 400, cursor: "pointer", fontFamily: "inherit", transition: "all 0.14s", background: isActive ? "var(--accent)" : "transparent", color: isActive ? "#fff" : "var(--t2)" }}
-                  >
-                    {icons[tab]}
-                    {labels[tab]}
-                  </button>
-                );
-              })}
-            </div>
+            {/* Tab-Leiste + Kontext-Button */}
+            {(() => {
+              const tabLabels: Record<ActiveTab, string> = { all: "Alle", note: "Notiz", call: "Anruf", task: "Aufgabe", appointment: "Termin" };
+              const tabIcons: Record<ActiveTab, React.ReactNode> = {
+                all: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
+                note: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
+                call: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>,
+                task: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>,
+                appointment: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+              };
+              return (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                  <div style={{ flex: 1, display: "flex", gap: 6, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: 5 }}>
+                    {(["all", "note", "call", "task", "appointment"] as ActiveTab[]).map((tab) => {
+                      const isActive = activeTab === tab;
+                      return (
+                        <button key={tab} onClick={() => { setActiveTab(tab); setOpenForm(null); }}
+                          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, borderRadius: 7, border: "none", fontSize: 13, fontWeight: isActive ? 500 : 400, cursor: "pointer", fontFamily: "inherit", transition: "all 0.14s", background: isActive ? "var(--accent)" : "transparent", color: isActive ? "#fff" : "var(--t2)" }}>
+                          {tabIcons[tab]}{tabLabels[tab]}
+                        </button>
+                      );
+                    })}
+                  </div>
 
-            {/* Eingabe-Panel — nur bei spezifischen Tabs */}
-            {activeTab !== "all" && (
-              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", flexShrink: 0 }}>
-                {activeTab === "note" ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    <textarea
-                      style={{ ...inp, height: 80, padding: "8px 11px", resize: "none" }}
-                      placeholder="Notiz hinzufügen…"
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAddNote(); }}
-                    />
-                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  {/* Kontext-Button */}
+                  {activeTab === "all" ? (
+                    <div style={{ position: "relative" }}>
                       <button
-                        onClick={handleAddNote}
-                        disabled={addingNote || !newNote.trim()}
-                        style={{ height: 34, padding: "0 16px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", opacity: !newNote.trim() ? 0.5 : 1 }}
+                        onClick={() => setShowDropdown((v) => !v)}
+                        style={{ height: 34, padding: "0 12px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}
                       >
-                        {addingNote ? "…" : "Notiz speichern"}
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Aktivität
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
                       </button>
+                      {showDropdown && (
+                        <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card)", border: "1px solid var(--border-md)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", padding: 5, minWidth: 150, zIndex: 500 }}>
+                          {(["note", "call", "task", "appointment"] as const).map((t) => (
+                            <button key={t} onClick={() => openFormFor(t)}
+                              style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: "var(--t1)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                              {tabIcons[t]}{tabLabels[t]}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => openForm === activeTab ? setOpenForm(null) : openFormFor(activeTab as "note" | "call" | "task" | "appointment")}
+                      style={{ height: 34, padding: "0 12px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      {tabLabels[activeTab]}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Inline-Formular */}
+            {openForm && (
+              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", flexShrink: 0 }}>
+                {openForm === "note" && (
+                  <textarea autoFocus style={{ ...inp, height: 90, padding: "8px 11px", resize: "none" }}
+                    placeholder="Notiz…" value={fNote} onChange={(e) => setFNote(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmitForm(); }} />
+                )}
+                {openForm === "call" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <textarea autoFocus style={{ ...inp, height: 70, padding: "8px 11px", resize: "none" }}
+                      placeholder="Gesprächsnotiz…" value={fNote} onChange={(e) => setFNote(e.target.value)} />
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={lbl}>Datum / Uhrzeit</label>
+                        <input style={{ ...inp, colorScheme: "light" }} type="datetime-local" value={fDatetime} onChange={(e) => setFDatetime(e.target.value)} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={lbl}>Ergebnis</label>
+                        <select style={{ ...inp, height: 36, cursor: "pointer" }} value={fCallResult} onChange={(e) => setFCallResult(e.target.value)}>
+                          <option value="reached">Erreicht</option>
+                          <option value="not_reached">Nicht erreicht</option>
+                          <option value="callback">Rückruf vereinbart</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
-                ) : (
-                  <div style={{ padding: "12px 0", textAlign: "center", fontSize: 13, color: "var(--t3)" }}>
-                    {activeTab === "call" && "Anruf protokollieren — kommt bald"}
-                    {activeTab === "task" && "Aufgabe erstellen — kommt bald"}
-                    {activeTab === "appointment" && "Termin anlegen — kommt bald"}
+                )}
+                {openForm === "task" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <input autoFocus style={inp} placeholder="Titel *" value={fTitle} onChange={(e) => setFTitle(e.target.value)} />
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={lbl}>Fällig am</label>
+                        <input style={{ ...inp, colorScheme: "light" }} type="datetime-local" value={fDatetime} onChange={(e) => setFDatetime(e.target.value)} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={lbl}>Priorität</label>
+                        <select style={{ ...inp, height: 36, cursor: "pointer" }} value={fPriority} onChange={(e) => setFPriority(e.target.value as "low" | "medium" | "high")}>
+                          <option value="low">Niedrig</option>
+                          <option value="medium">Mittel</option>
+                          <option value="high">Hoch</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 )}
+                {openForm === "appointment" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <input autoFocus style={inp} placeholder="Titel *" value={fTitle} onChange={(e) => setFTitle(e.target.value)} />
+                    <div style={{ flex: 1 }}>
+                      <label style={lbl}>Datum / Uhrzeit</label>
+                      <input style={{ ...inp, colorScheme: "light" }} type="datetime-local" value={fDatetime} onChange={(e) => setFDatetime(e.target.value)} />
+                    </div>
+                    <textarea style={{ ...inp, height: 60, padding: "8px 11px", resize: "none" }}
+                      placeholder="Notiz (optional)…" value={fApptNote} onChange={(e) => setFApptNote(e.target.value)} />
+                  </div>
+                )}
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
+                  <button onClick={() => setOpenForm(null)} disabled={submitting}
+                    style={{ height: 32, padding: "0 12px", background: "transparent", border: "1px solid var(--border-md)", borderRadius: 7, fontSize: 13, color: "var(--t2)", cursor: "pointer", fontFamily: "inherit" }}>
+                    Abbrechen
+                  </button>
+                  <button onClick={handleSubmitForm} disabled={submitting}
+                    style={{ height: 32, padding: "0 14px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: submitting ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: submitting ? 0.7 : 1 }}>
+                    {submitting ? "…" : "Speichern"}
+                  </button>
+                </div>
               </div>
             )}
 
