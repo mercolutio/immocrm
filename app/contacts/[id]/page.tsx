@@ -701,30 +701,29 @@ export default function ContactDetailPage() {
         pointerEvents: isDirty ? "auto" : "none",
         transition: "opacity 0.2s ease, transform 0.2s ease",
         zIndex: 1000,
-        background: "var(--card)",
-        border: "1px solid var(--border-md)",
+        background: "var(--accent)",
+        border: "none",
         borderRadius: 12,
-        boxShadow: "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)",
+        boxShadow: "0 8px 32px rgba(194,105,42,0.35), 0 2px 8px rgba(0,0,0,0.1)",
         padding: "12px 16px",
         display: "flex",
         alignItems: "center",
         gap: 12,
         minWidth: 320,
       }}>
-        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }} />
-        <span style={{ fontSize: 13, color: "var(--t1)", fontWeight: 500, flex: 1 }}>Ungespeicherte Änderungen</span>
-        {saveError && <span style={{ fontSize: 12, color: "var(--red)" }}>{saveError}</span>}
+        <span style={{ fontSize: 13, color: "rgba(255,255,255,0.9)", fontWeight: 500, flex: 1 }}>Ungespeicherte Änderungen</span>
+        {saveError && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.85)" }}>{saveError}</span>}
         <button
           onClick={handleDiscard}
           disabled={saving}
-          style={{ height: 32, padding: "0 12px", background: "transparent", border: "1px solid var(--border-md)", borderRadius: 7, fontSize: 13, color: "var(--t2)", cursor: "pointer", fontFamily: "inherit", transition: "all 0.14s" }}
+          style={{ height: 32, padding: "0 12px", background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 7, fontSize: 13, color: "rgba(255,255,255,0.8)", cursor: "pointer", fontFamily: "inherit", transition: "all 0.14s" }}
         >
           Verwerfen
         </button>
         <button
           onClick={handleSave}
           disabled={saving}
-          style={{ height: 32, padding: "0 14px", background: "var(--accent)", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 500, color: "#fff", cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: saving ? 0.7 : 1, transition: "opacity 0.14s" }}
+          style={{ height: 32, padding: "0 14px", background: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, color: "var(--accent)", cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: saving ? 0.7 : 1, transition: "opacity 0.14s" }}
         >
           {saving ? "Speichern…" : "Speichern"}
         </button>
