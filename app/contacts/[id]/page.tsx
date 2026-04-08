@@ -115,7 +115,7 @@ export default function ContactDetailPage() {
   const [form, setForm] = useState<Partial<Contact>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   const [searchProfile, setSearchProfile] = useState<SearchProfile | null>(null);
   const [spForm, setSpForm] = useState<Partial<SearchProfile>>({});
@@ -156,6 +156,33 @@ export default function ContactDetailPage() {
     }
     load();
   }, [id]);
+
+  // ── Dirty helpers ─────────────────────────────────────────────────────────
+  function updateForm(patch: Partial<Contact>) {
+    setForm((f) => ({ ...f, ...patch }));
+    setIsDirty(true);
+  }
+  function updateSpForm(patch: Partial<SearchProfile>) {
+    setSpForm((f) => ({ ...f, ...patch }));
+    setIsDirty(true);
+  }
+
+  // ── Discard ───────────────────────────────────────────────────────────────
+  function handleDiscard() {
+    if (!contact) return;
+    setForm(contact);
+    if (searchProfile) setSpForm(searchProfile);
+    setIsDirty(false);
+    setSaveError(null);
+  }
+
+  // ── Unsaved-changes guard ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
 
   // ── Save ──────────────────────────────────────────────────────────────────
   async function handleSave() {
@@ -212,8 +239,7 @@ export default function ContactDetailPage() {
       }
     }
 
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setIsDirty(false);
     setSaving(false);
   }
 
@@ -375,23 +401,23 @@ export default function ContactDetailPage() {
             <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
               <div>
                 <label style={lbl}>Vorname *</label>
-                <input style={inp} value={form.first_name ?? ""} onChange={(e) => setForm((f) => ({ ...f, first_name: e.target.value }))} />
+                <input style={inp} value={form.first_name ?? ""} onChange={(e) => updateForm({ first_name: e.target.value })} />
               </div>
               <div>
                 <label style={lbl}>Nachname *</label>
-                <input style={inp} value={form.last_name ?? ""} onChange={(e) => setForm((f) => ({ ...f, last_name: e.target.value }))} />
+                <input style={inp} value={form.last_name ?? ""} onChange={(e) => updateForm({ last_name: e.target.value })} />
               </div>
               <div>
                 <label style={lbl}>E-Mail</label>
-                <input style={inp} type="email" value={form.email ?? ""} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
+                <input style={inp} type="email" value={form.email ?? ""} onChange={(e) => updateForm({ email: e.target.value })} />
               </div>
               <div>
                 <label style={lbl}>Telefon</label>
-                <input style={inp} type="tel" value={form.phone ?? ""} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
+                <input style={inp} type="tel" value={form.phone ?? ""} onChange={(e) => updateForm({ phone: e.target.value })} />
               </div>
               <div>
                 <label style={lbl}>Typ</label>
-                <select style={{ ...inp, height: 36, cursor: "pointer" }} value={form.type ?? "buyer"} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as ContactType }))}>
+                <select style={{ ...inp, height: 36, cursor: "pointer" }} value={form.type ?? "buyer"} onChange={(e) => updateForm({ type: e.target.value as ContactType })}>
                   <option value="buyer">Käufer</option>
                   <option value="seller">Verkäufer</option>
                   <option value="both">Käufer & Verkäufer</option>
@@ -401,7 +427,7 @@ export default function ContactDetailPage() {
               </div>
               <div>
                 <label style={lbl}>Quelle</label>
-                <select style={{ ...inp, height: 36, cursor: "pointer" }} value={form.source ?? "other"} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value as ContactSource }))}>
+                <select style={{ ...inp, height: 36, cursor: "pointer" }} value={form.source ?? "other"} onChange={(e) => updateForm({ source: e.target.value as ContactSource })}>
                   <option value="website">Website</option>
                   <option value="referral">Empfehlung</option>
                   <option value="portal">Portal</option>
@@ -414,7 +440,7 @@ export default function ContactDetailPage() {
                 <textarea
                   style={{ ...inp, height: 80, padding: "8px 11px", resize: "none" }}
                   value={form.notes ?? ""}
-                  onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                  onChange={(e) => updateForm({ notes: e.target.value })}
                   placeholder="Persönliche Notizen…"
                 />
               </div>
@@ -456,14 +482,14 @@ export default function ContactDetailPage() {
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       <div>
                         <label style={lbl}>Gesuchter Typ</label>
-                        <select style={{ ...inp, height: 36, cursor: "pointer" }} value={spForm.type ?? "buy"} onChange={(e) => setSpForm((f) => ({ ...f, type: e.target.value as SearchType }))}>
+                        <select style={{ ...inp, height: 36, cursor: "pointer" }} value={spForm.type ?? "buy"} onChange={(e) => updateSpForm({ type: e.target.value as SearchType })}>
                           <option value="buy">Kaufen</option>
                           <option value="rent">Mieten</option>
                         </select>
                       </div>
                       <div>
                         <label style={lbl}>Immobilientyp</label>
-                        <select style={{ ...inp, height: 36, cursor: "pointer" }} value={spForm.property_type ?? "apartment"} onChange={(e) => setSpForm((f) => ({ ...f, property_type: e.target.value as PropertyType }))}>
+                        <select style={{ ...inp, height: 36, cursor: "pointer" }} value={spForm.property_type ?? "apartment"} onChange={(e) => updateSpForm({ property_type: e.target.value as PropertyType })}>
                           <option value="apartment">Wohnung</option>
                           <option value="house">Haus</option>
                           <option value="land">Grundstück</option>
@@ -473,20 +499,20 @@ export default function ContactDetailPage() {
                       <div>
                         <label style={lbl}>Fläche (m²)</label>
                         <div style={{ display: "flex", gap: 8 }}>
-                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Min" value={spForm.min_area ?? ""} onChange={(e) => setSpForm((f) => ({ ...f, min_area: e.target.value ? Number(e.target.value) : null }))} />
-                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Max" value={spForm.max_area ?? ""} onChange={(e) => setSpForm((f) => ({ ...f, max_area: e.target.value ? Number(e.target.value) : null }))} />
+                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Min" value={spForm.min_area ?? ""} onChange={(e) => updateSpForm({ min_area: e.target.value ? Number(e.target.value) : null })} />
+                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Max" value={spForm.max_area ?? ""} onChange={(e) => updateSpForm({ max_area: e.target.value ? Number(e.target.value) : null })} />
                         </div>
                       </div>
                       <div>
                         <label style={lbl}>Zimmer</label>
                         <div style={{ display: "flex", gap: 8 }}>
-                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Min" value={spForm.min_rooms ?? ""} onChange={(e) => setSpForm((f) => ({ ...f, min_rooms: e.target.value ? Number(e.target.value) : null }))} />
-                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Max" value={spForm.max_rooms ?? ""} onChange={(e) => setSpForm((f) => ({ ...f, max_rooms: e.target.value ? Number(e.target.value) : null }))} />
+                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Min" value={spForm.min_rooms ?? ""} onChange={(e) => updateSpForm({ min_rooms: e.target.value ? Number(e.target.value) : null })} />
+                          <input style={{ ...inp, width: "50%" }} type="number" placeholder="Max" value={spForm.max_rooms ?? ""} onChange={(e) => updateSpForm({ max_rooms: e.target.value ? Number(e.target.value) : null })} />
                         </div>
                       </div>
                       <div>
                         <label style={lbl}>{spForm.type === "rent" ? "Max. Miete (€/Monat)" : "Max. Budget (€)"}</label>
-                        <input style={inp} type="number" placeholder="z.B. 450000" value={spForm.max_price ?? ""} onChange={(e) => setSpForm((f) => ({ ...f, max_price: e.target.value ? Number(e.target.value) : null }))} />
+                        <input style={inp} type="number" placeholder="z.B. 450000" value={spForm.max_price ?? ""} onChange={(e) => updateSpForm({ max_price: e.target.value ? Number(e.target.value) : null })} />
                       </div>
                       <div>
                         <label style={lbl}>Städte (kommasepariert)</label>
@@ -494,12 +520,12 @@ export default function ContactDetailPage() {
                           style={inp}
                           placeholder="z.B. München, Augsburg"
                           value={spForm.cities ? spForm.cities.join(", ") : ""}
-                          onChange={(e) => setSpForm((f) => ({ ...f, cities: e.target.value ? e.target.value.split(",").map((s) => s.trim()).filter(Boolean) : null }))}
+                          onChange={(e) => updateSpForm({ cities: e.target.value ? e.target.value.split(",").map((s) => s.trim()).filter(Boolean) : null })}
                         />
                       </div>
                       <div>
                         <label style={lbl}>Notizen zum Suchprofil</label>
-                        <textarea style={{ ...inp, height: 70, padding: "8px 11px", resize: "none" }} placeholder="Weitere Wünsche…" value={spForm.notes ?? ""} onChange={(e) => setSpForm((f) => ({ ...f, notes: e.target.value || null }))} />
+                        <textarea style={{ ...inp, height: 70, padding: "8px 11px", resize: "none" }} placeholder="Weitere Wünsche…" value={spForm.notes ?? ""} onChange={(e) => updateSpForm({ notes: e.target.value || null })} />
                       </div>
                     </div>
                   )}
@@ -512,18 +538,6 @@ export default function ContactDetailPage() {
               </div>
             </div>
 
-            {/* Save-Button (sticky unten) */}
-            <div style={{ padding: "12px 20px", borderTop: "1px solid var(--border)", flexShrink: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-              {saveError && <div style={{ fontSize: 11, color: "var(--red)" }}>{saveError}</div>}
-              {saved && <div style={{ fontSize: 11, color: "var(--grn)", fontWeight: 500 }}>Gespeichert ✓</div>}
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                style={{ width: "100%", height: 36, background: "var(--accent)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: saving ? 0.7 : 1, transition: "opacity 0.14s" }}
-              >
-                {saving ? "Speichern…" : "Änderungen speichern"}
-              </button>
-            </div>
           </div>
 
           {/* ── MITTLERE SPALTE: Aktivitäten ── */}
@@ -677,6 +691,44 @@ export default function ContactDetailPage() {
 
         </div>
       )}
+      {/* ── Unsaved Changes Floating Card ── */}
+      <div style={{
+        position: "fixed",
+        bottom: 24,
+        left: "50%",
+        transform: isDirty ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(16px)",
+        opacity: isDirty ? 1 : 0,
+        pointerEvents: isDirty ? "auto" : "none",
+        transition: "opacity 0.2s ease, transform 0.2s ease",
+        zIndex: 1000,
+        background: "var(--card)",
+        border: "1px solid var(--border-md)",
+        borderRadius: 12,
+        boxShadow: "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)",
+        padding: "12px 16px",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        minWidth: 320,
+      }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }} />
+        <span style={{ fontSize: 13, color: "var(--t1)", fontWeight: 500, flex: 1 }}>Ungespeicherte Änderungen</span>
+        {saveError && <span style={{ fontSize: 12, color: "var(--red)" }}>{saveError}</span>}
+        <button
+          onClick={handleDiscard}
+          disabled={saving}
+          style={{ height: 32, padding: "0 12px", background: "transparent", border: "1px solid var(--border-md)", borderRadius: 7, fontSize: 13, color: "var(--t2)", cursor: "pointer", fontFamily: "inherit", transition: "all 0.14s" }}
+        >
+          Verwerfen
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          style={{ height: 32, padding: "0 14px", background: "var(--accent)", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 500, color: "#fff", cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: saving ? 0.7 : 1, transition: "opacity 0.14s" }}
+        >
+          {saving ? "Speichern…" : "Speichern"}
+        </button>
+      </div>
     </DashboardLayout>
   );
 }
