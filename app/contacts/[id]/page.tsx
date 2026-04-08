@@ -692,11 +692,18 @@ export default function ContactDetailPage() {
         </div>
       )}
       {/* ── Unsaved Changes Floating Card ── */}
+      <style>{`
+        @keyframes pulse-ring {
+          0%   { transform: scale(1);   opacity: 0.6; }
+          70%  { transform: scale(1.9); opacity: 0; }
+          100% { transform: scale(1.9); opacity: 0; }
+        }
+      `}</style>
       <div style={{
         position: "fixed",
         bottom: 24,
-        left: "50%",
-        transform: isDirty ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(16px)",
+        left: 24,
+        transform: isDirty ? "translateY(0)" : "translateY(16px)",
         opacity: isDirty ? 1 : 0,
         pointerEvents: isDirty ? "auto" : "none",
         transition: "opacity 0.2s ease, transform 0.2s ease",
@@ -705,13 +712,21 @@ export default function ContactDetailPage() {
         border: "none",
         borderRadius: 12,
         boxShadow: "0 8px 32px rgba(194,105,42,0.35), 0 2px 8px rgba(0,0,0,0.1)",
-        padding: "12px 16px",
+        padding: "13px 18px",
         display: "flex",
         alignItems: "center",
-        gap: 12,
-        minWidth: 320,
+        gap: 14,
+        minWidth: 340,
       }}>
-        <span style={{ fontSize: 13, color: "rgba(255,255,255,0.9)", fontWeight: 500, flex: 1 }}>Ungespeicherte Änderungen</span>
+        {/* Pulsierender Kreis */}
+        <div style={{ position: "relative", width: 10, height: 10, flexShrink: 0 }}>
+          <div style={{
+            position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(255,255,255,0.5)",
+            animation: "pulse-ring 1.6s ease-out infinite",
+          }} />
+          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "#fff" }} />
+        </div>
+        <span style={{ fontSize: 14, color: "rgba(255,255,255,0.95)", fontWeight: 500, flex: 1 }}>Ungespeicherte Änderungen</span>
         {saveError && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.85)" }}>{saveError}</span>}
         <button
           onClick={handleDiscard}
