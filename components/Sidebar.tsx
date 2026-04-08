@@ -2,12 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("sidebar-collapsed") === "true";
+  });
   const [tooltipState, setTooltipState] = useState<{ label: string; y: number } | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("sidebar-collapsed", String(collapsed));
+  }, [collapsed]);
 
   function active(href: string) {
     if (href === "/") return pathname === "/";
