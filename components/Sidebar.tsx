@@ -4,32 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-function SidebarTooltip({ label, visible }: { label: string; visible: boolean }) {
-  return (
-    <div
-      style={{
-        position: "fixed",
-        left: 60,
-        pointerEvents: "none",
-        background: "#1e1812",
-        color: "rgba(255,255,255,0.9)",
-        fontSize: 12,
-        fontWeight: 500,
-        padding: "5px 10px",
-        borderRadius: 6,
-        border: "1px solid rgba(255,255,255,0.1)",
-        whiteSpace: "nowrap",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-        opacity: visible ? 1 : 0,
-        transition: "opacity 0.1s ease",
-        zIndex: 9999,
-      }}
-    >
-      {label}
-    </div>
-  );
-}
-
 export default function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
