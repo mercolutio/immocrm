@@ -72,7 +72,8 @@
   cursor: pointer; transition: all 0.14s; text-decoration: none;
 }
 .dashboard-layout .sb-item:hover { background: rgba(255,255,255,0.05); color: var(--sb-text-hover); }
-.dashboard-layout .sb-item.active { background: var(--sb-active-bg); color: var(--sb-active-txt); font-weight: 500; box-shadow: inset 3px 0 0 var(--accent); }
+.dashboard-layout .sb-item.active { background: transparent; color: var(--sb-active-txt); font-weight: 500; box-shadow: inset 3px 0 0 var(--accent); }
+.dashboard-layout .sb-item.active::before { display: none; }
 .dashboard-layout .sb-icon { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.72; }
 .dashboard-layout .sb-item.active .sb-icon { opacity: 1; }
 .dashboard-layout .sb-badge {
