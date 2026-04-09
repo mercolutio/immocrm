@@ -16,9 +16,9 @@ import {
 // ─── Styles ─────────────────────────────────────────────────────────────────
 const inp: React.CSSProperties = {
   width: "100%",
-  height: 36,
+  height: 37,
   border: "1px solid rgba(0,0,0,0.11)",
-  borderRadius: 7,
+  borderRadius: 8,
   padding: "0 11px",
   fontSize: 13,
   color: "var(--t1)",
@@ -65,9 +65,9 @@ function LinkSection({
   count: number;
 }) {
   return (
-    <div className="h-lift" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
+    <div className="h-lift" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderBottom: "1px solid var(--border)" }}>
-        <div style={{ width: 28, height: 28, borderRadius: 7, background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
+        <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
           {icon}
         </div>
         <span style={{ fontSize: 13, fontWeight: 500, color: "var(--t1)", flex: 1 }}>{title}</span>
@@ -433,25 +433,25 @@ export default function ContactDetailPage() {
 
       {/* BODY */}
       {loading ? (
-        <div style={{ display: "flex", gap: 16, padding: "18px 22px" }}>
+        <div style={{ display: "flex", gap: 16, padding: "26px 30px" }}>
           <div style={{ width: 280, flexShrink: 0 }}>
-            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: 20 }}>
+            <div style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 20, padding: 22, boxShadow: "0 2px 8px rgba(28,24,20,0.055)" }}>
               <SkeletonBox w="100%" h={120} />
             </div>
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: 20 }}>
+            <div style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 20, padding: 22, boxShadow: "0 2px 8px rgba(28,24,20,0.055)" }}>
               <SkeletonBox w="100%" h={200} />
             </div>
           </div>
           <div style={{ width: 260, flexShrink: 0 }}>
-            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: 20 }}>
+            <div style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 20, padding: 22, boxShadow: "0 2px 8px rgba(28,24,20,0.055)" }}>
               <SkeletonBox w="100%" h={80} />
             </div>
           </div>
         </div>
       ) : error ? (
-        <div style={{ margin: "18px 22px", background: "rgba(201,59,46,0.08)", border: "1px solid rgba(201,59,46,0.2)", borderRadius: 10, padding: "16px 20px", fontSize: 13, color: "var(--red)" }}>
+        <div style={{ margin: "26px 30px", background: "rgba(201,59,46,0.08)", border: "1px solid rgba(201,59,46,0.2)", borderRadius: 10, padding: "16px 20px", fontSize: 13, color: "var(--red)" }}>
           {error}
         </div>
       ) : (
@@ -470,11 +470,11 @@ export default function ContactDetailPage() {
             }}
           >
             {/* Avatar + Name */}
-            <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid var(--border)", textAlign: "center" }}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "linear-gradient(135deg, #C2692A, #E8955A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 600, color: "#fff", margin: "0 auto 12px" }}>
+            <div style={{ padding: "28px 24px 22px", borderBottom: "1px solid var(--border)", textAlign: "center" }}>
+              <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, #C2692A, #E8955A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 600, color: "#fff", margin: "0 auto 14px" }}>
                 {initials}
               </div>
-              <div style={{ fontFamily: "var(--font-playfair, 'Playfair Display'), serif", fontSize: 18, fontWeight: 400, color: "var(--t1)", lineHeight: 1.2, marginBottom: 8 }}>
+              <div style={{ fontFamily: "var(--font-playfair, 'Playfair Display'), serif", fontSize: 20, fontWeight: 400, color: "var(--t1)", lineHeight: 1.2, marginBottom: 8 }}>
                 {contact?.first_name} {contact?.last_name}
               </div>
               {contact && (
@@ -485,7 +485,7 @@ export default function ContactDetailPage() {
             </div>
 
             {/* Formularfelder */}
-            <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ flex: 1, overflowY: "auto", padding: "18px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
                 <label style={lbl}>Vorname *</label>
                 <input style={inp} value={form.first_name ?? ""} onChange={(e) => updateForm({ first_name: e.target.value })} />
@@ -582,7 +582,7 @@ export default function ContactDetailPage() {
                           const f = spForms[profile.id] ?? {};
                           const isOpen = !!spExpanded[profile.id];
                           return (
-                            <div key={profile.id} style={{ border: "1px solid var(--border)", borderRadius: 9, overflow: "hidden" }}>
+                            <div key={profile.id} style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
                               {/* Karten-Kopfzeile */}
                               <div className="h-accordion" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", background: "var(--bg2)", cursor: "pointer" }} onClick={() => setSpExpanded((prev) => ({ ...prev, [profile.id]: !prev[profile.id] }))}>
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform var(--dur-out) var(--ease-out)" }}><polyline points="6 9 12 15 18 9"/></svg>
@@ -598,7 +598,7 @@ export default function ContactDetailPage() {
 
                               {/* Karten-Felder */}
                               {isOpen && (
-                                <div style={{ padding: "12px 10px", display: "flex", flexDirection: "column", gap: 10 }}>
+                                <div style={{ padding: "13px 11px", display: "flex", flexDirection: "column", gap: 10 }}>
                                   <div style={{ display: "flex", gap: 8 }}>
                                     <div style={{ flex: 1 }}>
                                       <label style={lbl}>Typ</label>
@@ -663,7 +663,7 @@ export default function ContactDetailPage() {
           </div>
 
           {/* ── MITTLERE SPALTE: Aktivitäten ── */}
-          <div style={{ ...colStyle, flex: 1, padding: "18px 20px", background: "var(--bg)", display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
+          <div style={{ ...colStyle, flex: 1, padding: "20px 22px", background: "var(--bg)", display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
 
             {/* Tab-Leiste + Kontext-Button */}
             {(() => {
@@ -677,12 +677,12 @@ export default function ContactDetailPage() {
               };
               return (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  <div style={{ flex: 1, display: "flex", gap: 6, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: 5 }}>
+                  <div style={{ flex: 1, display: "flex", gap: 6, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: 5 }}>
                     {(["all", "note", "call", "task", "appointment"] as ActiveTab[]).map((tab) => {
                       const isActive = activeTab === tab;
                       return (
                         <button key={tab} className={isActive ? undefined : "h-soft"} onClick={() => { setActiveTab(tab); setOpenForm(null); }}
-                          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, borderRadius: 7, border: "none", fontSize: 13, fontWeight: isActive ? 500 : 400, cursor: "pointer", fontFamily: "inherit", transition: "background-color var(--dur-out) var(--ease-out), color var(--dur-out) var(--ease-out)", background: isActive ? "var(--accent)" : "transparent", color: isActive ? "#fff" : "var(--t2)" }}>
+                          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, borderRadius: 8, border: "none", fontSize: 13, fontWeight: isActive ? 500 : 400, cursor: "pointer", fontFamily: "inherit", transition: "background-color var(--dur-out) var(--ease-out), color var(--dur-out) var(--ease-out)", background: isActive ? "var(--accent)" : "transparent", color: isActive ? "#fff" : "var(--t2)" }}>
                           {tabIcons[tab]}{tabLabels[tab]}
                         </button>
                       );
@@ -729,7 +729,7 @@ export default function ContactDetailPage() {
 
             {/* Inline-Formular */}
             {openForm && (
-              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", flexShrink: 0 }}>
+              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "16px 18px", flexShrink: 0 }}>
                 {openForm === "note" && (
                   <textarea autoFocus style={{ ...inp, height: 90, padding: "8px 11px", resize: "none" }}
                     placeholder="Notiz…" value={fNote} onChange={(e) => setFNote(e.target.value)}
@@ -809,9 +809,9 @@ export default function ContactDetailPage() {
                   if (item.kind === "task") {
                     return (
                       <div key={item.id} style={{ paddingBottom: i < timeline.length - 1 ? 10 : 0 }}>
-                        <div className="h-lift" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
+                        <div className="h-lift" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
-                            <div style={{ width: 22, height: 22, borderRadius: 6, background: "var(--bg2)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
+                            <div style={{ width: 24, height: 24, borderRadius: 7, background: "var(--bg2)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
                               <ActivityIcon type="task" size={11} />
                             </div>
                             <span style={{ fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Aufgabe</span>
@@ -864,13 +864,13 @@ export default function ContactDetailPage() {
               minWidth: 260,
               borderLeft: "1px solid var(--border)",
               background: "var(--bg)",
-              padding: "18px 16px",
+              padding: "20px 18px",
               display: "flex",
               flexDirection: "column",
-              gap: 10,
+              gap: 12,
             }}
           >
-            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--t3)", marginBottom: 4 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--t3)", marginBottom: 6 }}>
               Verknüpfungen
             </div>
 

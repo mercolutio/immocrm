@@ -155,7 +155,7 @@ export default function ContactsPage() {
           <div style={{
             display: "flex", alignItems: "center", gap: 7,
             background: "var(--bg)", border: "1px solid rgba(0,0,0,0.11)",
-            borderRadius: 8, padding: "0 11px", height: 34, width: 210,
+            borderRadius: 10, padding: "0 11px", height: 36, width: 210,
           }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -176,7 +176,7 @@ export default function ContactsPage() {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as ContactType | "all")}
-            style={{ height: 34, padding: "0 10px", border: "1px solid rgba(0,0,0,0.11)", borderRadius: 8, fontSize: 13, color: "var(--t1)", background: "var(--bg)", outline: "none", cursor: "pointer", fontFamily: "inherit" }}
+            style={{ height: 36, padding: "0 10px", border: "1px solid rgba(0,0,0,0.11)", borderRadius: 10, fontSize: 13, color: "var(--t1)", background: "var(--bg)", outline: "none", cursor: "pointer", fontFamily: "inherit" }}
           >
             <option value="all">Alle Typen</option>
             <option value="buyer">Käufer</option>
@@ -200,9 +200,9 @@ export default function ContactsPage() {
       <div className="body-wrap">
         {loading ? (
           /* Skeleton */
-          <div style={{ background: "var(--card)", borderRadius: 14, border: "1px solid var(--border)", overflow: "hidden" }}>
+          <div style={{ background: "var(--card)", borderRadius: 20, border: "1px solid rgba(0,0,0,0.05)", overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
             {[...Array(6)].map((_, i) => (
-              <div key={i} style={{ display: "flex", gap: 16, padding: "14px 20px", borderBottom: i < 5 ? "1px solid var(--border)" : "none" }}>
+              <div key={i} style={{ display: "flex", gap: 16, padding: "14px 22px", borderBottom: i < 5 ? "1px solid rgba(0,0,0,0.05)" : "none" }}>
                 {[150, 80, 140, 110, 80, 75].map((w, j) => (
                   <div key={j} style={{ height: 13, width: w, background: "var(--bg2)", borderRadius: 4, flexShrink: 0, animation: `pulse 1.4s ease-in-out ${j * 0.08}s infinite` }} />
                 ))}
@@ -216,7 +216,7 @@ export default function ContactsPage() {
         ) : filtered.length === 0 ? (
           /* Leerer Zustand */
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 80 }}>
-            <div style={{ width: 52, height: 52, borderRadius: 14, background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 52, height: 52, borderRadius: 18, background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="1.5" strokeLinecap="round">
                 <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
                 <path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
@@ -239,12 +239,12 @@ export default function ContactsPage() {
           </div>
         ) : (
           /* Tabelle */
-          <div style={{ background: "var(--card)", borderRadius: 14, border: "1px solid var(--border)", overflow: "hidden" }}>
+          <div style={{ background: "var(--card)", borderRadius: 20, border: "1px solid rgba(0,0,0,0.05)", overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}>
+                <tr style={{ background: "var(--bg)", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
                   {["Name", "Typ", "E-Mail", "Telefon", "Quelle", "Erstellt"].map((h) => (
-                    <th key={h} style={{ padding: "10px 18px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
+                    <th key={h} style={{ padding: "12px 22px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
                       {h}
                     </th>
                   ))}
@@ -256,24 +256,24 @@ export default function ContactsPage() {
                     key={c.id}
                     className="h-row"
                     onClick={() => router.push(`/contacts/${c.id}`)}
-                    style={{ borderBottom: i < filtered.length - 1 ? "1px solid var(--border)" : "none" }}
+                    style={{ borderBottom: i < filtered.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none" }}
                   >
-                    <td style={{ padding: "13px 18px" }}>
+                    <td style={{ padding: "14px 22px" }}>
                       <span style={{ fontWeight: 500, color: "var(--t1)", fontSize: 14 }}>
                         {c.first_name} {c.last_name}
                       </span>
                     </td>
-                    <td style={{ padding: "13px 18px" }}>
+                    <td style={{ padding: "14px 22px" }}>
                       <span style={{ display: "inline-flex", alignItems: "center", fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: CONTACT_TYPE_BG[c.type], color: CONTACT_TYPE_COLORS[c.type] }}>
                         {CONTACT_TYPE_LABELS[c.type]}
                       </span>
                     </td>
-                    <td style={{ padding: "13px 18px", fontSize: 13, color: "var(--t2)" }}>{c.email ?? "—"}</td>
-                    <td style={{ padding: "13px 18px", fontSize: 13, color: "var(--t2)" }}>{c.phone ?? "—"}</td>
-                    <td style={{ padding: "13px 18px", fontSize: 13, color: "var(--t2)" }}>
+                    <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>{c.email ?? "—"}</td>
+                    <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>{c.phone ?? "—"}</td>
+                    <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>
                       {CONTACT_SOURCE_LABELS[c.source] ?? c.source}
                     </td>
-                    <td style={{ padding: "13px 18px", fontSize: 13, color: "var(--t3)", whiteSpace: "nowrap" }}>
+                    <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t3)", whiteSpace: "nowrap" }}>
                       {fmtDate(c.created_at)}
                     </td>
                   </tr>
@@ -289,15 +289,15 @@ export default function ContactsPage() {
         <SheetContent
           style={{ background: "#fff", borderLeft: "1px solid rgba(0,0,0,0.08)", padding: 0, width: 420, maxWidth: "95vw", display: "flex", flexDirection: "column" }}
         >
-          <div style={{ padding: "24px 28px", borderBottom: "1px solid rgba(0,0,0,0.07)", flexShrink: 0 }}>
+          <div style={{ padding: "26px 30px", borderBottom: "1px solid rgba(0,0,0,0.07)", flexShrink: 0 }}>
             <SheetHeader>
-              <SheetTitle style={{ fontFamily: "var(--font-playfair, 'Playfair Display'), serif", fontSize: 20, fontWeight: 400, color: "var(--t1)" }}>
+              <SheetTitle style={{ fontFamily: "var(--font-playfair, 'Playfair Display'), serif", fontSize: 22, fontWeight: 400, color: "var(--t1)" }}>
                 Neuer Kontakt
               </SheetTitle>
             </SheetHeader>
           </div>
 
-          <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", gap: 15, overflowY: "auto", flex: 1 }}>
+          <div style={{ padding: "26px 30px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", flex: 1 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
                 <label style={lbl}>Vorname *</label>
