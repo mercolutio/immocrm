@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
-import Sidebar from "@/components/Sidebar";
-import "./dashboard.css";
+import DashboardLayout from "@/components/DashboardLayout";
 
 export default function Dashboard() {
   const [qaOpen, setQaOpen] = useState(false);
@@ -18,11 +17,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="dashboard-layout">
-      {/* SIDEBAR */}
-      <Sidebar />
-
-      {/* MAIN */}
+    <DashboardLayout>
       <main className="main">
         {/* HEADER */}
         <header className="header">
@@ -529,6 +524,6 @@ export default function Dashboard() {
           }}
         />
       )}
-    </div>
+    </DashboardLayout>
   );
 }
