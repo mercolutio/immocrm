@@ -701,8 +701,8 @@ export default function ContactDetailPage() {
                     {(["all", "note", "call", "task", "appointment"] as ActiveTab[]).map((tab) => {
                       const isActive = activeTab === tab;
                       return (
-                        <button key={tab} className={isActive ? undefined : "h-soft"} onClick={() => { setActiveTab(tab); setOpenForm(null); }}
-                          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, borderRadius: 8, border: "none", fontSize: 13, fontWeight: isActive ? 500 : 400, cursor: "pointer", fontFamily: "inherit", transition: "background-color var(--dur-out) var(--ease-out), color var(--dur-out) var(--ease-out)", background: isActive ? "var(--accent)" : "transparent", color: isActive ? "#fff" : "var(--t2)" }}>
+                        <button key={tab} className={isActive ? undefined : "h-menu-item"} onClick={() => { setActiveTab(tab); setOpenForm(null); }}
+                          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, borderRadius: 8, border: "none", fontSize: 13, fontWeight: isActive ? 500 : 400, cursor: "pointer", fontFamily: "inherit", background: isActive ? "var(--accent)" : undefined, color: isActive ? "#fff" : "var(--t2)" }}>
                           {tabIcons[tab]}{tabLabels[tab]}
                         </button>
                       );
@@ -725,8 +725,8 @@ export default function ContactDetailPage() {
                       {showDropdown && (
                         <div ref={dropdownRef} style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card)", border: "1px solid var(--border-md)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", padding: 5, minWidth: 150, zIndex: 500 }}>
                           {(["note", "call", "task", "appointment"] as const).map((t) => (
-                            <button key={t} className="h-soft" onClick={() => openFormFor(t)}
-                              style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: "var(--t1)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                            <button key={t} className="h-menu-item" onClick={() => openFormFor(t)}
+                              style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: "var(--t1)", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
                               {tabIcons[t]}{tabLabels[t]}
                             </button>
                           ))}

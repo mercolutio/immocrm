@@ -97,6 +97,16 @@
   color: var(--t1);
   transition-duration: var(--dur-in);
 }
+/* Dropdown/Menu-Items: Cream-Fill wie Dashboard .qa-item */
+.h-menu-item {
+  transition: background-color var(--dur-out) var(--ease-out),
+              color var(--dur-out) var(--ease-out);
+}
+.h-menu-item:hover {
+  background: var(--bg);
+  color: var(--t1);
+  transition-duration: var(--dur-in);
+}
 
 .h-row {
   cursor: pointer;
