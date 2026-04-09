@@ -37,6 +37,13 @@ const lbl: React.CSSProperties = {
   letterSpacing: "0.06em",
 };
 
+const ACTIVITY_COLORS: Record<string, { bg: string; color: string }> = {
+  note:        { bg: "var(--blu-bg)",  color: "var(--blu)" },
+  call:        { bg: "var(--grn-bg)",  color: "var(--grn)" },
+  task:        { bg: "var(--amb-bg)",  color: "var(--amb)" },
+  appointment: { bg: "var(--pur-bg)",  color: "var(--pur)" },
+};
+
 function SkeletonBox({ w, h = 14 }: { w: number | string; h?: number }) {
   return <div style={{ height: h, width: w, background: "var(--bg2)", borderRadius: 4 }} />;
 }
@@ -821,13 +828,13 @@ export default function ContactDetailPage() {
                 timeline.map((item, i) => {
                   if (item.kind === "task") {
                     return (
-                      <div key={item.id} style={{ paddingBottom: i < timeline.length - 1 ? 10 : 0 }}>
+                      <div key={item.id} style={{ paddingBottom: i < timeline.length - 1 ? 12 : 0 }}>
                         <div className="h-lift" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 12, padding: "14px 16px", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
-                            <div style={{ width: 24, height: 24, borderRadius: 7, background: "var(--bg2)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
+                            <div style={{ width: 24, height: 24, borderRadius: 7, background: ACTIVITY_COLORS.task.bg, border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: ACTIVITY_COLORS.task.color, flexShrink: 0 }}>
                               <ActivityIcon type="task" size={11} />
                             </div>
-                            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Aufgabe</span>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: ACTIVITY_COLORS.task.color, textTransform: "uppercase", letterSpacing: "0.07em" }}>Aufgabe</span>
                             <span style={{ fontSize: 11, color: "var(--t3)", marginLeft: "auto" }}>{fmtDateTime(item.created_at)}</span>
                           </div>
                           <div style={{ fontSize: 13, color: "var(--t1)", lineHeight: 1.6 }}>{item.title}</div>
@@ -848,13 +855,13 @@ export default function ContactDetailPage() {
                   const extraNotes = rawExtra ? (CALL_RESULT_LABELS[rawExtra] ?? rawExtra) : null;
 
                   return (
-                    <div key={item.id} style={{ paddingBottom: i < timeline.length - 1 ? 10 : 0 }}>
-                      <div className="h-lift" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
+                    <div key={item.id} style={{ paddingBottom: i < timeline.length - 1 ? 12 : 0 }}>
+                      <div className="h-lift" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 12, padding: "14px 16px", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
-                          <div style={{ width: 22, height: 22, borderRadius: 6, background: "var(--bg2)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
+                          <div style={{ width: 24, height: 24, borderRadius: 7, background: ACTIVITY_COLORS[itemType]?.bg ?? "var(--bg2)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: ACTIVITY_COLORS[itemType]?.color ?? "var(--t2)", flexShrink: 0 }}>
                             <ActivityIcon type={itemType} size={11} />
                           </div>
-                          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.07em" }}>{typeLabel}</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: ACTIVITY_COLORS[itemType]?.color ?? "var(--t3)", textTransform: "uppercase", letterSpacing: "0.07em" }}>{typeLabel}</span>
                           <span style={{ fontSize: 11, color: "var(--t3)", marginLeft: "auto" }}>{fmtDateTime(dateStr)}</span>
                         </div>
                         <div style={{ fontSize: 13, color: "var(--t1)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{content}</div>
