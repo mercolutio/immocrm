@@ -65,7 +65,7 @@ function LinkSection({
   count: number;
 }) {
   return (
-    <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
+    <div className="h-lift" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderBottom: "1px solid var(--border)" }}>
         <div style={{ width: 28, height: 28, borderRadius: 7, background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
           {icon}
@@ -74,7 +74,7 @@ function LinkSection({
         {count > 0 && (
           <span style={{ fontSize: 11, fontWeight: 600, background: "rgba(194,105,42,0.1)", color: "var(--accent)", padding: "1px 7px", borderRadius: 8 }}>{count}</span>
         )}
-        <button style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid var(--border-md)", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--t2)" }}>
+        <button className="h-icon-btn" style={{ width: 24, height: 24 }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
       </div>
@@ -455,7 +455,7 @@ export default function ContactDetailPage() {
           {error}
         </div>
       ) : (
-        <div style={{ display: "flex", gap: 0, flex: 1, overflow: "hidden" }}>
+        <div className="contact-detail" style={{ display: "flex", gap: 0, flex: 1, overflow: "hidden" }}>
 
           {/* ── LINKE SPALTE: Kontaktdaten ── */}
           <div
@@ -553,6 +553,7 @@ export default function ContactDetailPage() {
                         </span>
                       </div>
                       <button
+                        className="btn-ghost"
                         disabled={addingSp}
                         onClick={async () => {
                           setAddingSp(true);
@@ -565,7 +566,7 @@ export default function ContactDetailPage() {
                           }
                           setAddingSp(false);
                         }}
-                        style={{ display: "flex", alignItems: "center", gap: 4, height: 26, padding: "0 8px", background: "transparent", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--t2)", cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}
+                        style={{ height: 26, padding: "0 8px", fontSize: 12, flexShrink: 0 }}
                       >
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         {addingSp ? "…" : "Hinzufügen"}
@@ -583,12 +584,13 @@ export default function ContactDetailPage() {
                           return (
                             <div key={profile.id} style={{ border: "1px solid var(--border)", borderRadius: 9, overflow: "hidden" }}>
                               {/* Karten-Kopfzeile */}
-                              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", background: "var(--bg2)", cursor: "pointer" }} onClick={() => setSpExpanded((prev) => ({ ...prev, [profile.id]: !prev[profile.id] }))}>
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}><polyline points="6 9 12 15 18 9"/></svg>
+                              <div className="h-accordion" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", background: "var(--bg2)", cursor: "pointer" }} onClick={() => setSpExpanded((prev) => ({ ...prev, [profile.id]: !prev[profile.id] }))}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform var(--dur-out) var(--ease-out)" }}><polyline points="6 9 12 15 18 9"/></svg>
                                 <span style={{ fontSize: 12, color: "var(--t1)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{spSummary(f)}</span>
                                 <button
+                                  className="h-icon-btn danger"
                                   onClick={(e) => { e.stopPropagation(); deleteSearchProfile(profile.id); }}
-                                  style={{ width: 20, height: 20, border: "none", background: "none", cursor: "pointer", color: "var(--t3)", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4, flexShrink: 0, padding: 0 }}
+                                  style={{ width: 22, height: 22 }}
                                 >
                                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                                 </button>
@@ -679,8 +681,8 @@ export default function ContactDetailPage() {
                     {(["all", "note", "call", "task", "appointment"] as ActiveTab[]).map((tab) => {
                       const isActive = activeTab === tab;
                       return (
-                        <button key={tab} onClick={() => { setActiveTab(tab); setOpenForm(null); }}
-                          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, borderRadius: 7, border: "none", fontSize: 13, fontWeight: isActive ? 500 : 400, cursor: "pointer", fontFamily: "inherit", transition: "all 0.14s", background: isActive ? "var(--accent)" : "transparent", color: isActive ? "#fff" : "var(--t2)" }}>
+                        <button key={tab} className={isActive ? undefined : "h-soft"} onClick={() => { setActiveTab(tab); setOpenForm(null); }}
+                          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, borderRadius: 7, border: "none", fontSize: 13, fontWeight: isActive ? 500 : 400, cursor: "pointer", fontFamily: "inherit", transition: "background-color var(--dur-out) var(--ease-out), color var(--dur-out) var(--ease-out)", background: isActive ? "var(--accent)" : "transparent", color: isActive ? "#fff" : "var(--t2)" }}>
                           {tabIcons[tab]}{tabLabels[tab]}
                         </button>
                       );
@@ -692,8 +694,9 @@ export default function ContactDetailPage() {
                     <div style={{ position: "relative" }}>
                       <button
                         ref={triggerRef}
+                        className="btn-primary"
                         onClick={() => setShowDropdown((v) => !v)}
-                        style={{ height: 34, padding: "0 12px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}
+                        style={{ whiteSpace: "nowrap" }}
                       >
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Aktivität
@@ -702,7 +705,7 @@ export default function ContactDetailPage() {
                       {showDropdown && (
                         <div ref={dropdownRef} style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card)", border: "1px solid var(--border-md)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", padding: 5, minWidth: 150, zIndex: 500 }}>
                           {(["note", "call", "task", "appointment"] as const).map((t) => (
-                            <button key={t} onClick={() => openFormFor(t)}
+                            <button key={t} className="h-soft" onClick={() => openFormFor(t)}
                               style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: "var(--t1)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
                               {tabIcons[t]}{tabLabels[t]}
                             </button>
@@ -712,8 +715,9 @@ export default function ContactDetailPage() {
                     </div>
                   ) : (
                     <button
+                      className="btn-primary"
                       onClick={() => openForm === activeTab ? setOpenForm(null) : openFormFor(activeTab as "note" | "call" | "task" | "appointment")}
-                      style={{ height: 34, padding: "0 12px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}
+                      style={{ whiteSpace: "nowrap" }}
                     >
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                       {tabLabels[activeTab]}
@@ -782,12 +786,12 @@ export default function ContactDetailPage() {
                   </div>
                 )}
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
-                  <button onClick={() => setOpenForm(null)} disabled={submitting}
-                    style={{ height: 32, padding: "0 12px", background: "transparent", border: "1px solid var(--border-md)", borderRadius: 7, fontSize: 13, color: "var(--t2)", cursor: "pointer", fontFamily: "inherit" }}>
+                  <button className="btn-ghost" onClick={() => setOpenForm(null)} disabled={submitting}
+                    style={{ height: 32 }}>
                     Abbrechen
                   </button>
-                  <button onClick={handleSubmitForm} disabled={submitting}
-                    style={{ height: 32, padding: "0 14px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: submitting ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: submitting ? 0.7 : 1 }}>
+                  <button className="btn-primary" onClick={handleSubmitForm} disabled={submitting}
+                    style={{ height: 32, padding: "0 14px" }}>
                     {submitting ? "…" : "Speichern"}
                   </button>
                 </div>
@@ -805,7 +809,7 @@ export default function ContactDetailPage() {
                   if (item.kind === "task") {
                     return (
                       <div key={item.id} style={{ paddingBottom: i < timeline.length - 1 ? 10 : 0 }}>
-                        <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
+                        <div className="h-lift" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
                             <div style={{ width: 22, height: 22, borderRadius: 6, background: "var(--bg2)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
                               <ActivityIcon type="task" size={11} />
@@ -832,7 +836,7 @@ export default function ContactDetailPage() {
 
                   return (
                     <div key={item.id} style={{ paddingBottom: i < timeline.length - 1 ? 10 : 0 }}>
-                      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
+                      <div className="h-lift" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
                           <div style={{ width: 22, height: 22, borderRadius: 6, background: "var(--bg2)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
                             <ActivityIcon type={itemType} size={11} />
@@ -944,16 +948,18 @@ export default function ContactDetailPage() {
         <span style={{ fontSize: 14, color: "rgba(255,255,255,0.95)", fontWeight: 500, flex: 1 }}>Ungespeicherte Änderungen</span>
         {saveError && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.85)" }}>{saveError}</span>}
         <button
+          className="unsaved-discard"
           onClick={handleDiscard}
           disabled={saving}
-          style={{ height: 32, padding: "0 12px", background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 7, fontSize: 13, color: "rgba(255,255,255,0.8)", cursor: "pointer", fontFamily: "inherit", transition: "all 0.14s" }}
+          style={{ height: 32, padding: "0 12px", background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 7, fontSize: 13, color: "rgba(255,255,255,0.8)", cursor: "pointer", fontFamily: "inherit" }}
         >
           Verwerfen
         </button>
         <button
+          className="unsaved-save"
           onClick={handleSave}
           disabled={saving}
-          style={{ height: 32, padding: "0 14px", background: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, color: "var(--accent)", cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: saving ? 0.7 : 1, transition: "opacity 0.14s" }}
+          style={{ height: 32, padding: "0 14px", background: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, color: "var(--accent)", cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: saving ? 0.7 : 1 }}
         >
           {saving ? "Speichern…" : "Speichern"}
         </button>

@@ -87,31 +87,9 @@ export default function Sidebar() {
           </div>
 
           <button
+            className="sb-toggle"
             onClick={() => setCollapsed((c) => !c)}
             title={collapsed ? "Sidebar ausklappen" : "Sidebar einklappen"}
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 8,
-              background: "rgba(255,255,255,0.13)",
-              border: "1px solid rgba(255,255,255,0.22)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              color: "rgba(255,255,255,0.75)",
-              transition: "background 0.14s, color 0.14s",
-              flexShrink: 0,
-              padding: 0,
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.22)";
-              (e.currentTarget as HTMLButtonElement).style.color = "white";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.13)";
-              (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.75)";
-            }}
           >
             <svg
               width="14"

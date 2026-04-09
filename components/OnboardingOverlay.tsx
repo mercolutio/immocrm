@@ -199,29 +199,16 @@ export default function OnboardingOverlay({ onDone }: Props) {
         {/* Buttons */}
         <div style={{ display: "flex", gap: 8 }}>
           <button
+            className="btn-primary"
             onClick={handleNext}
-            style={{
-              flex: 1, height: 38,
-              background: "#C2692A", color: "#fff",
-              border: "none", borderRadius: 8,
-              fontSize: 13, fontWeight: 500,
-              cursor: "pointer", fontFamily: "inherit",
-              transition: "background 0.14s",
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = "#D97D3A")}
-            onMouseLeave={e => (e.currentTarget.style.background = "#C2692A")}
+            style={{ flex: 1, height: 38 }}
           >
             {step < STEPS.length - 1 ? "Weiter →" : "Los geht's ✓"}
           </button>
           <button
+            className="btn-ghost"
             onClick={handleDone}
-            style={{
-              height: 38, padding: "0 14px",
-              background: "transparent",
-              border: "1px solid rgba(0,0,0,0.11)",
-              borderRadius: 8, fontSize: 13, color: "#A8A49F",
-              cursor: "pointer", fontFamily: "inherit",
-            }}
+            style={{ height: 38, padding: "0 14px" }}
           >
             Überspringen
           </button>

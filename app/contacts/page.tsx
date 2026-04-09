@@ -254,10 +254,9 @@ export default function ContactsPage() {
                 {filtered.map((c, i) => (
                   <tr
                     key={c.id}
+                    className="h-row"
                     onClick={() => router.push(`/contacts/${c.id}`)}
-                    style={{ borderBottom: i < filtered.length - 1 ? "1px solid var(--border)" : "none", cursor: "pointer", transition: "background 0.1s" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    style={{ borderBottom: i < filtered.length - 1 ? "1px solid var(--border)" : "none" }}
                   >
                     <td style={{ padding: "13px 18px" }}>
                       <span style={{ fontWeight: 500, color: "var(--t1)", fontSize: 14 }}>
