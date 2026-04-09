@@ -65,7 +65,7 @@ function LinkSection({
   count: number;
 }) {
   return (
-    <div className="h-lift" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden" }}>
+    <div className="h-lift" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderBottom: "1px solid var(--border)" }}>
         <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
           {icon}
@@ -380,7 +380,7 @@ export default function ContactDetailPage() {
 
   // ── Column height ─────────────────────────────────────────────────────────
   const colStyle: React.CSSProperties = {
-    height: "calc(100vh - 58px)",
+    height: "calc(100vh - 62px)",
     overflowY: "auto",
     scrollbarWidth: "thin",
   };
@@ -392,13 +392,24 @@ export default function ContactDetailPage() {
       <header className="header">
         <Link
           href="/contacts"
-          style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--t2)", fontSize: 13, textDecoration: "none", marginRight: 8, flexShrink: 0 }}
+          style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--t2)", fontSize: 13, textDecoration: "none", flexShrink: 0 }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
           Kontakte
         </Link>
+
+        {contact && (
+          <>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--t3)", flexShrink: 0, margin: "0 4px" }}>
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+            <div className="hdr-title" style={{ fontSize: 18 }}>
+              {contact.first_name} {contact.last_name}
+            </div>
+          </>
+        )}
 
         <div style={{ flex: 1 }} />
 
@@ -463,10 +474,12 @@ export default function ContactDetailPage() {
               ...colStyle,
               width: 280,
               minWidth: 280,
-              borderRight: "1px solid var(--border)",
+              borderRight: "1px solid rgba(0,0,0,0.05)",
               background: "var(--card)",
               display: "flex",
               flexDirection: "column",
+              boxShadow: "4px 0 16px rgba(28,24,20,0.06)",
+              zIndex: 1,
             }}
           >
             {/* Avatar + Name */}
@@ -677,7 +690,7 @@ export default function ContactDetailPage() {
               };
               return (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  <div style={{ flex: 1, display: "flex", gap: 6, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: 5 }}>
+                  <div style={{ flex: 1, display: "flex", gap: 6, background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 12, padding: 5, boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
                     {(["all", "note", "call", "task", "appointment"] as ActiveTab[]).map((tab) => {
                       const isActive = activeTab === tab;
                       return (
@@ -729,7 +742,7 @@ export default function ContactDetailPage() {
 
             {/* Inline-Formular */}
             {openForm && (
-              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "16px 18px", flexShrink: 0 }}>
+              <div style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 14, padding: "16px 18px", flexShrink: 0, boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
                 {openForm === "note" && (
                   <textarea autoFocus style={{ ...inp, height: 90, padding: "8px 11px", resize: "none" }}
                     placeholder="Notiz…" value={fNote} onChange={(e) => setFNote(e.target.value)}
@@ -809,7 +822,7 @@ export default function ContactDetailPage() {
                   if (item.kind === "task") {
                     return (
                       <div key={item.id} style={{ paddingBottom: i < timeline.length - 1 ? 10 : 0 }}>
-                        <div className="h-lift" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px" }}>
+                        <div className="h-lift" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 12, padding: "14px 16px", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
                             <div style={{ width: 24, height: 24, borderRadius: 7, background: "var(--bg2)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
                               <ActivityIcon type="task" size={11} />
