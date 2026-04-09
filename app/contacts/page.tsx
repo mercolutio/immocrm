@@ -147,8 +147,14 @@ export default function ContactsPage() {
     <DashboardLayout>
       {/* HEADER */}
       <header className="header">
-        <div style={{ flex: 1 }}>
+        <div className="hdr-greeting">
           <div className="hdr-title">Kontakte</div>
+          {!loading && (
+            <div className="hdr-date">
+              {contacts.length === 0 ? "Noch keine Kontakte" : `${contacts.length} ${contacts.length === 1 ? "Kontakt" : "Kontakte"}`}
+              {filtered.length !== contacts.length && ` · ${filtered.length} angezeigt`}
+            </div>
+          )}
         </div>
         <div className="hdr-right">
           {/* Suche */}
@@ -259,9 +265,14 @@ export default function ContactsPage() {
                     style={{ borderBottom: i < filtered.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none" }}
                   >
                     <td style={{ padding: "14px 22px" }}>
-                      <span style={{ fontWeight: 500, color: "var(--t1)", fontSize: 14 }}>
-                        {c.first_name} {c.last_name}
-                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #C2692A, #E8955A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "#fff", flexShrink: 0, letterSpacing: "0.02em" }}>
+                          {c.first_name[0]?.toUpperCase()}{c.last_name[0]?.toUpperCase()}
+                        </div>
+                        <span style={{ fontWeight: 500, color: "var(--t1)", fontSize: 14 }}>
+                          {c.first_name} {c.last_name}
+                        </span>
+                      </div>
                     </td>
                     <td style={{ padding: "14px 22px" }}>
                       <span style={{ display: "inline-flex", alignItems: "center", fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: CONTACT_TYPE_BG[c.type], color: CONTACT_TYPE_COLORS[c.type] }}>
