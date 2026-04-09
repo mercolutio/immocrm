@@ -142,8 +142,8 @@ export default function Sidebar() {
 
           <Link
             id="onb-nav-objekte"
-            href="#"
-            className="sb-item"
+            href="/properties"
+            className={`sb-item${active("/properties") ? " active" : ""}`}
             style={{ justifyContent: collapsed ? "center" : undefined, gap: collapsed ? 0 : undefined, padding: collapsed ? "8px 0" : undefined }}
             onMouseEnter={(e) => onMouseEnter(e, "Objekte")}
             onMouseLeave={onMouseLeave}
