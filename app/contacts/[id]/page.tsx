@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -133,6 +133,7 @@ export default function ContactDetailPage() {
 
   const [openForm, setOpenForm] = useState<"note" | "call" | "task" | "appointment" | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [fNote, setFNote] = useState("");
   const [fTitle, setFTitle] = useState("");
   const [fDatetime, setFDatetime] = useState("");
@@ -179,9 +180,12 @@ export default function ContactDetailPage() {
   // ── Dropdown außen schließen ──────────────────────────────────────────────
   useEffect(() => {
     if (!showDropdown) return;
-    const handler = () => setShowDropdown(false);
-    window.addEventListener("click", handler, { capture: true });
-    return () => window.removeEventListener("click", handler, { capture: true });
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && dropdownRef.current.contains(e.target as Node)) return;
+      setShowDropdown(false);
+    };
+    window.addEventListener("click", handler);
+    return () => window.removeEventListener("click", handler);
   }, [showDropdown]);
 
   // ── Dirty helpers ─────────────────────────────────────────────────────────
@@ -692,7 +696,7 @@ export default function ContactDetailPage() {
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
                       </button>
                       {showDropdown && (
-                        <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card)", border: "1px solid var(--border-md)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", padding: 5, minWidth: 150, zIndex: 500 }}>
+                        <div ref={dropdownRef} style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card)", border: "1px solid var(--border-md)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", padding: 5, minWidth: 150, zIndex: 500 }}>
                           {(["note", "call", "task", "appointment"] as const).map((t) => (
                             <button key={t} onClick={() => openFormFor(t)}
                               style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: "var(--t1)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
