@@ -644,10 +644,11 @@ export default function ContactDetailPage() {
                 );
               })()}
 
-              <div style={{ fontSize: 11, color: "var(--t3)", lineHeight: 1.6 }}>
-                Erstellt {contact ? fmtDate(contact.created_at) : "—"}<br />
-                Geändert {contact ? fmtDate(contact.updated_at) : "—"}
-              </div>
+            </div>
+
+            <div style={{ flexShrink: 0, padding: "10px 20px", borderTop: "1px solid var(--border)", fontSize: 11, color: "var(--t3)", lineHeight: 1.6 }}>
+              Erstellt {contact ? fmtDate(contact.created_at) : "—"}<br />
+              Geändert {contact ? fmtDate(contact.updated_at) : "—"}
             </div>
 
           </div>
