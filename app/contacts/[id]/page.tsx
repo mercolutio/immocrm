@@ -134,6 +134,7 @@ export default function ContactDetailPage() {
   const [openForm, setOpenForm] = useState<"note" | "call" | "task" | "appointment" | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const [fNote, setFNote] = useState("");
   const [fTitle, setFTitle] = useState("");
   const [fDatetime, setFDatetime] = useState("");
@@ -181,11 +182,13 @@ export default function ContactDetailPage() {
   useEffect(() => {
     if (!showDropdown) return;
     const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && dropdownRef.current.contains(e.target as Node)) return;
+      const t = e.target as Node;
+      if (dropdownRef.current?.contains(t)) return;
+      if (triggerRef.current?.contains(t)) return;
       setShowDropdown(false);
     };
-    window.addEventListener("click", handler);
-    return () => window.removeEventListener("click", handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [showDropdown]);
 
   // ── Dirty helpers ─────────────────────────────────────────────────────────
@@ -688,6 +691,7 @@ export default function ContactDetailPage() {
                   {activeTab === "all" ? (
                     <div style={{ position: "relative" }}>
                       <button
+                        ref={triggerRef}
                         onClick={() => setShowDropdown((v) => !v)}
                         style={{ height: 34, padding: "0 12px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}
                       >
