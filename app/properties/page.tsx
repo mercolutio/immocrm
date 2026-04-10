@@ -104,6 +104,7 @@ export default function PropertiesPage() {
   const [form, setForm] = useState<NewPropertyForm>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   async function fetchProperties() {
     setLoading(true);
@@ -112,7 +113,7 @@ export default function PropertiesPage() {
     const { data, error } = await supabase
       .from("properties")
       .select("*, owner:contacts!owner_contact_id(first_name, last_name)")
-      .eq("is_archived", false)
+      .eq("is_archived", showArchived)
       .order("created_at", { ascending: false });
     if (error) setError(error.message);
     else setProperties((data ?? []) as PropertyRow[]);
@@ -130,7 +131,7 @@ export default function PropertiesPage() {
     setOwners((data ?? []) as Contact[]);
   }
 
-  useEffect(() => { fetchProperties(); fetchOwners(); }, []);
+  useEffect(() => { fetchProperties(); fetchOwners(); }, [showArchived]);
 
   const filtered = useMemo(() => properties.filter((p) => {
     const q = search.toLowerCase();
@@ -273,6 +274,33 @@ export default function PropertiesPage() {
             <option value="rented">Vermietet</option>
           </select>
 
+          {/* Archiv-Toggle */}
+          <button
+            onClick={() => setShowArchived((v) => !v)}
+            style={{
+              height: 36,
+              padding: "0 12px",
+              border: showArchived ? "1px solid var(--accent)" : "1px solid rgba(0,0,0,0.11)",
+              borderRadius: 10,
+              fontSize: 13,
+              color: showArchived ? "var(--accent)" : "var(--t3)",
+              background: showArchived ? "rgba(194,105,42,0.08)" : "var(--bg)",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              transition: "all 0.15s",
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="21 8 21 21 3 21 3 8"/>
+              <rect x="1" y="3" width="22" height="5"/>
+              <line x1="10" y1="12" x2="14" y2="12"/>
+            </svg>
+            Archiv
+          </button>
+
           {/* Neues Objekt */}
           <button onClick={openSheet} className="hdr-add-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -340,7 +368,7 @@ export default function PropertiesPage() {
                     key={p.id}
                     className="h-row"
                     onClick={() => router.push(`/properties/${p.id}`)}
-                    style={{ borderBottom: i < filtered.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none" }}
+                    style={{ borderBottom: i < filtered.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none", opacity: p.is_archived ? 0.6 : 1 }}
                   >
                     <td style={{ padding: "14px 22px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -351,9 +379,14 @@ export default function PropertiesPage() {
                           </svg>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
-                          <span style={{ fontWeight: 500, color: "var(--t1)", fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 220 }}>
-                            {p.title}
-                          </span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontWeight: 500, color: "var(--t1)", fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 220 }}>
+                              {p.title}
+                            </span>
+                            {p.is_archived && (
+                              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: "var(--bg2)", color: "var(--t3)" }}>Archiviert</span>
+                            )}
+                          </div>
                           <span style={{ fontSize: 11, color: "var(--t3)" }}>
                             {LISTING_TYPE_LABELS[p.listing_type]}
                           </span>

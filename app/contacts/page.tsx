@@ -73,6 +73,7 @@ export default function ContactsPage() {
   const [form, setForm] = useState<NewContactForm>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   async function fetchContacts() {
     setLoading(true);
@@ -81,14 +82,14 @@ export default function ContactsPage() {
     const { data, error } = await supabase
       .from("contacts")
       .select("*")
-      .eq("is_archived", false)
+      .eq("is_archived", showArchived)
       .order("created_at", { ascending: false });
     if (error) setError(error.message);
     else setContacts(data ?? []);
     setLoading(false);
   }
 
-  useEffect(() => { fetchContacts(); }, []);
+  useEffect(() => { fetchContacts(); }, [showArchived]);
 
   const filtered = useMemo(() => contacts.filter((c) => {
     const q = search.toLowerCase();
@@ -192,6 +193,33 @@ export default function ContactsPage() {
             <option value="landlord">Vermieter</option>
           </select>
 
+          {/* Archiv-Toggle */}
+          <button
+            onClick={() => setShowArchived((v) => !v)}
+            style={{
+              height: 36,
+              padding: "0 12px",
+              border: showArchived ? "1px solid var(--accent)" : "1px solid rgba(0,0,0,0.11)",
+              borderRadius: 10,
+              fontSize: 13,
+              color: showArchived ? "var(--accent)" : "var(--t3)",
+              background: showArchived ? "rgba(194,105,42,0.08)" : "var(--bg)",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              transition: "all 0.15s",
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="21 8 21 21 3 21 3 8"/>
+              <rect x="1" y="3" width="22" height="5"/>
+              <line x1="10" y1="12" x2="14" y2="12"/>
+            </svg>
+            Archiv
+          </button>
+
           {/* Neuer Kontakt */}
           <button onClick={openSheet} className="hdr-add-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -262,7 +290,7 @@ export default function ContactsPage() {
                     key={c.id}
                     className="h-row"
                     onClick={() => router.push(`/contacts/${c.id}`)}
-                    style={{ borderBottom: i < filtered.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none" }}
+                    style={{ borderBottom: i < filtered.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none", opacity: c.is_archived ? 0.6 : 1 }}
                   >
                     <td style={{ padding: "14px 22px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -272,6 +300,9 @@ export default function ContactsPage() {
                         <span style={{ fontWeight: 500, color: "var(--t1)", fontSize: 14 }}>
                           {c.first_name} {c.last_name}
                         </span>
+                        {c.is_archived && (
+                          <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: "var(--bg2)", color: "var(--t3)" }}>Archiviert</span>
+                        )}
                       </div>
                     </td>
                     <td style={{ padding: "14px 22px" }}>

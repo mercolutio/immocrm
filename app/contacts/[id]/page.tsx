@@ -5,12 +5,17 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/lib/supabase/client";
-import type { Contact, Note, Activity, ActivityType, ContactType, ContactSource, SearchProfile, PropertyType, SearchType, Task, TaskPriority } from "@/lib/types";
+import type { Contact, Note, Activity, ActivityType, ContactType, ContactSource, SearchProfile, Property, PropertyType, SearchType, Task, TaskPriority } from "@/lib/types";
 import {
   CONTACT_TYPE_LABELS,
   CONTACT_TYPE_COLORS,
   CONTACT_TYPE_BG,
   ACTIVITY_TYPE_LABELS,
+  PROPERTY_TYPE_LABELS,
+  PROPERTY_TYPE_COLORS,
+  PROPERTY_TYPE_BG,
+  PROPERTY_STATUS_LABELS,
+  PROPERTY_STATUS_COLORS,
 } from "@/lib/types";
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
@@ -66,10 +71,12 @@ function LinkSection({
   icon,
   title,
   count,
+  children,
 }: {
   icon: React.ReactNode;
   title: string;
   count: number;
+  children?: React.ReactNode;
 }) {
   return (
     <div className="h-lift" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
@@ -85,9 +92,11 @@ function LinkSection({
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
       </div>
-      <div style={{ padding: "20px 14px", textAlign: "center", fontSize: 12, color: "var(--t3)" }}>
-        Noch keine Verknüpfungen
-      </div>
+      {children || (
+        <div style={{ padding: "20px 14px", textAlign: "center", fontSize: 12, color: "var(--t3)" }}>
+          Noch keine Verknüpfungen
+        </div>
+      )}
     </div>
   );
 }
@@ -151,6 +160,7 @@ export default function ContactDetailPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [archiving, setArchiving] = useState(false);
+  const [contactProperties, setContactProperties] = useState<Property[]>([]);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("all");
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -180,6 +190,16 @@ export default function ContactDetailPage() {
       const forms: Record<string, Partial<SearchProfile>> = {};
       profiles.forEach((p) => { forms[p.id] = { ...p }; });
       setSpForms(forms);
+
+      // Objekte des Kontakts (als Eigentümer)
+      const { data: propData } = await supabase
+        .from("properties")
+        .select("id, title, type, status, listing_type, is_archived")
+        .eq("owner_contact_id", id)
+        .eq("is_archived", false)
+        .order("created_at", { ascending: false });
+      setContactProperties((propData ?? []) as Property[]);
+
       setLoading(false);
     }
     load();
@@ -291,13 +311,22 @@ export default function ContactDetailPage() {
     setSaving(false);
   }
 
-  // ── Archive ───────────────────────────────────────────────────────────────
+  // ── Archive / Restore ─────────────────────────────────────────────────────
   async function handleArchive() {
-    if (!confirm("Kontakt archivieren? Er wird aus der Liste ausgeblendet.")) return;
+    const isArchived = contact?.is_archived;
+    const msg = isArchived
+      ? "Kontakt wiederherstellen?"
+      : "Kontakt archivieren? Er wird aus der Liste ausgeblendet.";
+    if (!confirm(msg)) return;
     setArchiving(true);
     const supabase = createClient();
-    await supabase.from("contacts").update({ is_archived: true }).eq("id", id);
-    router.push("/contacts");
+    await supabase.from("contacts").update({ is_archived: !isArchived }).eq("id", id);
+    if (isArchived) {
+      setContact((c) => c ? { ...c, is_archived: false } : c);
+      setArchiving(false);
+    } else {
+      router.push("/contacts");
+    }
   }
 
   // ── Open form helper ──────────────────────────────────────────────────────
@@ -436,18 +465,34 @@ export default function ContactDetailPage() {
                 <button
                   onClick={() => { setShowMoreMenu(false); handleArchive(); }}
                   disabled={archiving || loading}
-                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: "var(--red)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}
+                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: contact?.is_archived ? "var(--grn)" : "var(--red)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                     <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
                   </svg>
-                  Archivieren
+                  {contact?.is_archived ? "Wiederherstellen" : "Archivieren"}
                 </button>
               </div>
             )}
           </div>
         </div>
       </header>
+
+      {/* Archiv-Banner */}
+      {contact?.is_archived && (
+        <div style={{ margin: "0 30px", padding: "10px 16px", background: "var(--amb-bg)", border: "1px solid rgba(194,150,42,0.2)", borderRadius: 10, fontSize: 13, color: "var(--amb)", display: "flex", alignItems: "center", gap: 8 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
+          </svg>
+          Dieser Kontakt ist archiviert.
+          <button
+            onClick={handleArchive}
+            style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--accent)", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}
+          >
+            Wiederherstellen
+          </button>
+        </div>
+      )}
 
       {/* BODY */}
       {loading ? (
@@ -906,14 +951,45 @@ export default function ContactDetailPage() {
 
             <LinkSection
               title="Objekte"
-              count={0}
+              count={contactProperties.length}
               icon={
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                   <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
                   <polyline points="9 22 9 12 15 12 15 22"/>
                 </svg>
               }
-            />
+            >
+              {contactProperties.length > 0 && (
+                <div>
+                  {contactProperties.map((p, i) => (
+                    <Link
+                      key={p.id}
+                      href={`/properties/${p.id}`}
+                      className="h-row"
+                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", textDecoration: "none", borderBottom: i < contactProperties.length - 1 ? "1px solid var(--border)" : "none" }}
+                    >
+                      <div style={{ width: 28, height: 28, borderRadius: 6, background: PROPERTY_TYPE_BG[p.type], display: "flex", alignItems: "center", justifyContent: "center", color: PROPERTY_TYPE_COLORS[p.type], flexShrink: 0 }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                          <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--t1)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {p.title}
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--t3)" }}>
+                          {PROPERTY_TYPE_LABELS[p.type]}
+                        </div>
+                      </div>
+                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: PROPERTY_STATUS_COLORS[p.status].bg, color: PROPERTY_STATUS_COLORS[p.status].fg }}>
+                        {PROPERTY_STATUS_LABELS[p.status]}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </LinkSection>
 
             <LinkSection
               title="Dokumente"

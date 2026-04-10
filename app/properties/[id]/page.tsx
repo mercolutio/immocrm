@@ -183,13 +183,18 @@ export default function PropertyDetailPage() {
       setNotes(nRes.data ?? []);
       setActivities(aRes.data ?? []);
       setTasks(tRes.data ?? []);
-      setOwners((ownersRes.data ?? []) as Contact[]);
+      let ownersList = (ownersRes.data ?? []) as Contact[];
 
       // Eigentümer laden
       if (p.owner_contact_id) {
         const { data: ownerData } = await supabase.from("contacts").select("*").eq("id", p.owner_contact_id).single();
         setOwner(ownerData as Contact);
+        // Archivierter Eigentümer: in Dropdown-Liste einfügen falls nicht vorhanden
+        if (ownerData?.is_archived && !ownersList.find((o) => o.id === ownerData.id)) {
+          ownersList = [ownerData as Contact, ...ownersList];
+        }
       }
+      setOwners(ownersList);
 
       // Interessenten (search_profiles mit passendem Typ, Eigentümer ausschließen)
       let spQuery = supabase
@@ -298,11 +303,20 @@ export default function PropertyDetailPage() {
   }
 
   async function handleArchive() {
-    if (!confirm("Objekt archivieren? Es wird aus der Liste ausgeblendet.")) return;
+    const isArchived = property?.is_archived;
+    const msg = isArchived
+      ? "Objekt wiederherstellen?"
+      : "Objekt archivieren? Es wird aus der Liste ausgeblendet.";
+    if (!confirm(msg)) return;
     setArchiving(true);
     const supabase = createClient();
-    await supabase.from("properties").update({ is_archived: true }).eq("id", id);
-    router.push("/properties");
+    await supabase.from("properties").update({ is_archived: !isArchived }).eq("id", id);
+    if (isArchived) {
+      setProperty((p) => p ? { ...p, is_archived: false } : p);
+      setArchiving(false);
+    } else {
+      router.push("/properties");
+    }
   }
 
   function openFormFor(type: "note" | "call" | "task" | "viewing") {
@@ -552,18 +566,34 @@ export default function PropertyDetailPage() {
                 <button
                   onClick={() => { setShowMoreMenu(false); handleArchive(); }}
                   disabled={archiving || loading}
-                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: "var(--red)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}
+                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: property?.is_archived ? "var(--grn)" : "var(--red)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                     <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
                   </svg>
-                  Archivieren
+                  {property?.is_archived ? "Wiederherstellen" : "Archivieren"}
                 </button>
               </div>
             )}
           </div>
         </div>
       </header>
+
+      {/* Archiv-Banner */}
+      {property?.is_archived && (
+        <div style={{ margin: "0 30px", padding: "10px 16px", background: "var(--amb-bg)", border: "1px solid rgba(194,150,42,0.2)", borderRadius: 10, fontSize: 13, color: "var(--amb)", display: "flex", alignItems: "center", gap: 8 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
+          </svg>
+          Dieses Objekt ist archiviert.
+          <button
+            onClick={handleArchive}
+            style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--accent)", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}
+          >
+            Wiederherstellen
+          </button>
+        </div>
+      )}
 
       {/* BODY */}
       {loading ? (
@@ -823,7 +853,7 @@ export default function PropertyDetailPage() {
                 <select style={{ ...inp, height: 36, cursor: "pointer" }} value={form.owner_contact_id ?? ""} onChange={(e) => updateForm({ owner_contact_id: e.target.value || null })}>
                   <option value="">— Kein Eigentümer —</option>
                   {owners.map((o) => (
-                    <option key={o.id} value={o.id}>{o.first_name} {o.last_name}</option>
+                    <option key={o.id} value={o.id}>{o.first_name} {o.last_name}{o.is_archived ? " (archiviert)" : ""}</option>
                   ))}
                 </select>
               </div>
@@ -1091,8 +1121,11 @@ export default function PropertyDetailPage() {
                     {owner.first_name[0]?.toUpperCase()}{owner.last_name[0]?.toUpperCase()}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: "var(--t1)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: "var(--t1)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>
                       {owner.first_name} {owner.last_name}
+                      {owner.is_archived && (
+                        <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 4, background: "var(--amb-bg)", color: "var(--amb)" }}>Archiviert</span>
+                      )}
                     </div>
                     {owner.email && (
                       <div style={{ fontSize: 11, color: "var(--t3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
