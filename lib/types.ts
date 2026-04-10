@@ -155,6 +155,17 @@ export interface Property {
   is_archived: boolean
 }
 
+export interface PropertyImage {
+  id: string
+  created_at: string
+  property_id: string
+  user_id: string
+  storage_path: string
+  file_name: string
+  position: number
+  is_cover: boolean
+}
+
 export interface Deal {
   id: string
   created_at: string

@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/lib/supabase/client";
-import type { Property, PropertyType, PropertyStatus, SearchType, Contact, Note, Activity, ActivityType, SearchProfile, Task, TaskPriority } from "@/lib/types";
+import type { Property, PropertyType, PropertyStatus, SearchType, Contact, Note, Activity, ActivityType, SearchProfile, Task, TaskPriority, PropertyImage } from "@/lib/types";
 import {
   PROPERTY_TYPE_LABELS,
   PROPERTY_STATUS_LABELS,
@@ -149,6 +149,16 @@ export default function PropertyDetailPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("all");
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
+  // ── Images ────────────────────────────────────────────────────────────────
+  const [images, setImages] = useState<PropertyImage[]>([]);
+  const [showGallery, setShowGallery] = useState(false);
+  const [galleryIdx, setGalleryIdx] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [dragOverGallery, setDragOverGallery] = useState(false);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryFileRef = useRef<HTMLInputElement>(null);
+
   // ── Fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     async function load() {
@@ -180,12 +190,20 @@ export default function PropertyDetailPage() {
       }
 
       // Interessenten (search_profiles mit passendem Typ)
-      const { data: spData } = await supabase
-        .from("search_profiles")
-        .select("*, contact:contacts(id, first_name, last_name, type)")
-        .eq("property_type", p.type)
-        .eq("type", p.listing_type);
-      setInteressenten((spData ?? []) as (SearchProfile & { contact: Pick<Contact, "id" | "first_name" | "last_name" | "type"> | null })[]);
+      const [spRes, imgRes] = await Promise.all([
+        supabase
+          .from("search_profiles")
+          .select("*, contact:contacts(id, first_name, last_name, type)")
+          .eq("property_type", p.type)
+          .eq("type", p.listing_type),
+        supabase
+          .from("property_images")
+          .select("*")
+          .eq("property_id", id)
+          .order("position"),
+      ]);
+      setInteressenten((spRes.data ?? []) as (SearchProfile & { contact: Pick<Contact, "id" | "first_name" | "last_name" | "type"> | null })[]);
+      setImages((imgRes.data ?? []) as PropertyImage[]);
 
       setLoading(false);
     }
@@ -328,6 +346,96 @@ export default function PropertyDetailPage() {
     setSubmitting(false);
   }
 
+  // ── Image helpers ─────────────────────────────────────────────────────────
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  function imgUrl(path: string) {
+    return `${SUPABASE_URL}/storage/v1/object/public/property-images/${path}`;
+  }
+
+  const coverImage = images.find((i) => i.is_cover) ?? images[0] ?? null;
+
+  async function uploadFiles(files: FileList | File[]) {
+    if (!files.length) return;
+    setUploading(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setUploading(false); return; }
+
+    const newImages: PropertyImage[] = [];
+    let maxPos = images.length > 0 ? Math.max(...images.map((i) => i.position)) + 1 : 0;
+
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const storagePath = `${user.id}/${id}/${crypto.randomUUID()}.${ext}`;
+
+      const { error: upErr } = await supabase.storage.from("property-images").upload(storagePath, file);
+      if (upErr) continue;
+
+      const { data, error: dbErr } = await supabase
+        .from("property_images")
+        .insert({
+          property_id: id,
+          user_id: user.id,
+          storage_path: storagePath,
+          file_name: file.name,
+          position: maxPos,
+          is_cover: images.length === 0 && newImages.length === 0,
+        })
+        .select()
+        .single();
+      if (!dbErr && data) {
+        newImages.push(data as PropertyImage);
+        maxPos++;
+      }
+    }
+
+    setImages((prev) => [...prev, ...newImages]);
+    setUploading(false);
+  }
+
+  async function deleteImage(img: PropertyImage) {
+    const supabase = createClient();
+    await supabase.storage.from("property-images").remove([img.storage_path]);
+    await supabase.from("property_images").delete().eq("id", img.id);
+    setImages((prev) => {
+      const next = prev.filter((i) => i.id !== img.id);
+      // Falls Cover gelöscht, erstes Bild zum Cover machen
+      if (img.is_cover && next.length > 0) {
+        next[0] = { ...next[0], is_cover: true };
+        supabase.from("property_images").update({ is_cover: true }).eq("id", next[0].id);
+      }
+      return next;
+    });
+    // Wenn aktueller Gallery-Index out of bounds, korrigieren
+    setGalleryIdx((i) => Math.min(i, Math.max(0, images.length - 2)));
+  }
+
+  async function setCover(img: PropertyImage) {
+    const supabase = createClient();
+    // Altes Cover entfernen
+    const oldCover = images.find((i) => i.is_cover);
+    if (oldCover) {
+      await supabase.from("property_images").update({ is_cover: false }).eq("id", oldCover.id);
+    }
+    await supabase.from("property_images").update({ is_cover: true }).eq("id", img.id);
+    setImages((prev) => prev.map((i) => ({ ...i, is_cover: i.id === img.id })));
+  }
+
+  async function reorderImages(fromIdx: number, toIdx: number) {
+    if (fromIdx === toIdx) return;
+    const reordered = [...images];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+    const updated = reordered.map((img, i) => ({ ...img, position: i }));
+    setImages(updated);
+
+    const supabase = createClient();
+    for (const img of updated) {
+      await supabase.from("property_images").update({ position: img.position }).eq("id", img.id);
+    }
+  }
+
   // ── Timeline ──────────────────────────────────────────────────────────────
   type TimelineItem =
     | { kind: "note"; id: string; body: string; created_at: string }
@@ -461,14 +569,45 @@ export default function PropertyDetailPage() {
               zIndex: 1,
             }}
           >
-            {/* Header: Icon + Titel */}
-            <div style={{ padding: "28px 24px 22px", borderBottom: "1px solid var(--border)", textAlign: "center" }}>
-              <div style={{ width: 64, height: 64, borderRadius: 14, background: property ? PROPERTY_TYPE_BG[property.type] : "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center", color: property ? PROPERTY_TYPE_COLORS[property.type] : "var(--t2)", margin: "0 auto 14px" }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                  <polyline points="9 22 9 12 15 12 15 22"/>
-                </svg>
-              </div>
+            {/* Header: Hero-Bild + Titel */}
+            <div style={{ borderBottom: "1px solid var(--border)", textAlign: "center" }}>
+              {/* Hero-Bild oder Upload-Placeholder */}
+              {coverImage ? (
+                <div
+                  style={{ position: "relative", width: "100%", height: 180, cursor: "pointer", overflow: "hidden" }}
+                  onClick={() => { setGalleryIdx(images.indexOf(coverImage)); setShowGallery(true); }}
+                >
+                  <img
+                    src={imgUrl(coverImage.storage_path)}
+                    alt={property?.title ?? "Objektbild"}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  />
+                  <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 6, display: "flex", alignItems: "center", gap: 4, backdropFilter: "blur(4px)" }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    {images.length}
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    width: "100%", height: 140, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer",
+                    background: "var(--bg2)", borderBottom: "1px solid var(--border)", transition: "background 0.15s",
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg3, rgba(0,0,0,0.06))"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg2)"; }}
+                >
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="1.5" strokeLinecap="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  <span style={{ fontSize: 12, color: "var(--t3)", fontWeight: 500 }}>Fotos hinzufügen</span>
+                </div>
+              )}
+              <input ref={fileInputRef} type="file" accept="image/*" multiple hidden onChange={(e) => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ""; }} />
+
+              <div style={{ padding: "16px 24px 18px" }}>
               <div style={{ fontFamily: "var(--font-playfair, 'Playfair Display'), serif", fontSize: 18, fontWeight: 400, color: "var(--t1)", lineHeight: 1.3, marginBottom: 10, padding: "0 8px" }}>
                 {property?.title}
               </div>
@@ -486,6 +625,7 @@ export default function PropertyDetailPage() {
                     </span>
                   </>
                 )}
+              </div>
               </div>
             </div>
 
@@ -531,6 +671,50 @@ export default function PropertyDetailPage() {
                   placeholder="Kurzbeschreibung…"
                 />
               </div>
+
+              {/* Fotos-Sektion */}
+              <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
+              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Fotos</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {images.slice(0, 6).map((img, i) => (
+                  <div
+                    key={img.id}
+                    onClick={() => { setGalleryIdx(i); setShowGallery(true); }}
+                    style={{
+                      width: 74, height: 54, borderRadius: 8, overflow: "hidden", cursor: "pointer",
+                      border: img.is_cover ? "2px solid var(--accent)" : "1px solid rgba(0,0,0,0.08)",
+                      position: "relative", flexShrink: 0,
+                    }}
+                  >
+                    <img src={imgUrl(img.storage_path)} alt={img.file_name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    {img.is_cover && (
+                      <div style={{ position: "absolute", top: 2, left: 2, width: 14, height: 14, borderRadius: 3, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {images.length > 6 && (
+                  <div
+                    onClick={() => { setGalleryIdx(0); setShowGallery(true); }}
+                    style={{ width: 74, height: 54, borderRadius: 8, background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--t2)" }}
+                  >
+                    +{images.length - 6}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => { setGalleryIdx(0); setShowGallery(true); }}
+                className="h-menu-item"
+                style={{
+                  width: "100%", height: 34, borderRadius: 8, border: "1px dashed rgba(0,0,0,0.15)", background: "none",
+                  fontSize: 12, fontWeight: 500, color: "var(--t2)", cursor: "pointer", fontFamily: "inherit",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                {images.length === 0 ? "Fotos hinzufügen" : `Alle ${images.length} Fotos verwalten`}
+              </button>
 
               <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
               <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Adresse</div>
@@ -933,12 +1117,193 @@ export default function PropertyDetailPage() {
         </div>
       )}
 
+      {/* ── GALLERY OVERLAY ── */}
+      {showGallery && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 2000,
+            background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowGallery(false); }}
+        >
+          <div
+            style={{
+              width: "min(920px, 92vw)", maxHeight: "88vh",
+              background: "var(--card)", borderRadius: 20, overflow: "hidden",
+              boxShadow: "0 24px 80px rgba(0,0,0,0.4)", display: "flex", flexDirection: "column",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Gallery Header */}
+            <div style={{ display: "flex", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 500, color: "var(--t1)", flex: 1 }}>
+                Fotos verwalten
+                <span style={{ fontSize: 12, fontWeight: 400, color: "var(--t3)", marginLeft: 8 }}>{images.length} Foto{images.length !== 1 ? "s" : ""}</span>
+              </div>
+              <button
+                onClick={() => setShowGallery(false)}
+                style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "var(--bg2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)" }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            {/* Main Image */}
+            {images.length > 0 ? (
+              <div style={{ position: "relative", flex: "0 0 auto", height: "min(480px, 55vh)", background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <img
+                  src={imgUrl(images[galleryIdx]?.storage_path ?? "")}
+                  alt={images[galleryIdx]?.file_name ?? ""}
+                  style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                />
+
+                {/* Nav Arrows */}
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setGalleryIdx((i) => (i - 1 + images.length) % images.length)}
+                      style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.15)", backdropFilter: "blur(4px)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <button
+                      onClick={() => setGalleryIdx((i) => (i + 1) % images.length)}
+                      style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.15)", backdropFilter: "blur(4px)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                  </>
+                )}
+
+                {/* Actions on current image */}
+                <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6 }}>
+                  {!images[galleryIdx]?.is_cover && (
+                    <button
+                      onClick={() => setCover(images[galleryIdx])}
+                      title="Als Cover setzen"
+                      style={{ height: 30, padding: "0 10px", borderRadius: 7, border: "none", background: "rgba(255,255,255,0.15)", backdropFilter: "blur(4px)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, color: "#fff" }}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
+                      Cover
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { deleteImage(images[galleryIdx]); }}
+                    title="Löschen"
+                    style={{ height: 30, padding: "0 10px", borderRadius: 7, border: "none", background: "rgba(201,59,46,0.7)", backdropFilter: "blur(4px)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, color: "#fff" }}
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                    Löschen
+                  </button>
+                </div>
+
+                {/* Cover badge */}
+                {images[galleryIdx]?.is_cover && (
+                  <div style={{ position: "absolute", top: 12, left: 12, height: 26, padding: "0 10px", borderRadius: 7, background: "var(--accent)", display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "#fff" }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
+                    Cover
+                  </div>
+                )}
+
+                {/* Counter */}
+                <div style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 12, fontWeight: 500, padding: "4px 12px", borderRadius: 20, backdropFilter: "blur(4px)" }}>
+                  {galleryIdx + 1} / {images.length}
+                </div>
+              </div>
+            ) : (
+              /* Empty state / upload zone */
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragOverGallery(true); }}
+                onDragLeave={() => setDragOverGallery(false)}
+                onDrop={(e) => { e.preventDefault(); setDragOverGallery(false); if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files); }}
+                style={{
+                  height: 280, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
+                  background: dragOverGallery ? "rgba(194,105,42,0.06)" : "var(--bg)",
+                  border: dragOverGallery ? "2px dashed var(--accent)" : "2px dashed transparent",
+                  transition: "all 0.15s",
+                }}
+              >
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="1.2" strokeLinecap="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <span style={{ fontSize: 14, color: "var(--t2)", fontWeight: 500 }}>Fotos hierher ziehen</span>
+                <span style={{ fontSize: 12, color: "var(--t3)" }}>oder</span>
+                <button
+                  onClick={() => galleryFileRef.current?.click()}
+                  className="btn-primary"
+                  style={{ height: 34, padding: "0 16px", fontSize: 13 }}
+                >
+                  Dateien auswählen
+                </button>
+              </div>
+            )}
+
+            {/* Thumbnail strip + Upload button */}
+            <div style={{ borderTop: "1px solid var(--border)", padding: "14px 20px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0, overflowX: "auto" }}>
+              <div style={{ display: "flex", gap: 6, flex: 1, overflowX: "auto", scrollbarWidth: "thin", paddingBottom: 2 }}>
+                {images.map((img, i) => (
+                  <div
+                    key={img.id}
+                    draggable
+                    onDragStart={() => setDragIdx(i)}
+                    onDragOver={(e) => { e.preventDefault(); }}
+                    onDrop={(e) => { e.preventDefault(); if (dragIdx !== null) { reorderImages(dragIdx, i); setDragIdx(null); } }}
+                    onDragEnd={() => setDragIdx(null)}
+                    onClick={() => setGalleryIdx(i)}
+                    style={{
+                      width: 64, height: 48, borderRadius: 8, overflow: "hidden", cursor: "grab", flexShrink: 0,
+                      border: galleryIdx === i ? "2px solid var(--accent)" : "1px solid rgba(0,0,0,0.08)",
+                      opacity: dragIdx === i ? 0.4 : 1,
+                      position: "relative",
+                      transition: "border 0.1s",
+                    }}
+                  >
+                    <img src={imgUrl(img.storage_path)} alt={img.file_name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }} />
+                    {img.is_cover && (
+                      <div style={{ position: "absolute", top: 2, left: 2, width: 12, height: 12, borderRadius: 2, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="7" height="7" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Upload / Drop zone in strip */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragOverGallery(true); }}
+                onDragLeave={() => setDragOverGallery(false)}
+                onDrop={(e) => { e.preventDefault(); setDragOverGallery(false); if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files); }}
+                onClick={() => galleryFileRef.current?.click()}
+                style={{
+                  width: 64, height: 48, borderRadius: 8, flexShrink: 0, cursor: "pointer",
+                  border: dragOverGallery ? "2px dashed var(--accent)" : "2px dashed rgba(0,0,0,0.12)",
+                  background: dragOverGallery ? "rgba(194,105,42,0.06)" : "transparent",
+                  display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t3)",
+                  transition: "all 0.15s",
+                }}
+              >
+                {uploading ? (
+                  <div style={{ width: 16, height: 16, border: "2px solid var(--t3)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                )}
+              </div>
+              <input ref={galleryFileRef} type="file" accept="image/*" multiple hidden onChange={(e) => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ""; }} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Floating Save */}
       <style>{`
         @keyframes pulse-ring {
           0%   { transform: scale(1);   opacity: 0.8; }
           60%  { transform: scale(2.8); opacity: 0; }
           100% { transform: scale(2.8); opacity: 0; }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
       <div style={{
