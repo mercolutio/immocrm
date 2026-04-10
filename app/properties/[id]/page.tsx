@@ -348,15 +348,17 @@ export default function PropertyDetailPage() {
     setSubmitting(false);
   }
 
-  // ── ESC to close gallery ────────────────────────────────────────────────
+  // ── Keyboard navigation (ESC + Pfeiltasten) ─────────────────────────────
   useEffect(() => {
     if (!showGallery) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") setShowGallery(false);
+      if (e.key === "ArrowLeft")  setGalleryIdx((i) => (i - 1 + images.length) % images.length);
+      if (e.key === "ArrowRight") setGalleryIdx((i) => (i + 1) % images.length);
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [showGallery]);
+  }, [showGallery, images.length]);
 
   // ── Image helpers ─────────────────────────────────────────────────────────
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -1196,7 +1198,7 @@ export default function PropertyDetailPage() {
 
           <div
             style={{
-              width: "min(920px, 92vw)", maxHeight: "88vh",
+              width: "min(1380px, 94vw)", maxHeight: "94vh",
               background: "var(--card)", borderRadius: 20, overflow: "hidden",
               boxShadow: "0 24px 80px rgba(0,0,0,0.4)", display: "flex", flexDirection: "column",
             }}
@@ -1254,7 +1256,7 @@ export default function PropertyDetailPage() {
 
             {/* Main Image */}
             {images.length > 0 ? (
-              <div style={{ position: "relative", flex: "0 0 auto", height: "min(480px, 55vh)", background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ position: "relative", width: "100%", aspectRatio: "3/2", background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
                 <img
                   src={imgUrl(images[galleryIdx]?.storage_path ?? "")}
                   alt={images[galleryIdx]?.file_name ?? ""}
