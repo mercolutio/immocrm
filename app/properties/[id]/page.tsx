@@ -191,13 +191,16 @@ export default function PropertyDetailPage() {
         setOwner(ownerData as Contact);
       }
 
-      // Interessenten (search_profiles mit passendem Typ)
+      // Interessenten (search_profiles mit passendem Typ, Eigentümer ausschließen)
+      let spQuery = supabase
+        .from("search_profiles")
+        .select("*, contact:contacts(id, first_name, last_name, type)")
+        .eq("property_type", p.type)
+        .eq("type", p.listing_type);
+      if (p.owner_contact_id) spQuery = spQuery.neq("contact_id", p.owner_contact_id);
+
       const [spRes, imgRes] = await Promise.all([
-        supabase
-          .from("search_profiles")
-          .select("*, contact:contacts(id, first_name, last_name, type)")
-          .eq("property_type", p.type)
-          .eq("type", p.listing_type),
+        spQuery,
         supabase
           .from("property_images")
           .select("*")
