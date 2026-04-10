@@ -16,6 +16,7 @@ import {
   ACTIVITY_TYPE_LABELS,
 } from "@/lib/types";
 import { formatEUR, propertyPrice, hasRooms } from "@/lib/property-helpers";
+import { resizeImage } from "@/lib/image-utils";
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 const inp: React.CSSProperties = {
@@ -362,6 +363,9 @@ export default function PropertyDetailPage() {
   function imgUrl(path: string) {
     return `${SUPABASE_URL}/storage/v1/object/public/property-images/${path}`;
   }
+  function thumbUrl(img: PropertyImage) {
+    return imgUrl(img.thumb_path ?? img.storage_path);
+  }
 
   const coverImage = images.find((i) => i.is_cover) ?? images[0] ?? null;
 
@@ -377,27 +381,43 @@ export default function PropertyDetailPage() {
 
     for (const file of Array.from(files)) {
       if (!file.type.startsWith("image/")) continue;
-      const ext = file.name.split(".").pop() ?? "jpg";
-      const storagePath = `${user.id}/${id}/${crypto.randomUUID()}.${ext}`;
+      const uuid = crypto.randomUUID();
+      const mainPath = `${user.id}/${id}/${uuid}.webp`;
+      const tPath = `${user.id}/${id}/${uuid}_thumb.webp`;
 
-      const { error: upErr } = await supabase.storage.from("property-images").upload(storagePath, file);
-      if (upErr) { console.error("Storage upload error:", upErr.message, upErr); continue; }
+      try {
+        const [mainBlob, thumbBlob] = await Promise.all([
+          resizeImage(file, 1920, 0.85),
+          resizeImage(file, 400, 0.75),
+        ]);
 
-      const { data, error: dbErr } = await supabase
-        .from("property_images")
-        .insert({
-          property_id: id,
-          user_id: user.id,
-          storage_path: storagePath,
-          file_name: file.name,
-          position: maxPos,
-          is_cover: images.length === 0 && newImages.length === 0,
-        })
-        .select()
-        .single();
-      if (!dbErr && data) {
-        newImages.push(data as PropertyImage);
-        maxPos++;
+        const [mainRes, thumbRes] = await Promise.all([
+          supabase.storage.from("property-images").upload(mainPath, mainBlob, { contentType: "image/webp" }),
+          supabase.storage.from("property-images").upload(tPath, thumbBlob, { contentType: "image/webp" }),
+        ]);
+
+        if (mainRes.error) { console.error("Main upload error:", mainRes.error.message); continue; }
+        if (thumbRes.error) console.error("Thumb upload error:", thumbRes.error.message);
+
+        const { data, error: dbErr } = await supabase
+          .from("property_images")
+          .insert({
+            property_id: id,
+            user_id: user.id,
+            storage_path: mainPath,
+            thumb_path: thumbRes.error ? null : tPath,
+            file_name: file.name,
+            position: maxPos,
+            is_cover: images.length === 0 && newImages.length === 0,
+          })
+          .select()
+          .single();
+        if (!dbErr && data) {
+          newImages.push(data as PropertyImage);
+          maxPos++;
+        }
+      } catch (err) {
+        console.error("Image processing error:", err);
       }
     }
 
@@ -589,7 +609,7 @@ export default function PropertyDetailPage() {
                   onClick={() => { setGalleryIdx(images.indexOf(coverImage)); setShowGallery(true); }}
                 >
                   <img
-                    src={imgUrl(coverImage.storage_path)}
+                    src={thumbUrl(coverImage)}
                     alt={property?.title ?? "Objektbild"}
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                   />
@@ -713,7 +733,7 @@ export default function PropertyDetailPage() {
                       position: "relative", flexShrink: 0,
                     }}
                   >
-                    <img src={imgUrl(img.storage_path)} alt={img.file_name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    <img src={thumbUrl(img)} alt={img.file_name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                     {img.is_cover && (
                       <div style={{ position: "absolute", top: 2, left: 2, width: 14, height: 14, borderRadius: 3, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <svg width="8" height="8" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
@@ -1317,7 +1337,7 @@ export default function PropertyDetailPage() {
                         margin: "0 3px",
                       }}
                     >
-                      <img src={imgUrl(img.storage_path)} alt={img.file_name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }} />
+                      <img src={thumbUrl(img)} alt={img.file_name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }} />
                       {img.is_cover && (
                         <div style={{ position: "absolute", top: 2, left: 2, width: 12, height: 12, borderRadius: 2, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <svg width="7" height="7" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>

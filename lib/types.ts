@@ -164,6 +164,7 @@ export interface PropertyImage {
   file_name: string
   position: number
   is_cover: boolean
+  thumb_path: string | null
 }
 
 export interface Deal {

@@ -10,7 +10,8 @@ CREATE TABLE property_images (
   storage_path    text        NOT NULL,
   file_name       text        NOT NULL,
   position        integer     NOT NULL DEFAULT 0,
-  is_cover        boolean     NOT NULL DEFAULT false
+  is_cover        boolean     NOT NULL DEFAULT false,
+  thumb_path      text
 );
 
 ALTER TABLE property_images ENABLE ROW LEVEL SECURITY;
