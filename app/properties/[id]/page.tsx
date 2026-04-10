@@ -380,7 +380,7 @@ export default function PropertyDetailPage() {
       const storagePath = `${user.id}/${id}/${crypto.randomUUID()}.${ext}`;
 
       const { error: upErr } = await supabase.storage.from("property-images").upload(storagePath, file);
-      if (upErr) continue;
+      if (upErr) { console.error("Storage upload error:", upErr.message, upErr); continue; }
 
       const { data, error: dbErr } = await supabase
         .from("property_images")
