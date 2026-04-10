@@ -346,6 +346,16 @@ export default function PropertyDetailPage() {
     setSubmitting(false);
   }
 
+  // ── ESC to close gallery ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!showGallery) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowGallery(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [showGallery]);
+
   // ── Image helpers ─────────────────────────────────────────────────────────
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   function imgUrl(path: string) {
@@ -1126,7 +1136,27 @@ export default function PropertyDetailPage() {
             display: "flex", alignItems: "center", justifyContent: "center",
           }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowGallery(false); }}
+          onDragOver={(e) => { e.preventDefault(); setDragOverGallery(true); }}
+          onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOverGallery(false); }}
+          onDrop={(e) => { e.preventDefault(); setDragOverGallery(false); if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files); }}
         >
+          {/* Drag overlay indicator */}
+          {dragOverGallery && (
+            <div style={{
+              position: "absolute", inset: 0, zIndex: 2001, pointerEvents: "none",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              background: "rgba(194,105,42,0.12)", border: "3px dashed var(--accent)",
+              borderRadius: 20,
+            }}>
+              <div style={{ background: "var(--card)", borderRadius: 16, padding: "24px 40px", boxShadow: "0 8px 32px rgba(0,0,0,0.3)", textAlign: "center" }}>
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" style={{ marginBottom: 8 }}>
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <div style={{ fontSize: 15, fontWeight: 500, color: "var(--t1)" }}>Fotos hier ablegen</div>
+              </div>
+            </div>
+          )}
+
           <div
             style={{
               width: "min(920px, 92vw)", maxHeight: "88vh",
@@ -1135,15 +1165,51 @@ export default function PropertyDetailPage() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Gallery Header */}
-            <div style={{ display: "flex", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
+            {/* Gallery Header — Title + Actions + Close */}
+            <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid var(--border)", flexShrink: 0, gap: 10 }}>
               <div style={{ fontSize: 15, fontWeight: 500, color: "var(--t1)", flex: 1 }}>
                 Fotos verwalten
                 <span style={{ fontSize: 12, fontWeight: 400, color: "var(--t3)", marginLeft: 8 }}>{images.length} Foto{images.length !== 1 ? "s" : ""}</span>
               </div>
+
+              {/* Cover Button — always visible when images exist */}
+              {images.length > 0 && (
+                <button
+                  onClick={() => { if (!images[galleryIdx]?.is_cover) setCover(images[galleryIdx]); }}
+                  disabled={images[galleryIdx]?.is_cover}
+                  style={{
+                    height: 32, padding: "0 12px", borderRadius: 8, border: "1px solid var(--border)",
+                    background: images[galleryIdx]?.is_cover ? "rgba(194,105,42,0.1)" : "var(--bg)",
+                    cursor: images[galleryIdx]?.is_cover ? "default" : "pointer",
+                    display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 500,
+                    color: images[galleryIdx]?.is_cover ? "var(--accent)" : "var(--t2)", fontFamily: "inherit",
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill={images[galleryIdx]?.is_cover ? "var(--accent)" : "none"} stroke={images[galleryIdx]?.is_cover ? "none" : "currentColor"} strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
+                  {images[galleryIdx]?.is_cover ? "Cover" : "Als Cover"}
+                </button>
+              )}
+
+              {/* Delete Button */}
+              {images.length > 0 && (
+                <button
+                  onClick={() => deleteImage(images[galleryIdx])}
+                  style={{
+                    height: 32, padding: "0 12px", borderRadius: 8, border: "1px solid rgba(201,59,46,0.2)",
+                    background: "rgba(201,59,46,0.06)", cursor: "pointer",
+                    display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 500,
+                    color: "var(--red)", fontFamily: "inherit",
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                  Löschen
+                </button>
+              )}
+
+              {/* Close */}
               <button
                 onClick={() => setShowGallery(false)}
-                style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "var(--bg2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)" }}
+                style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "var(--bg2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
@@ -1176,52 +1242,17 @@ export default function PropertyDetailPage() {
                   </>
                 )}
 
-                {/* Actions on current image */}
-                <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6 }}>
-                  {!images[galleryIdx]?.is_cover && (
-                    <button
-                      onClick={() => setCover(images[galleryIdx])}
-                      title="Als Cover setzen"
-                      style={{ height: 30, padding: "0 10px", borderRadius: 7, border: "none", background: "rgba(255,255,255,0.15)", backdropFilter: "blur(4px)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, color: "#fff" }}
-                    >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
-                      Cover
-                    </button>
-                  )}
-                  <button
-                    onClick={() => { deleteImage(images[galleryIdx]); }}
-                    title="Löschen"
-                    style={{ height: 30, padding: "0 10px", borderRadius: 7, border: "none", background: "rgba(201,59,46,0.7)", backdropFilter: "blur(4px)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, color: "#fff" }}
-                  >
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                    Löschen
-                  </button>
-                </div>
-
-                {/* Cover badge */}
-                {images[galleryIdx]?.is_cover && (
-                  <div style={{ position: "absolute", top: 12, left: 12, height: 26, padding: "0 10px", borderRadius: 7, background: "var(--accent)", display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "#fff" }}>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
-                    Cover
-                  </div>
-                )}
-
                 {/* Counter */}
                 <div style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 12, fontWeight: 500, padding: "4px 12px", borderRadius: 20, backdropFilter: "blur(4px)" }}>
                   {galleryIdx + 1} / {images.length}
                 </div>
               </div>
             ) : (
-              /* Empty state / upload zone */
+              /* Empty state */
               <div
-                onDragOver={(e) => { e.preventDefault(); setDragOverGallery(true); }}
-                onDragLeave={() => setDragOverGallery(false)}
-                onDrop={(e) => { e.preventDefault(); setDragOverGallery(false); if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files); }}
                 style={{
                   height: 280, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
-                  background: dragOverGallery ? "rgba(194,105,42,0.06)" : "var(--bg)",
-                  border: dragOverGallery ? "2px dashed var(--accent)" : "2px dashed transparent",
-                  transition: "all 0.15s",
+                  background: "var(--bg)",
                 }}
               >
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="1.2" strokeLinecap="round">
@@ -1246,9 +1277,9 @@ export default function PropertyDetailPage() {
                   <div
                     key={img.id}
                     draggable
-                    onDragStart={() => setDragIdx(i)}
-                    onDragOver={(e) => { e.preventDefault(); }}
-                    onDrop={(e) => { e.preventDefault(); if (dragIdx !== null) { reorderImages(dragIdx, i); setDragIdx(null); } }}
+                    onDragStart={(e) => { setDragIdx(i); e.stopPropagation(); }}
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (dragIdx !== null) { reorderImages(dragIdx, i); setDragIdx(null); } }}
                     onDragEnd={() => setDragIdx(null)}
                     onClick={() => setGalleryIdx(i)}
                     style={{
@@ -1269,16 +1300,12 @@ export default function PropertyDetailPage() {
                 ))}
               </div>
 
-              {/* Upload / Drop zone in strip */}
+              {/* Upload + button */}
               <div
-                onDragOver={(e) => { e.preventDefault(); setDragOverGallery(true); }}
-                onDragLeave={() => setDragOverGallery(false)}
-                onDrop={(e) => { e.preventDefault(); setDragOverGallery(false); if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files); }}
                 onClick={() => galleryFileRef.current?.click()}
                 style={{
                   width: 64, height: 48, borderRadius: 8, flexShrink: 0, cursor: "pointer",
-                  border: dragOverGallery ? "2px dashed var(--accent)" : "2px dashed rgba(0,0,0,0.12)",
-                  background: dragOverGallery ? "rgba(194,105,42,0.06)" : "transparent",
+                  border: "2px dashed rgba(0,0,0,0.12)",
                   display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t3)",
                   transition: "all 0.15s",
                 }}
