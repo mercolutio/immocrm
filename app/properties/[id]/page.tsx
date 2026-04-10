@@ -156,6 +156,7 @@ export default function PropertyDetailPage() {
   const [uploading, setUploading] = useState(false);
   const [dragOverGallery, setDragOverGallery] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dropTargetIdx, setDropTargetIdx] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryFileRef = useRef<HTMLInputElement>(null);
 
@@ -592,6 +593,12 @@ export default function PropertyDetailPage() {
                     alt={property?.title ?? "Objektbild"}
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                   />
+                  {uploading && (
+                    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                      <div style={{ width: 18, height: 18, border: "2.5px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
+                      <span style={{ fontSize: 12, fontWeight: 500, color: "#fff" }}>Wird hochgeladen…</span>
+                    </div>
+                  )}
                   <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 6, display: "flex", alignItems: "center", gap: 4, backdropFilter: "blur(4px)" }}>
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                     {images.length}
@@ -599,20 +606,30 @@ export default function PropertyDetailPage() {
                 </div>
               ) : (
                 <div
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => !uploading && fileInputRef.current?.click()}
                   style={{
-                    width: "100%", height: 140, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer",
+                    width: "100%", height: 140, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
+                    cursor: uploading ? "default" : "pointer",
                     background: "var(--bg2)", borderBottom: "1px solid var(--border)", transition: "background 0.15s",
                   }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg3, rgba(0,0,0,0.06))"; }}
+                  onMouseEnter={(e) => { if (!uploading) (e.currentTarget as HTMLElement).style.background = "var(--bg3, rgba(0,0,0,0.06))"; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg2)"; }}
                 >
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="1.5" strokeLinecap="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                    <polyline points="21 15 16 10 5 21"/>
-                  </svg>
-                  <span style={{ fontSize: 12, color: "var(--t3)", fontWeight: 500 }}>Fotos hinzufügen</span>
+                  {uploading ? (
+                    <>
+                      <div style={{ width: 24, height: 24, border: "2.5px solid rgba(0,0,0,0.1)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
+                      <span style={{ fontSize: 12, color: "var(--t2)", fontWeight: 500 }}>Wird hochgeladen…</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="1.5" strokeLinecap="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                      </svg>
+                      <span style={{ fontSize: 12, color: "var(--t3)", fontWeight: 500 }}>Fotos hinzufügen</span>
+                    </>
+                  )}
                 </div>
               )}
               <input ref={fileInputRef} type="file" accept="image/*" multiple hidden onChange={(e) => { if (e.target.files?.length) { uploadFiles(Array.from(e.target.files)); e.target.value = ""; } }} />
@@ -1136,12 +1153,12 @@ export default function PropertyDetailPage() {
             display: "flex", alignItems: "center", justifyContent: "center",
           }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowGallery(false); }}
-          onDragOver={(e) => { e.preventDefault(); setDragOverGallery(true); }}
+          onDragOver={(e) => { e.preventDefault(); if (dragIdx === null && e.dataTransfer.types.includes("Files")) setDragOverGallery(true); }}
           onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOverGallery(false); }}
-          onDrop={(e) => { e.preventDefault(); setDragOverGallery(false); if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files); }}
+          onDrop={(e) => { e.preventDefault(); setDragOverGallery(false); if (dragIdx === null && e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files); }}
         >
-          {/* Drag overlay indicator */}
-          {dragOverGallery && (
+          {/* Drag overlay indicator — only for external file drops, not internal reorder */}
+          {dragOverGallery && dragIdx === null && (
             <div style={{
               position: "absolute", inset: 0, zIndex: 2001, pointerEvents: "none",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -1272,30 +1289,41 @@ export default function PropertyDetailPage() {
 
             {/* Thumbnail strip + Upload button */}
             <div style={{ borderTop: "1px solid var(--border)", padding: "14px 20px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0, overflowX: "auto" }}>
-              <div style={{ display: "flex", gap: 6, flex: 1, overflowX: "auto", scrollbarWidth: "thin", paddingBottom: 2 }}>
+              <div style={{ display: "flex", gap: 0, flex: 1, overflowX: "auto", scrollbarWidth: "thin", paddingBottom: 2, alignItems: "center" }}>
                 {images.map((img, i) => (
-                  <div
-                    key={img.id}
-                    draggable
-                    onDragStart={(e) => { setDragIdx(i); e.stopPropagation(); }}
-                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (dragIdx !== null) { reorderImages(dragIdx, i); setDragIdx(null); } }}
-                    onDragEnd={() => setDragIdx(null)}
-                    onClick={() => setGalleryIdx(i)}
-                    style={{
-                      width: 64, height: 48, borderRadius: 8, overflow: "hidden", cursor: "grab", flexShrink: 0,
-                      border: galleryIdx === i ? "2px solid var(--accent)" : "1px solid rgba(0,0,0,0.08)",
-                      opacity: dragIdx === i ? 0.4 : 1,
-                      position: "relative",
-                      transition: "border 0.1s",
-                    }}
-                  >
-                    <img src={imgUrl(img.storage_path)} alt={img.file_name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }} />
-                    {img.is_cover && (
-                      <div style={{ position: "absolute", top: 2, left: 2, width: 12, height: 12, borderRadius: 2, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <svg width="7" height="7" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
-                      </div>
-                    )}
+                  <div key={img.id} style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+                    {/* Insertion marker */}
+                    <div style={{
+                      width: dropTargetIdx === i && dragIdx !== null && dragIdx !== i ? 3 : 0,
+                      height: 40, borderRadius: 2, background: "var(--accent)", flexShrink: 0,
+                      margin: dropTargetIdx === i && dragIdx !== null && dragIdx !== i ? "0 3px" : 0,
+                      transition: "width 0.12s, margin 0.12s",
+                    }} />
+                    <div
+                      draggable
+                      onDragStart={(e) => { setDragIdx(i); e.stopPropagation(); }}
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDropTargetIdx(i); }}
+                      onDragLeave={() => { if (dropTargetIdx === i) setDropTargetIdx(null); }}
+                      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (dragIdx !== null) { reorderImages(dragIdx, i); setDragIdx(null); setDropTargetIdx(null); } }}
+                      onDragEnd={() => { setDragIdx(null); setDropTargetIdx(null); }}
+                      onClick={() => setGalleryIdx(i)}
+                      style={{
+                        width: 64, height: 48, borderRadius: 8, overflow: "hidden", cursor: "grab", flexShrink: 0,
+                        border: galleryIdx === i ? "2px solid var(--accent)" : "1px solid rgba(0,0,0,0.08)",
+                        opacity: dragIdx === i ? 0.35 : 1,
+                        transform: dragIdx === i ? "scale(0.9)" : "scale(1)",
+                        position: "relative",
+                        transition: "border 0.1s, opacity 0.15s, transform 0.15s",
+                        margin: "0 3px",
+                      }}
+                    >
+                      <img src={imgUrl(img.storage_path)} alt={img.file_name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }} />
+                      {img.is_cover && (
+                        <div style={{ position: "absolute", top: 2, left: 2, width: 12, height: 12, borderRadius: 2, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <svg width="7" height="7" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
