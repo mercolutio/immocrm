@@ -199,7 +199,7 @@ export default function PropertyDetailPage() {
       // Interessenten (search_profiles mit passendem Typ, Eigentümer ausschließen)
       let spQuery = supabase
         .from("search_profiles")
-        .select("*, contact:contacts(id, first_name, last_name, type)")
+        .select("*, contact:contacts(id, first_name, last_name, type, is_archived)")
         .eq("property_type", p.type)
         .eq("type", p.listing_type);
       if (p.owner_contact_id) spQuery = spQuery.neq("contact_id", p.owner_contact_id);
@@ -212,7 +212,8 @@ export default function PropertyDetailPage() {
           .eq("property_id", id)
           .order("position"),
       ]);
-      setInteressenten((spRes.data ?? []) as (SearchProfile & { contact: Pick<Contact, "id" | "first_name" | "last_name" | "type"> | null })[]);
+      const interessentenRaw = (spRes.data ?? []) as (SearchProfile & { contact: (Pick<Contact, "id" | "first_name" | "last_name" | "type"> & { is_archived: boolean }) | null })[];
+      setInteressenten(interessentenRaw.filter((sp) => !sp.contact?.is_archived) as (SearchProfile & { contact: Pick<Contact, "id" | "first_name" | "last_name" | "type"> | null })[]);
       setImages((imgRes.data ?? []) as PropertyImage[]);
 
       setLoading(false);
