@@ -444,6 +444,20 @@ export default function ContactDetailPage() {
             <div className="hdr-title" style={{ fontSize: 18 }}>
               {contact.first_name} {contact.last_name}
             </div>
+            {contact.is_archived && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: 12, padding: "5px 12px", background: "var(--amb-bg)", border: "1px solid rgba(194,150,42,0.15)", borderRadius: 8, fontSize: 12, color: "var(--amb)", flexShrink: 0 }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
+                </svg>
+                Archiviert
+                <button
+                  onClick={handleArchive}
+                  style={{ background: "none", border: "none", color: "var(--accent)", fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0 }}
+                >
+                  Wiederherstellen
+                </button>
+              </div>
+            )}
           </>
         )}
 
@@ -477,22 +491,6 @@ export default function ContactDetailPage() {
           </div>
         </div>
       </header>
-
-      {/* Archiv-Banner */}
-      {contact?.is_archived && (
-        <div style={{ margin: "0 30px", padding: "10px 16px", background: "var(--amb-bg)", border: "1px solid rgba(194,150,42,0.2)", borderRadius: 10, fontSize: 13, color: "var(--amb)", display: "flex", alignItems: "center", gap: 8 }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
-          </svg>
-          Dieser Kontakt ist archiviert.
-          <button
-            onClick={handleArchive}
-            style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--accent)", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}
-          >
-            Wiederherstellen
-          </button>
-        </div>
-      )}
 
       {/* BODY */}
       {loading ? (

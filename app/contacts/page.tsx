@@ -91,6 +91,12 @@ export default function ContactsPage() {
 
   useEffect(() => { fetchContacts(); }, [showArchived]);
 
+  async function handleRestore(contactId: string) {
+    const supabase = createClient();
+    await supabase.from("contacts").update({ is_archived: false }).eq("id", contactId);
+    setContacts((prev) => prev.filter((c) => c.id !== contactId));
+  }
+
   const filtered = useMemo(() => contacts.filter((c) => {
     const q = search.toLowerCase();
     const matchSearch =
@@ -277,7 +283,7 @@ export default function ContactsPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "var(--bg)", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
-                  {["Name", "Typ", "E-Mail", "Telefon", "Quelle", "Erstellt"].map((h) => (
+                  {[...["Name", "Typ", "E-Mail", "Telefon", "Quelle", "Erstellt"], ...(showArchived ? ["Aktion"] : [])].map((h) => (
                     <th key={h} style={{ padding: "12px 22px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
                       {h}
                     </th>
@@ -318,6 +324,20 @@ export default function ContactsPage() {
                     <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t3)", whiteSpace: "nowrap" }}>
                       {fmtDate(c.created_at)}
                     </td>
+                    {showArchived && (
+                      <td style={{ padding: "14px 22px" }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleRestore(c.id); }}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,0.1)", background: "var(--bg)", fontSize: 12, fontWeight: 500, color: "var(--accent)", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", transition: "all 0.15s" }}
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <polyline points="1 4 1 10 7 10"/>
+                            <path d="M3.51 15a9 9 0 105.64-11.36L1 10"/>
+                          </svg>
+                          Wiederherstellen
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

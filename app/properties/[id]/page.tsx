@@ -1121,10 +1121,12 @@ export default function PropertyDetailPage() {
                     {owner.first_name[0]?.toUpperCase()}{owner.last_name[0]?.toUpperCase()}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: "var(--t1)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>
-                      {owner.first_name} {owner.last_name}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: "var(--t1)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {owner.first_name} {owner.last_name}
+                      </span>
                       {owner.is_archived && (
-                        <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 4, background: "var(--amb-bg)", color: "var(--amb)" }}>Archiviert</span>
+                        <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 4, background: "var(--amb-bg)", color: "var(--amb)", flexShrink: 0 }}>Archiviert</span>
                       )}
                     </div>
                     {owner.email && (
