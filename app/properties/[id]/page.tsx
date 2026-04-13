@@ -892,50 +892,46 @@ export default function PropertyDetailPage() {
               </div>
               {energyOpen && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={lbl}>Energieausweis-Typ</label>
-                      <AppSelect
-                        value={form.energy_certificate_type ?? ""}
-                        onChange={(v) => updateForm({ energy_certificate_type: v || null })}
-                        options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(ENERGY_CERTIFICATE_TYPE_LABELS)]}
-                        style={{ height: 36 }}
-                      />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={lbl}>Effizienzklasse</label>
-                      <AppSelect
-                        value={form.energy_efficiency_class ?? ""}
-                        onChange={(v) => updateForm({ energy_efficiency_class: v || null })}
-                        options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(ENERGY_EFFICIENCY_CLASS_LABELS)]}
-                        style={{ height: 36 }}
-                      />
-                    </div>
+                  <div>
+                    <label style={lbl}>Energieausweis-Typ</label>
+                    <AppSelect
+                      value={form.energy_certificate_type ?? ""}
+                      onChange={(v) => updateForm({ energy_certificate_type: v || null })}
+                      options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(ENERGY_CERTIFICATE_TYPE_LABELS)]}
+                      style={{ height: 36 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={lbl}>Effizienzklasse</label>
+                    <AppSelect
+                      value={form.energy_efficiency_class ?? ""}
+                      onChange={(v) => updateForm({ energy_efficiency_class: v || null })}
+                      options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(ENERGY_EFFICIENCY_CLASS_LABELS)]}
+                      style={{ height: 36 }}
+                    />
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <div style={{ flex: 1 }}>
-                      <label style={lbl}>Energieverbrauch (kWh/m²·a)</label>
+                      <label style={lbl}>Verbrauch (kWh/m²·a)</label>
                       <input style={inp} type="number" value={form.energy_consumption ?? ""} onChange={(e) => updateForm({ energy_consumption: e.target.value ? Number(e.target.value) : null })} />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={lbl}>Heizungsart</label>
-                      <AppSelect
-                        value={form.heating_type ?? ""}
-                        onChange={(v) => updateForm({ heating_type: v || null })}
-                        options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(HEATING_TYPE_LABELS)]}
-                        style={{ height: 36 }}
-                      />
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
                     <div style={{ flex: 1 }}>
                       <label style={lbl}>Baujahr</label>
                       <input style={inp} type="number" value={form.construction_year ?? ""} onChange={(e) => updateForm({ construction_year: e.target.value ? Number(e.target.value) : null })} />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={lbl}>Wesentlicher Energieträger</label>
-                      <input style={inp} type="text" value={form.primary_energy_source ?? ""} onChange={(e) => updateForm({ primary_energy_source: e.target.value })} />
-                    </div>
+                  </div>
+                  <div>
+                    <label style={lbl}>Heizungsart</label>
+                    <AppSelect
+                      value={form.heating_type ?? ""}
+                      onChange={(v) => updateForm({ heating_type: v || null })}
+                      options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(HEATING_TYPE_LABELS)]}
+                      style={{ height: 36 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={lbl}>Wesentlicher Energieträger</label>
+                    <input style={inp} type="text" value={form.primary_energy_source ?? ""} onChange={(e) => updateForm({ primary_energy_source: e.target.value })} />
                   </div>
                 </div>
               )}
@@ -966,50 +962,46 @@ export default function PropertyDetailPage() {
                         </div>
                       )}
                       <div style={{ flex: 1 }}>
-                        <label style={lbl}>Gesamtanzahl Etagen</label>
+                        <label style={lbl}>Gesamtetagen</label>
                         <input style={inp} type="number" value={form.total_floors ?? ""} onChange={(e) => updateForm({ total_floors: e.target.value ? Number(e.target.value) : null })} />
                       </div>
                     </div>
                   )}
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={lbl}>Stellplatz</label>
-                      <AppSelect
-                        value={form.parking ?? ""}
-                        onChange={(v) => updateForm({ parking: v || null })}
-                        options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(PARKING_LABELS)]}
-                        style={{ height: 36 }}
-                      />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={lbl}>Keller</label>
-                      <AppSelect
-                        value={form.basement === true ? "true" : form.basement === false ? "false" : ""}
-                        onChange={(v) => updateForm({ basement: v === "true" ? true : v === "false" ? false : null })}
-                        options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(BOOLEAN_YES_NO_LABELS)]}
-                        style={{ height: 36 }}
-                      />
-                    </div>
+                  <div>
+                    <label style={lbl}>Stellplatz</label>
+                    <AppSelect
+                      value={form.parking ?? ""}
+                      onChange={(v) => updateForm({ parking: v || null })}
+                      options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(PARKING_LABELS)]}
+                      style={{ height: 36 }}
+                    />
                   </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={lbl}>Aufzug</label>
-                      <AppSelect
-                        value={form.elevator === true ? "true" : form.elevator === false ? "false" : ""}
-                        onChange={(v) => updateForm({ elevator: v === "true" ? true : v === "false" ? false : null })}
-                        options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(BOOLEAN_YES_NO_LABELS)]}
-                        style={{ height: 36 }}
-                      />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={lbl}>Balkon/Terrasse</label>
-                      <AppSelect
-                        value={form.outdoor_space ?? ""}
-                        onChange={(v) => updateForm({ outdoor_space: v || null })}
-                        options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(OUTDOOR_SPACE_LABELS)]}
-                        style={{ height: 36 }}
-                      />
-                    </div>
+                  <div>
+                    <label style={lbl}>Keller</label>
+                    <AppSelect
+                      value={form.basement === true ? "true" : form.basement === false ? "false" : ""}
+                      onChange={(v) => updateForm({ basement: v === "true" ? true : v === "false" ? false : null })}
+                      options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(BOOLEAN_YES_NO_LABELS)]}
+                      style={{ height: 36 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={lbl}>Aufzug</label>
+                    <AppSelect
+                      value={form.elevator === true ? "true" : form.elevator === false ? "false" : ""}
+                      onChange={(v) => updateForm({ elevator: v === "true" ? true : v === "false" ? false : null })}
+                      options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(BOOLEAN_YES_NO_LABELS)]}
+                      style={{ height: 36 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={lbl}>Balkon/Terrasse</label>
+                    <AppSelect
+                      value={form.outdoor_space ?? ""}
+                      onChange={(v) => updateForm({ outdoor_space: v || null })}
+                      options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(OUTDOOR_SPACE_LABELS)]}
+                      style={{ height: 36 }}
+                    />
                   </div>
                   {(form.type === "house" || form.type === "land") && (
                     <div>
