@@ -757,6 +757,15 @@ export default function PropertyDetailPage() {
                   placeholder="Kurzbeschreibung…"
                 />
               </div>
+              <div>
+                <label style={lbl}>Eigentümer</label>
+                <select style={{ ...inp, height: 36, cursor: "pointer" }} value={form.owner_contact_id ?? ""} onChange={(e) => updateForm({ owner_contact_id: e.target.value || null })}>
+                  <option value="">— Kein Eigentümer —</option>
+                  {owners.map((o) => (
+                    <option key={o.id} value={o.id}>{o.first_name} {o.last_name}{o.is_archived ? " (archiviert)" : ""}</option>
+                  ))}
+                </select>
+              </div>
 
               {/* ── Sektion: Adresse ── */}
               <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
@@ -853,17 +862,6 @@ export default function PropertyDetailPage() {
                 {images.length === 0 ? "Fotos hinzufügen" : `Alle ${images.length} Fotos verwalten`}
               </button>
 
-              {/* ── Eigentümer ── */}
-              <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
-              <div>
-                <label style={lbl}>Eigentümer</label>
-                <select style={{ ...inp, height: 36, cursor: "pointer" }} value={form.owner_contact_id ?? ""} onChange={(e) => updateForm({ owner_contact_id: e.target.value || null })}>
-                  <option value="">— Kein Eigentümer —</option>
-                  {owners.map((o) => (
-                    <option key={o.id} value={o.id}>{o.first_name} {o.last_name}{o.is_archived ? " (archiviert)" : ""}</option>
-                  ))}
-                </select>
-              </div>
             </div>
 
             <div style={{ flexShrink: 0, padding: "10px 20px", borderTop: "1px solid var(--border)", fontSize: 11, color: "var(--t3)", lineHeight: 1.6 }}>
