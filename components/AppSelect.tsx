@@ -102,13 +102,11 @@ export default function AppSelect({ value, onChange, options, placeholder, style
                 (e.currentTarget as HTMLElement).style.background = isActive ? "rgba(194,105,42,0.1)" : "transparent";
               }}
             >
-              <svg
-                width="13" height="13" viewBox="0 0 24 24" fill="none"
-                stroke={isActive ? "var(--accent)" : "transparent"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                style={{ flexShrink: 0 }}
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+              <span style={{
+                width: 7, height: 7, borderRadius: "50%",
+                background: isActive ? "var(--accent)" : "transparent",
+                flexShrink: 0,
+              }} />
               {opt.label}
             </div>
           );

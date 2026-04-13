@@ -73,31 +73,17 @@ export default function SearchSelect({ value, onChange, onSearch, placeholder, d
             ...style,
           }}
         >
-          {value && displayValue ? (
-            <>
-              <span style={{
-                display: "inline-flex", alignItems: "center", gap: 4,
-                background: "rgba(194,105,42,0.1)", color: "var(--accent)",
-                fontSize: 12, fontWeight: 500, padding: "2px 6px 2px 8px",
-                borderRadius: 5, maxWidth: "100%", overflow: "hidden",
-              }}>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {displayValue}
-                </span>
-                <span
-                  onClick={(e) => { e.stopPropagation(); onChange(null); }}
-                  style={{ cursor: "pointer", display: "flex", alignItems: "center", marginLeft: 2, flexShrink: 0 }}
-                >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </span>
-              </span>
-              <span style={{ flex: 1 }} />
-            </>
-          ) : (
-            <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {placeholder ?? "Suchen…"}
+          <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {value && displayValue ? displayValue : (placeholder ?? "Suchen…")}
+          </span>
+          {value && (
+            <span
+              onClick={(e) => { e.stopPropagation(); onChange(null); }}
+              style={{ cursor: "pointer", display: "flex", alignItems: "center", flexShrink: 0, color: "var(--t3)" }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </span>
           )}
           <svg
@@ -171,9 +157,7 @@ export default function SearchSelect({ value, onChange, onSearch, placeholder, d
                         </span>
                       )}
                       {isActive && (
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
+                        <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }} />
                       )}
                     </CommandItem>
                   );
