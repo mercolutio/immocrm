@@ -127,8 +127,8 @@ export default function Sidebar() {
           </Link>
 
           <Link
-            href="#"
-            className="sb-item"
+            href="/pipeline"
+            className={`sb-item${active("/pipeline") ? " active" : ""}`}
             style={{ justifyContent: collapsed ? "center" : undefined, gap: collapsed ? 0 : undefined, padding: collapsed ? "8px 0" : undefined }}
             onMouseEnter={(e) => onMouseEnter(e, "Pipeline")}
             onMouseLeave={onMouseLeave}
@@ -137,7 +137,6 @@ export default function Sidebar() {
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
             </svg>
             {!collapsed && "Pipeline"}
-            {!collapsed && <span className="sb-badge">18</span>}
           </Link>
 
           <Link
@@ -241,8 +240,8 @@ export default function Sidebar() {
         <div className="sb-bottom">
           <Link
             id="onb-nav-einstellungen"
-            href="#"
-            className="sb-item"
+            href="/settings"
+            className={`sb-item${active("/settings") ? " active" : ""}`}
             style={{ justifyContent: collapsed ? "center" : undefined, gap: collapsed ? 0 : undefined, padding: collapsed ? "8px 0" : undefined }}
             onMouseEnter={(e) => onMouseEnter(e, "Einstellungen")}
             onMouseLeave={onMouseLeave}

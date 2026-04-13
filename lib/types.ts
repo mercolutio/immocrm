@@ -5,7 +5,6 @@ export type PropertyType = 'apartment' | 'house' | 'land' | 'commercial'
 export type PropertyStatus = 'available' | 'reserved' | 'sold' | 'rented'
 export type SearchType = 'buy' | 'rent'
 export type TaskPriority = 'low' | 'medium' | 'high'
-export type DealStage = 'lead' | 'contact_made' | 'viewing' | 'offer' | 'notary' | 'closed' | 'lost'
 
 export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
   apartment: 'Wohnung',
@@ -232,6 +231,16 @@ export interface PropertyImage {
   thumb_path: string | null
 }
 
+export interface PipelineStage {
+  id: string
+  created_at: string
+  user_id: string
+  name: string
+  color: string
+  position: number
+  is_default: boolean
+}
+
 export interface Deal {
   id: string
   created_at: string
@@ -239,7 +248,7 @@ export interface Deal {
   user_id: string
   contact_id: string | null
   property_id: string | null
-  stage: DealStage
+  stage_id: string | null
   probability: number | null
   commission: number | null
   expected_close_date: string | null
