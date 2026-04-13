@@ -714,6 +714,9 @@ export default function PropertyDetailPage() {
 
             {/* Formular */}
             <div style={{ flex: 1, overflowY: "auto", padding: "18px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
+
+              {/* ── Sektion: Objektdaten ── */}
+              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Objektdaten</div>
               <div>
                 <label style={lbl}>Titel *</label>
                 <input style={inp} value={form.title ?? ""} onChange={(e) => updateForm({ title: e.target.value })} />
@@ -755,7 +758,58 @@ export default function PropertyDetailPage() {
                 />
               </div>
 
-              {/* Fotos-Sektion */}
+              {/* ── Sektion: Adresse ── */}
+              <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
+              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Adresse</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ flex: 2 }}>
+                  <label style={lbl}>Straße</label>
+                  <input style={inp} value={form.street ?? ""} onChange={(e) => updateForm({ street: e.target.value })} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={lbl}>Nr.</label>
+                  <input style={inp} value={form.house_number ?? ""} onChange={(e) => updateForm({ house_number: e.target.value })} />
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={lbl}>PLZ</label>
+                  <input style={inp} value={form.zip ?? ""} onChange={(e) => updateForm({ zip: e.target.value })} />
+                </div>
+                <div style={{ flex: 2 }}>
+                  <label style={lbl}>Ort</label>
+                  <input style={inp} value={form.city ?? ""} onChange={(e) => updateForm({ city: e.target.value })} />
+                </div>
+              </div>
+
+              {/* ── Sektion: Eckdaten ── */}
+              <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
+              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Eckdaten</div>
+              {form.listing_type === "buy" ? (
+                <div>
+                  <label style={lbl}>Kaufpreis (€)</label>
+                  <input style={inp} type="number" value={form.price ?? ""} onChange={(e) => updateForm({ price: e.target.value ? Number(e.target.value) : null })} />
+                </div>
+              ) : (
+                <div>
+                  <label style={lbl}>Miete (€/Monat)</label>
+                  <input style={inp} type="number" value={form.rent ?? ""} onChange={(e) => updateForm({ rent: e.target.value ? Number(e.target.value) : null })} />
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={lbl}>Fläche (m²)</label>
+                  <input style={inp} type="number" value={form.area_sqm ?? ""} onChange={(e) => updateForm({ area_sqm: e.target.value ? Number(e.target.value) : null })} />
+                </div>
+                {hasRooms(form.type ?? "apartment") && (
+                  <div style={{ flex: 1 }}>
+                    <label style={lbl}>Zimmer</label>
+                    <input style={inp} type="number" step="0.5" value={form.rooms ?? ""} onChange={(e) => updateForm({ rooms: e.target.value ? Number(e.target.value) : null })} />
+                  </div>
+                )}
+              </div>
+
+              {/* ── Sektion: Fotos ── */}
               <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
               <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Fotos</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -799,55 +853,7 @@ export default function PropertyDetailPage() {
                 {images.length === 0 ? "Fotos hinzufügen" : `Alle ${images.length} Fotos verwalten`}
               </button>
 
-              <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
-              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Adresse</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <div style={{ flex: 2 }}>
-                  <label style={lbl}>Straße</label>
-                  <input style={inp} value={form.street ?? ""} onChange={(e) => updateForm({ street: e.target.value })} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={lbl}>Nr.</label>
-                  <input style={inp} value={form.house_number ?? ""} onChange={(e) => updateForm({ house_number: e.target.value })} />
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <div style={{ flex: 1 }}>
-                  <label style={lbl}>PLZ</label>
-                  <input style={inp} value={form.zip ?? ""} onChange={(e) => updateForm({ zip: e.target.value })} />
-                </div>
-                <div style={{ flex: 2 }}>
-                  <label style={lbl}>Ort</label>
-                  <input style={inp} value={form.city ?? ""} onChange={(e) => updateForm({ city: e.target.value })} />
-                </div>
-              </div>
-
-              <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
-              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Eckdaten</div>
-              {form.listing_type === "buy" ? (
-                <div>
-                  <label style={lbl}>Kaufpreis (€)</label>
-                  <input style={inp} type="number" value={form.price ?? ""} onChange={(e) => updateForm({ price: e.target.value ? Number(e.target.value) : null })} />
-                </div>
-              ) : (
-                <div>
-                  <label style={lbl}>Miete (€/Monat)</label>
-                  <input style={inp} type="number" value={form.rent ?? ""} onChange={(e) => updateForm({ rent: e.target.value ? Number(e.target.value) : null })} />
-                </div>
-              )}
-              <div style={{ display: "flex", gap: 8 }}>
-                <div style={{ flex: 1 }}>
-                  <label style={lbl}>Fläche (m²)</label>
-                  <input style={inp} type="number" value={form.area_sqm ?? ""} onChange={(e) => updateForm({ area_sqm: e.target.value ? Number(e.target.value) : null })} />
-                </div>
-                {hasRooms(form.type ?? "apartment") && (
-                  <div style={{ flex: 1 }}>
-                    <label style={lbl}>Zimmer</label>
-                    <input style={inp} type="number" step="0.5" value={form.rooms ?? ""} onChange={(e) => updateForm({ rooms: e.target.value ? Number(e.target.value) : null })} />
-                  </div>
-                )}
-              </div>
-
+              {/* ── Eigentümer ── */}
               <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
               <div>
                 <label style={lbl}>Eigentümer</label>
