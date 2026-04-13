@@ -15,6 +15,12 @@ import {
   LISTING_TYPE_LABELS,
   ACTIVITY_TYPE_LABELS,
   TASK_PRIORITY_LABELS,
+  ENERGY_CERTIFICATE_TYPE_LABELS,
+  ENERGY_EFFICIENCY_CLASS_LABELS,
+  HEATING_TYPE_LABELS,
+  PARKING_LABELS,
+  BOOLEAN_YES_NO_LABELS,
+  OUTDOOR_SPACE_LABELS,
   labelsToOptions,
 } from "@/lib/types";
 import AppSelect from "@/components/AppSelect";
@@ -142,6 +148,8 @@ export default function PropertyDetailPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [energyOpen, setEnergyOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const [openForm, setOpenForm] = useState<"note" | "call" | "task" | "viewing" | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -289,6 +297,19 @@ export default function PropertyDetailPage() {
         area_sqm: form.area_sqm ?? null,
         rooms: hasRooms(form.type ?? "apartment") ? (form.rooms ?? null) : null,
         owner_contact_id: form.owner_contact_id || null,
+        energy_certificate_type: form.energy_certificate_type || null,
+        energy_efficiency_class: form.energy_efficiency_class || null,
+        energy_consumption: form.energy_consumption ?? null,
+        heating_type: form.heating_type || null,
+        construction_year: form.construction_year ?? null,
+        primary_energy_source: form.primary_energy_source?.trim() || null,
+        floor_number: form.type === "apartment" ? (form.floor_number ?? null) : null,
+        total_floors: ["apartment", "house"].includes(form.type ?? "") ? (form.total_floors ?? null) : null,
+        parking: form.parking || null,
+        basement: form.basement ?? null,
+        elevator: form.elevator ?? null,
+        outdoor_space: form.outdoor_space || null,
+        plot_area: ["house", "land"].includes(form.type ?? "") ? (form.plot_area ?? null) : null,
       })
       .eq("id", id);
     if (error) {
@@ -853,6 +874,151 @@ export default function PropertyDetailPage() {
                   </div>
                 )}
               </div>
+
+              {/* ── Sektion: Energiedaten (ausklappbar) ── */}
+              <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
+              <div
+                onClick={() => setEnergyOpen((v) => !v)}
+                style={{ display: "flex", alignItems: "center", cursor: "pointer", gap: 6 }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)", flex: 1 }}>Energiedaten</div>
+                <svg
+                  width="11" height="11" viewBox="0 0 24 24" fill="none"
+                  stroke="var(--t3)" strokeWidth="2" strokeLinecap="round"
+                  style={{ flexShrink: 0, transform: energyOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
+              {energyOpen && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={lbl}>Energieausweis-Typ</label>
+                      <AppSelect
+                        value={form.energy_certificate_type ?? ""}
+                        onChange={(v) => updateForm({ energy_certificate_type: v || null })}
+                        options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(ENERGY_CERTIFICATE_TYPE_LABELS)]}
+                        style={{ height: 36 }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={lbl}>Effizienzklasse</label>
+                      <AppSelect
+                        value={form.energy_efficiency_class ?? ""}
+                        onChange={(v) => updateForm({ energy_efficiency_class: v || null })}
+                        options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(ENERGY_EFFICIENCY_CLASS_LABELS)]}
+                        style={{ height: 36 }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={lbl}>Energieverbrauch (kWh/m²·a)</label>
+                      <input style={inp} type="number" value={form.energy_consumption ?? ""} onChange={(e) => updateForm({ energy_consumption: e.target.value ? Number(e.target.value) : null })} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={lbl}>Heizungsart</label>
+                      <AppSelect
+                        value={form.heating_type ?? ""}
+                        onChange={(v) => updateForm({ heating_type: v || null })}
+                        options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(HEATING_TYPE_LABELS)]}
+                        style={{ height: 36 }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={lbl}>Baujahr</label>
+                      <input style={inp} type="number" value={form.construction_year ?? ""} onChange={(e) => updateForm({ construction_year: e.target.value ? Number(e.target.value) : null })} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={lbl}>Wesentlicher Energieträger</label>
+                      <input style={inp} type="text" value={form.primary_energy_source ?? ""} onChange={(e) => updateForm({ primary_energy_source: e.target.value })} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Sektion: Weitere Details (ausklappbar) ── */}
+              <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
+              <div
+                onClick={() => setDetailsOpen((v) => !v)}
+                style={{ display: "flex", alignItems: "center", cursor: "pointer", gap: 6 }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)", flex: 1 }}>Weitere Details</div>
+                <svg
+                  width="11" height="11" viewBox="0 0 24 24" fill="none"
+                  stroke="var(--t3)" strokeWidth="2" strokeLinecap="round"
+                  style={{ flexShrink: 0, transform: detailsOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
+              {detailsOpen && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {(form.type === "apartment" || form.type === "house") && (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {form.type === "apartment" && (
+                        <div style={{ flex: 1 }}>
+                          <label style={lbl}>Etage</label>
+                          <input style={inp} type="number" value={form.floor_number ?? ""} onChange={(e) => updateForm({ floor_number: e.target.value ? Number(e.target.value) : null })} />
+                        </div>
+                      )}
+                      <div style={{ flex: 1 }}>
+                        <label style={lbl}>Gesamtanzahl Etagen</label>
+                        <input style={inp} type="number" value={form.total_floors ?? ""} onChange={(e) => updateForm({ total_floors: e.target.value ? Number(e.target.value) : null })} />
+                      </div>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={lbl}>Stellplatz</label>
+                      <AppSelect
+                        value={form.parking ?? ""}
+                        onChange={(v) => updateForm({ parking: v || null })}
+                        options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(PARKING_LABELS)]}
+                        style={{ height: 36 }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={lbl}>Keller</label>
+                      <AppSelect
+                        value={form.basement === true ? "true" : form.basement === false ? "false" : ""}
+                        onChange={(v) => updateForm({ basement: v === "true" ? true : v === "false" ? false : null })}
+                        options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(BOOLEAN_YES_NO_LABELS)]}
+                        style={{ height: 36 }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={lbl}>Aufzug</label>
+                      <AppSelect
+                        value={form.elevator === true ? "true" : form.elevator === false ? "false" : ""}
+                        onChange={(v) => updateForm({ elevator: v === "true" ? true : v === "false" ? false : null })}
+                        options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(BOOLEAN_YES_NO_LABELS)]}
+                        style={{ height: 36 }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={lbl}>Balkon/Terrasse</label>
+                      <AppSelect
+                        value={form.outdoor_space ?? ""}
+                        onChange={(v) => updateForm({ outdoor_space: v || null })}
+                        options={[{ value: "", label: "— Nicht angegeben —" }, ...labelsToOptions(OUTDOOR_SPACE_LABELS)]}
+                        style={{ height: 36 }}
+                      />
+                    </div>
+                  </div>
+                  {(form.type === "house" || form.type === "land") && (
+                    <div>
+                      <label style={lbl}>Grundstücksfläche (m²)</label>
+                      <input style={inp} type="number" value={form.plot_area ?? ""} onChange={(e) => updateForm({ plot_area: e.target.value ? Number(e.target.value) : null })} />
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* ── Sektion: Fotos ── */}
               <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />

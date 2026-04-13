@@ -104,6 +104,32 @@ export const SEARCH_TYPE_LABELS: Record<SearchType, string> = {
   rent: 'Mieten',
 }
 
+export const ENERGY_CERTIFICATE_TYPE_LABELS: Record<string, string> = {
+  demand: 'Bedarfsausweis',
+  consumption: 'Verbrauchsausweis',
+}
+
+export const ENERGY_EFFICIENCY_CLASS_LABELS: Record<string, string> = {
+  'A+': 'A+', A: 'A', B: 'B', C: 'C', D: 'D', E: 'E', F: 'F', G: 'G', H: 'H',
+}
+
+export const HEATING_TYPE_LABELS: Record<string, string> = {
+  gas: 'Gas', oil: 'Öl', heat_pump: 'Wärmepumpe', district: 'Fernwärme',
+  pellets: 'Pellets', solar: 'Solar', electric: 'Strom', other: 'Sonstige',
+}
+
+export const PARKING_LABELS: Record<string, string> = {
+  yes: 'Ja', no: 'Nein', garage: 'Garage',
+}
+
+export const BOOLEAN_YES_NO_LABELS: Record<string, string> = {
+  true: 'Ja', false: 'Nein',
+}
+
+export const OUTDOOR_SPACE_LABELS: Record<string, string> = {
+  none: 'Keiner', balcony: 'Balkon', terrace: 'Terrasse', both: 'Beides',
+}
+
 export function labelsToOptions<T extends string>(
   labels: Record<T, string>
 ): { value: T; label: string }[] {
@@ -179,6 +205,19 @@ export interface Property {
   status: PropertyStatus
   owner_contact_id: string | null
   is_archived: boolean
+  energy_certificate_type: string | null
+  energy_efficiency_class: string | null
+  energy_consumption: number | null
+  heating_type: string | null
+  construction_year: number | null
+  primary_energy_source: string | null
+  floor_number: number | null
+  total_floors: number | null
+  parking: string | null
+  basement: boolean | null
+  elevator: boolean | null
+  outdoor_space: string | null
+  plot_area: number | null
 }
 
 export interface PropertyImage {
