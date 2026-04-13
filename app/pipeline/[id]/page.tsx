@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/lib/supabase/client";
-import type { Deal, PipelineStage, Contact, Property, Note, Activity, Task, TaskPriority } from "@/lib/types";
-import { TASK_PRIORITY_LABELS, labelsToOptions } from "@/lib/types";
+import type { Deal, PipelineStage, Contact, Property, Note, Activity, Task, TaskPriority, ActivityType } from "@/lib/types";
+import { ACTIVITY_TYPE_LABELS, TASK_PRIORITY_LABELS, labelsToOptions } from "@/lib/types";
 import AppSelect from "@/components/AppSelect";
 import SearchSelect from "@/components/SearchSelect";
 import { fmtDate, fmtDateTime, nowLocalISO, ACTIVITY_COLORS } from "@/lib/ui-tokens";
@@ -42,16 +42,26 @@ function LinkSection({ icon, title, children }: { icon: React.ReactNode; title: 
 }
 
 // ─── Activity icon ──────────────────────────────────────────────────────────
-function activityIcon(type: string) {
-  const size = 13;
-  const props = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const };
-  if (type === "call") return <svg {...props}><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>;
-  if (type === "viewing") return <svg {...props}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
-  if (type === "meeting") return <svg {...props}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
-  return <svg {...props}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>;
+function ActivityIcon({ type, size = 11 }: { type: string; size?: number }) {
+  const s = { width: size, height: size };
+  switch (type) {
+    case "call":
+      return <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>;
+    case "viewing":
+      return <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
+    case "meeting":
+      return <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+    case "note":
+      return <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
+    case "task":
+      return <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>;
+    default:
+      return <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>;
+  }
 }
 
 type ActiveTab = "all" | "note" | "call" | "viewing" | "task";
+type SourceFilter = "all" | "deal" | "contact" | "property";
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 export default function DealDetailPage() {
@@ -81,12 +91,15 @@ export default function DealDetailPage() {
   const [fDatetime, setFDatetime] = useState("");
   const [fCallResult, setFCallResult] = useState("reached");
   const [fPriority, setFPriority] = useState<TaskPriority>("medium");
+  const [fApptNote, setFApptNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>("all");
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
 
-  // Local call result labels (same as contacts/properties)
   const CALL_RESULT_LABELS: Record<string, string> = {
     reached: "Erreicht", not_reached: "Nicht erreicht", callback: "Rückruf vereinbart",
   };
+  const PRIORITY_LABELS: Record<TaskPriority, string> = { low: "Niedrig", medium: "Mittel", high: "Hoch" };
 
   function updateForm(patch: Partial<Deal>) {
     setForm((f) => ({ ...f, ...patch }));
@@ -104,30 +117,77 @@ export default function DealDetailPage() {
     async function load() {
       setLoading(true);
       const supabase = createClient();
-      const [dealRes, stagesRes, notesRes, activitiesRes, tasksRes] = await Promise.all([
+      const [dealRes, stagesRes] = await Promise.all([
         supabase.from("deals").select("*").eq("id", id).single(),
         supabase.from("pipeline_stages").select("*").order("position"),
-        supabase.from("notes").select("*").eq("deal_id", id).order("created_at", { ascending: false }),
-        supabase.from("activities").select("*").eq("deal_id", id).order("happened_at", { ascending: false }),
-        supabase.from("tasks").select("*").eq("deal_id", id).order("created_at", { ascending: false }),
       ]);
       if (dealRes.error || !dealRes.data) { setError("Deal nicht gefunden"); setLoading(false); return; }
       const d = dealRes.data as Deal;
       setDeal(d);
       setForm(d);
       setStages(stagesRes.data as PipelineStage[] ?? []);
-      setNotes(notesRes.data ?? []);
-      setActivities(activitiesRes.data ?? []);
-      setTasks(tasksRes.data ?? []);
 
+      // Load contact + property
+      let loadedContact: Contact | null = null;
+      let loadedProperty: Property | null = null;
       if (d.contact_id) {
         const { data } = await supabase.from("contacts").select("*").eq("id", d.contact_id).single();
-        if (data) setContact(data as Contact);
+        if (data) { loadedContact = data as Contact; setContact(loadedContact); }
       }
       if (d.property_id) {
         const { data } = await supabase.from("properties").select("*").eq("id", d.property_id).single();
-        if (data) setProperty(data as Property);
+        if (data) { loadedProperty = data as Property; setProperty(loadedProperty); }
       }
+
+      // Load activities for this deal
+      const [notesRes, activitiesRes, tasksRes] = await Promise.all([
+        supabase.from("notes").select("*").eq("deal_id", id).order("created_at", { ascending: false }),
+        supabase.from("activities").select("*").eq("deal_id", id).order("happened_at", { ascending: false }),
+        supabase.from("tasks").select("*").eq("deal_id", id).order("created_at", { ascending: false }),
+      ]);
+
+      let allNotes = notesRes.data ?? [];
+      let allActivities = activitiesRes.data ?? [];
+      let allTasks = tasksRes.data ?? [];
+
+      // Cross-linked: also load contact/property activities without deal_id
+      const extraQueries: Promise<void>[] = [];
+      if (d.contact_id) {
+        extraQueries.push(
+          Promise.all([
+            supabase.from("notes").select("*").eq("contact_id", d.contact_id).is("deal_id", null),
+            supabase.from("activities").select("*").eq("contact_id", d.contact_id).is("deal_id", null),
+            supabase.from("tasks").select("*").eq("contact_id", d.contact_id).is("deal_id", null),
+          ]).then(([n, a, t]) => {
+            allNotes = [...allNotes, ...(n.data ?? [])];
+            allActivities = [...allActivities, ...(a.data ?? [])];
+            allTasks = [...allTasks, ...(t.data ?? [])];
+          })
+        );
+      }
+      if (d.property_id) {
+        extraQueries.push(
+          Promise.all([
+            supabase.from("notes").select("*").eq("property_id", d.property_id).is("deal_id", null),
+            supabase.from("activities").select("*").eq("property_id", d.property_id).is("deal_id", null),
+            supabase.from("tasks").select("*").eq("property_id", d.property_id).is("deal_id", null),
+          ]).then(([n, a, t]) => {
+            allNotes = [...allNotes, ...(n.data ?? [])];
+            allActivities = [...allActivities, ...(a.data ?? [])];
+            allTasks = [...allTasks, ...(t.data ?? [])];
+          })
+        );
+      }
+      await Promise.all(extraQueries);
+
+      // Deduplicate by id
+      const dedup = <T extends { id: string }>(arr: T[]) => {
+        const seen = new Set<string>();
+        return arr.filter((item) => { if (seen.has(item.id)) return false; seen.add(item.id); return true; });
+      };
+      setNotes(dedup(allNotes));
+      setActivities(dedup(allActivities));
+      setTasks(dedup(allTasks));
       setLoading(false);
     }
     load();
@@ -148,7 +208,6 @@ export default function DealDetailPage() {
     }).eq("id", id);
     if (error) { setSaveError(error.message); setSaving(false); return; }
     setDeal((d) => ({ ...d!, ...form } as Deal));
-    // Reload contact/property if changed
     if (form.contact_id !== deal?.contact_id) {
       if (form.contact_id) {
         const { data } = await supabase.from("contacts").select("*").eq("id", form.contact_id).single();
@@ -174,32 +233,42 @@ export default function DealDetailPage() {
 
   function openFormFor(type: "note" | "call" | "task" | "viewing") {
     setFNote(""); setFTitle(""); setFDatetime(nowLocalISO());
-    setFCallResult("reached"); setFPriority("medium");
+    setFCallResult("reached"); setFPriority("medium"); setFApptNote("");
     setOpenForm(type);
     setShowDropdown(false);
   }
 
   async function handleSubmitForm() {
+    if (!openForm) return;
+    if (openForm === "note" && !fNote.trim()) return;
+    if (openForm === "task" && !fTitle.trim()) return;
+    setSubmitting(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { setSubmitting(false); return; }
+
+    // Cross-link: also set contact_id and property_id from the deal
+    const crossLink = {
+      contact_id: deal?.contact_id ?? null,
+      property_id: deal?.property_id ?? null,
+    };
+
     if (openForm === "note") {
-      if (!fNote.trim()) return;
-      const { data } = await supabase.from("notes").insert({ deal_id: id, user_id: user.id, body: fNote.trim() }).select().single();
+      const { data } = await supabase.from("notes").insert({ deal_id: id, ...crossLink, user_id: user.id, body: fNote.trim() }).select().single();
       if (data) setNotes((n) => [data, ...n]);
     } else if (openForm === "call") {
       const summary = `Anruf — ${CALL_RESULT_LABELS[fCallResult] ?? fCallResult}`;
-      const { data } = await supabase.from("activities").insert({ deal_id: id, user_id: user.id, type: "call", summary, happened_at: fDatetime, notes: fNote.trim() || null }).select().single();
+      const { data } = await supabase.from("activities").insert({ deal_id: id, ...crossLink, user_id: user.id, type: "call", summary, happened_at: fDatetime, notes: fNote.trim() || null }).select().single();
       if (data) setActivities((a) => [data, ...a]);
     } else if (openForm === "viewing") {
-      const { data } = await supabase.from("activities").insert({ deal_id: id, user_id: user.id, type: "viewing", summary: "Besichtigung", happened_at: fDatetime, notes: fNote.trim() || null }).select().single();
+      const { data } = await supabase.from("activities").insert({ deal_id: id, ...crossLink, user_id: user.id, type: "viewing", summary: fTitle.trim() || "Besichtigung", happened_at: fDatetime, notes: fApptNote.trim() || null }).select().single();
       if (data) setActivities((a) => [data, ...a]);
     } else if (openForm === "task") {
-      if (!fTitle.trim()) return;
-      const { data } = await supabase.from("tasks").insert({ deal_id: id, user_id: user.id, title: fTitle.trim(), due_date: fDatetime ? fDatetime.slice(0, 10) : null, priority: fPriority }).select().single();
+      const { data } = await supabase.from("tasks").insert({ deal_id: id, ...crossLink, user_id: user.id, title: fTitle.trim(), due_date: fDatetime ? fDatetime.slice(0, 10) : null, priority: fPriority }).select().single();
       if (data) setTasks((t) => [data, ...t]);
     }
     setOpenForm(null);
+    setSubmitting(false);
   }
 
   // Close dropdown on click outside
@@ -212,18 +281,45 @@ export default function DealDetailPage() {
   }, []);
 
   // Timeline items
-  type TimelineItem = { kind: "note"; date: string; data: Note } | { kind: "activity"; date: string; type: string; data: Activity } | { kind: "task"; date: string; data: Task };
-  const timeline: TimelineItem[] = [
-    ...notes.map((n) => ({ kind: "note" as const, date: n.created_at, data: n })),
-    ...activities.map((a) => ({ kind: "activity" as const, date: a.happened_at, type: a.type, data: a })),
-    ...tasks.map((t) => ({ kind: "task" as const, date: t.created_at, data: t })),
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  type TimelineItem =
+    | { kind: "note"; id: string; body: string; created_at: string; deal_id?: string | null; contact_id?: string | null; property_id?: string | null }
+    | { kind: "activity"; id: string; type: ActivityType; summary: string; notes?: string | null; happened_at: string; deal_id?: string | null; contact_id?: string | null; property_id?: string | null }
+    | { kind: "task"; id: string; title: string; priority: TaskPriority; due_date: string | null; created_at: string; deal_id?: string | null; contact_id?: string | null; property_id?: string | null };
 
-  const filteredTimeline = timeline.filter((item) => {
-    if (activeTab === "note") return item.kind === "note";
-    if (activeTab === "call") return item.kind === "activity" && item.type === "call";
-    if (activeTab === "viewing") return item.kind === "activity" && item.type === "viewing";
-    if (activeTab === "task") return item.kind === "task";
+  const allTimeline: TimelineItem[] = [
+    ...notes.map((n) => ({ kind: "note" as const, id: n.id, body: n.body, created_at: n.created_at, deal_id: (n as unknown as Record<string, unknown>).deal_id as string | null, contact_id: (n as unknown as Record<string, unknown>).contact_id as string | null, property_id: (n as unknown as Record<string, unknown>).property_id as string | null })),
+    ...activities.map((a) => ({ kind: "activity" as const, id: a.id, type: a.type, summary: a.summary, notes: a.notes, happened_at: a.happened_at, deal_id: (a as unknown as Record<string, unknown>).deal_id as string | null, contact_id: (a as unknown as Record<string, unknown>).contact_id as string | null, property_id: (a as unknown as Record<string, unknown>).property_id as string | null })),
+    ...tasks.map((t) => ({ kind: "task" as const, id: t.id, title: t.title, priority: t.priority, due_date: t.due_date, created_at: t.created_at, deal_id: (t as unknown as Record<string, unknown>).deal_id as string | null, contact_id: (t as unknown as Record<string, unknown>).contact_id as string | null, property_id: (t as unknown as Record<string, unknown>).property_id as string | null })),
+  ];
+  allTimeline.sort((a, b) => {
+    const da = a.kind === "activity" ? a.happened_at : a.created_at;
+    const db = b.kind === "activity" ? b.happened_at : b.created_at;
+    return new Date(db).getTime() - new Date(da).getTime();
+  });
+
+  // Determine source for each item
+  function getSource(item: TimelineItem): "deal" | "contact" | "property" {
+    if (item.deal_id === id) return "deal";
+    if (item.contact_id && !item.deal_id) return "contact";
+    if (item.property_id && !item.deal_id) return "property";
+    return "deal";
+  }
+
+  // Check if multiple sources exist
+  const hasMixedSources = useMemo(() => {
+    const sources = new Set(allTimeline.map(getSource));
+    return sources.size > 1;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTimeline.length, id]);
+
+  const timeline = allTimeline.filter((item) => {
+    // Tab filter
+    if (activeTab === "note" && item.kind !== "note") return false;
+    if (activeTab === "call" && !(item.kind === "activity" && item.type === "call")) return false;
+    if (activeTab === "viewing" && !(item.kind === "activity" && item.type === "viewing")) return false;
+    if (activeTab === "task" && item.kind !== "task") return false;
+    // Source filter
+    if (sourceFilter !== "all" && getSource(item) !== sourceFilter) return false;
     return true;
   });
 
@@ -232,6 +328,16 @@ export default function DealDetailPage() {
   };
 
   const currentStage = stages.find((s) => s.id === form.stage_id);
+
+  // Tab config
+  const tabLabels: Record<ActiveTab, string> = { all: "Alle", note: "Notiz", call: "Anruf", task: "Aufgabe", viewing: "Besichtigung" };
+  const tabIcons: Record<ActiveTab, React.ReactNode> = {
+    all: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
+    note: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
+    call: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>,
+    task: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>,
+    viewing: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  };
 
   if (loading) {
     return (
@@ -382,156 +488,258 @@ export default function DealDetailPage() {
           />
         </div>
 
-        {/* ── MIDDLE COLUMN ── */}
-        <div style={{ ...colStyle, flex: 1, padding: "22px 26px", display: "flex", flexDirection: "column", gap: 18 }}>
+        {/* ── MIDDLE COLUMN: Aktivitäten ── */}
+        <div style={{ ...colStyle, flex: 1, padding: "20px 22px", background: "var(--bg)", display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
 
-          {/* Tabs + Add button */}
-          <div style={{ display: "flex", alignItems: "center", gap: 0, borderBottom: "1px solid rgba(0,0,0,0.06)", position: "relative" }}>
-            {(["all", "note", "call", "viewing", "task"] as ActiveTab[]).map((tab) => {
-              const labels: Record<ActiveTab, string> = { all: "Alle", note: "Notizen", call: "Anrufe", viewing: "Besichtigungen", task: "Aufgaben" };
-              const isActive = activeTab === tab;
-              return (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    padding: "10px 14px", fontSize: 12, fontWeight: isActive ? 600 : 400,
-                    color: isActive ? "var(--accent)" : "var(--t3)",
-                    background: "transparent", border: "none", borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent",
-                    cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
-                  }}
-                >
-                  {labels[tab]}
-                </button>
-              );
-            })}
-            <span style={{ flex: 1 }} />
-            <div style={{ position: "relative" }}>
-              <button
-                ref={triggerRef}
-                onClick={() => setShowDropdown((v) => !v)}
-                style={{
-                  height: 32, padding: "0 10px", background: "var(--accent)", color: "#fff",
-                  border: "none", borderRadius: 7, fontSize: 12, fontWeight: 500,
-                  cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4,
-                }}
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-                Neu
-              </button>
-              {showDropdown && (
-                <div ref={dropdownRef} style={{
-                  position: "absolute", top: "calc(100% + 4px)", right: 0, zIndex: 100,
-                  background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10,
-                  boxShadow: "0 4px 16px rgba(28,24,20,0.12)", padding: 4, minWidth: 160,
-                }}>
-                  {[
-                    { key: "note", label: "Notiz", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
-                    { key: "call", label: "Anruf", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg> },
-                    { key: "viewing", label: "Besichtigung", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> },
-                    { key: "task", label: "Aufgabe", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
-                  ].map((item) => (
-                    <div
-                      key={item.key}
-                      onClick={() => openFormFor(item.key as "note" | "call" | "viewing" | "task")}
-                      style={{ padding: "7px 11px", borderRadius: 6, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, color: "var(--t1)" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.04)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          {/* Tab-Leiste + Kontext-Button */}
+          {(() => {
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                <div style={{ flex: 1, display: "flex", gap: 6, background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 12, padding: 5, boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
+                  {(["all", "note", "call", "task", "viewing"] as ActiveTab[]).map((tab) => {
+                    const isActive = activeTab === tab;
+                    return (
+                      <button key={tab} className={isActive ? undefined : "h-menu-item"} onClick={() => { setActiveTab(tab); setOpenForm(null); }}
+                        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, borderRadius: 8, border: "none", fontSize: 13, fontWeight: isActive ? 500 : 400, cursor: "pointer", fontFamily: "inherit", background: isActive ? "var(--accent)" : undefined, color: isActive ? "#fff" : "var(--t2)" }}>
+                        {tabIcons[tab]}{tabLabels[tab]}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Kontext-Button */}
+                {activeTab === "all" ? (
+                  <div style={{ position: "relative" }}>
+                    <button
+                      ref={triggerRef}
+                      className="btn-primary"
+                      onClick={() => setShowDropdown((v) => !v)}
+                      style={{ whiteSpace: "nowrap" }}
                     >
-                      {item.icon} {item.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Inline form */}
-          {openForm && (
-            <div style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--t2)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                {openForm === "note" ? "Neue Notiz" : openForm === "call" ? "Anruf protokollieren" : openForm === "viewing" ? "Besichtigung" : "Neue Aufgabe"}
-              </div>
-              {openForm === "task" ? (
-                <div>
-                  <input style={inp} placeholder="Aufgabentitel…" value={fTitle} onChange={(e) => setFTitle(e.target.value)} />
-                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={lbl}>Fällig am</label>
-                      <input style={inp} type="datetime-local" value={fDatetime} onChange={(e) => setFDatetime(e.target.value)} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={lbl}>Priorität</label>
-                      <AppSelect value={fPriority} onChange={(v) => setFPriority(v as TaskPriority)} options={labelsToOptions(TASK_PRIORITY_LABELS)} style={{ height: 36 }} />
-                    </div>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      Aktivität
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    {showDropdown && (
+                      <div ref={dropdownRef} style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card)", border: "1px solid var(--border-md)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", padding: 5, minWidth: 150, zIndex: 500 }}>
+                        {(["note", "call", "task", "viewing"] as const).map((t) => (
+                          <button key={t} className="h-menu-item" onClick={() => openFormFor(t)}
+                            style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: "var(--t1)", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                            {tabIcons[t]}{tabLabels[t]}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ) : openForm === "call" ? (
-                <div>
+                ) : (
+                  <button
+                    className="btn-primary"
+                    onClick={() => openForm === activeTab ? setOpenForm(null) : openFormFor(activeTab as "note" | "call" | "task" | "viewing")}
+                    style={{ whiteSpace: "nowrap" }}
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    {tabLabels[activeTab]}
+                  </button>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Source-Filter Chips */}
+          {hasMixedSources && (
+            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+              {([
+                { key: "all" as SourceFilter, label: "Alle" },
+                { key: "deal" as SourceFilter, label: "Dieser Deal" },
+                ...(contact ? [{ key: "contact" as SourceFilter, label: contact.first_name + " " + contact.last_name }] : []),
+                ...(property ? [{ key: "property" as SourceFilter, label: property.title }] : []),
+              ]).map((chip) => {
+                const isActive = sourceFilter === chip.key;
+                return (
+                  <button
+                    key={chip.key}
+                    onClick={() => setSourceFilter(chip.key)}
+                    style={{
+                      padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: isActive ? 600 : 400,
+                      border: isActive ? "none" : "1px solid rgba(0,0,0,0.08)",
+                      background: isActive ? "var(--accent)" : "var(--card)",
+                      color: isActive ? "#fff" : "var(--t2)",
+                      cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+                    }}
+                  >
+                    {chip.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Inline-Formular */}
+          {openForm && (
+            <div style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 14, padding: "16px 18px", flexShrink: 0, boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
+              {openForm === "note" && (
+                <textarea autoFocus style={{ ...inp, height: 90, padding: "8px 11px", resize: "none" }}
+                  placeholder="Notiz…" value={fNote} onChange={(e) => setFNote(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmitForm(); }} />
+              )}
+              {openForm === "call" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <textarea autoFocus style={{ ...inp, height: 70, padding: "8px 11px", resize: "none" }}
+                    placeholder="Gesprächsnotiz…" value={fNote} onChange={(e) => setFNote(e.target.value)} />
                   <div style={{ display: "flex", gap: 8 }}>
                     <div style={{ flex: 1 }}>
-                      <label style={lbl}>Datum/Uhrzeit</label>
-                      <input style={inp} type="datetime-local" value={fDatetime} onChange={(e) => setFDatetime(e.target.value)} />
+                      <label style={lbl}>Datum / Uhrzeit</label>
+                      <input style={{ ...inp, colorScheme: "light" }} type="datetime-local" value={fDatetime} onChange={(e) => setFDatetime(e.target.value)} />
                     </div>
                     <div style={{ flex: 1 }}>
                       <label style={lbl}>Ergebnis</label>
-                      <AppSelect value={fCallResult} onChange={(v) => setFCallResult(v)} options={labelsToOptions(CALL_RESULT_LABELS)} style={{ height: 36 }} />
+                      <AppSelect
+                        value={fCallResult}
+                        onChange={(v) => setFCallResult(v)}
+                        options={labelsToOptions(CALL_RESULT_LABELS)}
+                        style={{ height: 36 }}
+                      />
                     </div>
                   </div>
-                  <textarea style={{ ...inp, height: 60, padding: "8px 11px", resize: "none", marginTop: 8 }} placeholder="Notiz zum Anruf…" value={fNote} onChange={(e) => setFNote(e.target.value)} />
                 </div>
-              ) : openForm === "viewing" ? (
-                <div>
-                  <label style={lbl}>Datum/Uhrzeit</label>
-                  <input style={inp} type="datetime-local" value={fDatetime} onChange={(e) => setFDatetime(e.target.value)} />
-                  <textarea style={{ ...inp, height: 60, padding: "8px 11px", resize: "none", marginTop: 8 }} placeholder="Notiz zur Besichtigung…" value={fNote} onChange={(e) => setFNote(e.target.value)} />
-                </div>
-              ) : (
-                <textarea style={{ ...inp, height: 80, padding: "8px 11px", resize: "none" }} placeholder="Notiz schreiben…" value={fNote} onChange={(e) => setFNote(e.target.value)} autoFocus />
               )}
-              <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                <button onClick={() => setOpenForm(null)} style={{ height: 32, padding: "0 12px", background: "transparent", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 7, fontSize: 12, color: "var(--t2)", cursor: "pointer", fontFamily: "inherit" }}>Abbrechen</button>
-                <button onClick={handleSubmitForm} style={{ height: 32, padding: "0 14px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>Speichern</button>
+              {openForm === "task" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <input autoFocus style={inp} placeholder="Titel *" value={fTitle} onChange={(e) => setFTitle(e.target.value)} />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={lbl}>Fällig am</label>
+                      <input style={{ ...inp, colorScheme: "light" }} type="datetime-local" value={fDatetime} onChange={(e) => setFDatetime(e.target.value)} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={lbl}>Priorität</label>
+                      <AppSelect
+                        value={fPriority}
+                        onChange={(v) => setFPriority(v as TaskPriority)}
+                        options={labelsToOptions(TASK_PRIORITY_LABELS)}
+                        style={{ height: 36 }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              {openForm === "viewing" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <input autoFocus style={inp} placeholder="Titel *" value={fTitle} onChange={(e) => setFTitle(e.target.value)} />
+                  <div style={{ flex: 1 }}>
+                    <label style={lbl}>Datum / Uhrzeit</label>
+                    <input style={{ ...inp, colorScheme: "light" }} type="datetime-local" value={fDatetime} onChange={(e) => setFDatetime(e.target.value)} />
+                  </div>
+                  <textarea style={{ ...inp, height: 60, padding: "8px 11px", resize: "none" }}
+                    placeholder="Notiz (optional)…" value={fApptNote} onChange={(e) => setFApptNote(e.target.value)} />
+                </div>
+              )}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
+                <button className="btn-ghost" onClick={() => setOpenForm(null)} disabled={submitting}
+                  style={{ height: 32 }}>
+                  Abbrechen
+                </button>
+                <button className="btn-primary" onClick={handleSubmitForm} disabled={submitting}
+                  style={{ height: 32, padding: "0 14px" }}>
+                  {submitting ? "…" : "Speichern"}
+                </button>
               </div>
             </div>
           )}
 
           {/* Timeline */}
-          {filteredTimeline.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 0", fontSize: 13, color: "var(--t3)" }}>
-              Noch keine Einträge
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-              {filteredTimeline.map((item, i) => {
-                const isNote = item.kind === "note";
-                const isActivity = item.kind === "activity";
-                const isTask = item.kind === "task";
-                const type = isActivity ? item.data.type : isNote ? "note" : "task";
-                const ac = ACTIVITY_COLORS[type] ?? ACTIVITY_COLORS.note;
-                return (
-                  <div key={`${item.kind}-${item.data.id}`} style={{ display: "flex", gap: 12, padding: "14px 0", borderBottom: i < filteredTimeline.length - 1 ? "1px solid rgba(0,0,0,0.04)" : "none" }}>
-                    <div style={{ width: 30, height: 30, borderRadius: 8, background: ac.bg, color: ac.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
-                      {isTask ? (
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                      ) : activityIcon(type)}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, color: "var(--t1)", fontWeight: 500 }}>
-                        {isNote ? "Notiz" : isTask ? item.data.title : (item.data as Activity).summary}
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            {timeline.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 0", fontSize: 13, color: "var(--t3)" }}>
+                Noch keine Aktivitäten vorhanden
+              </div>
+            ) : (
+              timeline.map((item, i) => {
+                const source = getSource(item);
+
+                if (item.kind === "task") {
+                  return (
+                    <div key={item.id} style={{ paddingBottom: i < timeline.length - 1 ? 12 : 0 }}>
+                      <div className="h-lift" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 12, padding: "14px 16px", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+                          <div style={{ width: 24, height: 24, borderRadius: 7, background: ACTIVITY_COLORS.task.bg, border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: ACTIVITY_COLORS.task.color, flexShrink: 0 }}>
+                            <ActivityIcon type="task" size={11} />
+                          </div>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: ACTIVITY_COLORS.task.color, textTransform: "uppercase", letterSpacing: "0.07em" }}>Aufgabe</span>
+                          <span style={{ fontSize: 11, color: "var(--t3)", marginLeft: "auto" }}>{fmtDateTime(item.created_at)}</span>
+                        </div>
+                        <div style={{ fontSize: 13, color: "var(--t1)", lineHeight: 1.6 }}>{item.title}</div>
+                        <div style={{ display: "flex", gap: 8, marginTop: 5 }}>
+                          <span style={{ fontSize: 11, color: "var(--t3)" }}>Priorität: {PRIORITY_LABELS[item.priority]}</span>
+                          {item.due_date && <span style={{ fontSize: 11, color: "var(--t3)" }}>· Fällig: {fmtDateTime(item.due_date)}</span>}
+                        </div>
+                        {/* Source badge */}
+                        {source !== "deal" && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11, color: "var(--t3)" }}>
+                            {source === "contact" && contact && (
+                              <>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <span>via {contact.first_name} {contact.last_name}</span>
+                              </>
+                            )}
+                            {source === "property" && property && (
+                              <>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                <span>via {property.title}</span>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      {isNote && <div style={{ fontSize: 13, color: "var(--t2)", marginTop: 4, whiteSpace: "pre-wrap" }}>{(item.data as Note).body}</div>}
-                      {isActivity && (item.data as Activity).notes && <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 4 }}>{(item.data as Activity).notes}</div>}
-                      {isTask && <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 2 }}>Priorität: {TASK_PRIORITY_LABELS[item.data.priority as TaskPriority] ?? item.data.priority}</div>}
-                      <div style={{ fontSize: 11, color: "var(--t3)", marginTop: 4 }}>{fmtDateTime(item.date)}</div>
+                    </div>
+                  );
+                }
+
+                const isNote = item.kind === "note";
+                const dateStr = isNote ? item.created_at : item.happened_at;
+                const typeLabel = isNote ? "Notiz" : (ACTIVITY_TYPE_LABELS[item.type as ActivityType] ?? "Aktivität");
+                const itemType = isNote ? "note" : item.type;
+                const content = isNote ? item.body : item.summary;
+                const rawExtra = isNote ? null : item.notes;
+                const extraNotes = rawExtra ? (CALL_RESULT_LABELS[rawExtra] ?? rawExtra) : null;
+
+                return (
+                  <div key={item.id} style={{ paddingBottom: i < timeline.length - 1 ? 12 : 0 }}>
+                    <div className="h-lift" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 12, padding: "14px 16px", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+                        <div style={{ width: 24, height: 24, borderRadius: 7, background: ACTIVITY_COLORS[itemType]?.bg ?? "var(--bg2)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", color: ACTIVITY_COLORS[itemType]?.color ?? "var(--t2)", flexShrink: 0 }}>
+                          <ActivityIcon type={itemType} size={11} />
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: ACTIVITY_COLORS[itemType]?.color ?? "var(--t3)", textTransform: "uppercase", letterSpacing: "0.07em" }}>{typeLabel}</span>
+                        <span style={{ fontSize: 11, color: "var(--t3)", marginLeft: "auto" }}>{fmtDateTime(dateStr)}</span>
+                      </div>
+                      <div style={{ fontSize: 13, color: "var(--t1)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{content}</div>
+                      {extraNotes && (
+                        <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 4 }}>{extraNotes}</div>
+                      )}
+                      {/* Source badge */}
+                      {source !== "deal" && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11, color: "var(--t3)" }}>
+                          {source === "contact" && contact && (
+                            <>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                              <span>via {contact.first_name} {contact.last_name}</span>
+                            </>
+                          )}
+                          {source === "property" && property && (
+                            <>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                              <span>via {property.title}</span>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          )}
+              })
+            )}
+          </div>
         </div>
 
         {/* ── RIGHT COLUMN ── */}

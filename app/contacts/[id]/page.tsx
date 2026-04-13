@@ -188,6 +188,7 @@ export default function ContactDetailPage() {
   const [dealPropertyDisplay, setDealPropertyDisplay] = useState("");
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("all");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "direct" | "deal">("all");
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
@@ -207,9 +208,9 @@ export default function ContactDetailPage() {
         setContact(cRes.data);
         setForm(cRes.data);
       }
-      setNotes(nRes.data ?? []);
-      setActivities(aRes.data ?? []);
-      setTasks(tRes.data ?? []);
+      let allNotes = nRes.data ?? [];
+      let allActivities = aRes.data ?? [];
+      let allTasks = tRes.data ?? [];
       const profiles: SearchProfile[] = spRes.data ?? [];
       setSearchProfiles(profiles);
       const forms: Record<string, Partial<SearchProfile>> = {};
@@ -232,6 +233,28 @@ export default function ContactDetailPage() {
         .eq("contact_id", id)
         .order("created_at", { ascending: false });
       setContactDeals((dealsData ?? []) as typeof contactDeals);
+
+      // Cross-linked: also load activities from this contact's deals (where contact_id was not set)
+      const dealIds = (dealsData ?? []).map((d: { id: string }) => d.id);
+      if (dealIds.length > 0) {
+        const [extraNotes, extraActivities, extraTasks] = await Promise.all([
+          supabase.from("notes").select("*").in("deal_id", dealIds).is("contact_id", null),
+          supabase.from("activities").select("*").in("deal_id", dealIds).is("contact_id", null),
+          supabase.from("tasks").select("*").in("deal_id", dealIds).is("contact_id", null),
+        ]);
+        allNotes = [...allNotes, ...(extraNotes.data ?? [])];
+        allActivities = [...allActivities, ...(extraActivities.data ?? [])];
+        allTasks = [...allTasks, ...(extraTasks.data ?? [])];
+      }
+
+      // Deduplicate by id
+      const dedup = <T extends { id: string }>(arr: T[]) => {
+        const seen = new Set<string>();
+        return arr.filter((item) => { if (seen.has(item.id)) return false; seen.add(item.id); return true; });
+      };
+      setNotes(dedup(allNotes));
+      setActivities(dedup(allActivities));
+      setTasks(dedup(allTasks));
 
       setLoading(false);
     }
@@ -447,9 +470,9 @@ export default function ContactDetailPage() {
 
   // ── Timeline items ────────────────────────────────────────────────────────
   type TimelineItem =
-    | { kind: "note"; id: string; body: string; created_at: string }
-    | { kind: "activity"; id: string; type: ActivityType; summary: string; notes?: string | null; happened_at: string }
-    | { kind: "task"; id: string; title: string; priority: TaskPriority; due_date: string | null; created_at: string };
+    | { kind: "note"; id: string; body: string; created_at: string; deal_id?: string | null; contact_id?: string | null }
+    | { kind: "activity"; id: string; type: ActivityType; summary: string; notes?: string | null; happened_at: string; deal_id?: string | null; contact_id?: string | null }
+    | { kind: "task"; id: string; title: string; priority: TaskPriority; due_date: string | null; created_at: string; deal_id?: string | null; contact_id?: string | null };
 
   const CALL_RESULT_LABELS: Record<string, string> = {
     reached: "Erreicht",
@@ -459,21 +482,29 @@ export default function ContactDetailPage() {
   const PRIORITY_LABELS: Record<TaskPriority, string> = { low: "Niedrig", medium: "Mittel", high: "Hoch" };
 
   const allTimeline: TimelineItem[] = [
-    ...notes.map((n) => ({ kind: "note" as const, id: n.id, body: n.body, created_at: n.created_at })),
-    ...activities.map((a) => ({ kind: "activity" as const, id: a.id, type: a.type, summary: a.summary, notes: a.notes, happened_at: a.happened_at })),
-    ...tasks.map((t) => ({ kind: "task" as const, id: t.id, title: t.title, priority: t.priority, due_date: t.due_date, created_at: t.created_at })),
+    ...notes.map((n) => ({ kind: "note" as const, id: n.id, body: n.body, created_at: n.created_at, deal_id: (n as unknown as Record<string, unknown>).deal_id as string | null, contact_id: (n as unknown as Record<string, unknown>).contact_id as string | null })),
+    ...activities.map((a) => ({ kind: "activity" as const, id: a.id, type: a.type, summary: a.summary, notes: a.notes, happened_at: a.happened_at, deal_id: (a as unknown as Record<string, unknown>).deal_id as string | null, contact_id: (a as unknown as Record<string, unknown>).contact_id as string | null })),
+    ...tasks.map((t) => ({ kind: "task" as const, id: t.id, title: t.title, priority: t.priority, due_date: t.due_date, created_at: t.created_at, deal_id: (t as unknown as Record<string, unknown>).deal_id as string | null, contact_id: (t as unknown as Record<string, unknown>).contact_id as string | null })),
   ].sort((a, b) => {
     const dateA = a.kind === "activity" ? a.happened_at : a.created_at;
     const dateB = b.kind === "activity" ? b.happened_at : b.created_at;
     return new Date(dateB).getTime() - new Date(dateA).getTime();
   });
 
+  function getSource(item: TimelineItem): "direct" | "deal" {
+    return item.deal_id && !item.contact_id ? "deal" : "direct";
+  }
+
+  const hasMixedSources = allTimeline.some((item) => getSource(item) === "deal");
+
   const timeline = allTimeline.filter((item) => {
-    if (activeTab === "all") return true;
-    if (activeTab === "note") return item.kind === "note";
-    if (activeTab === "call") return item.kind === "activity" && item.type === "call";
-    if (activeTab === "appointment") return item.kind === "activity" && item.type === "meeting";
-    if (activeTab === "task") return item.kind === "task";
+    // Tab filter
+    if (activeTab === "note" && item.kind !== "note") return false;
+    if (activeTab === "call" && !(item.kind === "activity" && item.type === "call")) return false;
+    if (activeTab === "appointment" && !(item.kind === "activity" && item.type === "meeting")) return false;
+    if (activeTab === "task" && item.kind !== "task") return false;
+    // Source filter
+    if (sourceFilter !== "all" && getSource(item) !== sourceFilter) return false;
     return true;
   });
 
@@ -858,6 +889,34 @@ export default function ContactDetailPage() {
               );
             })()}
 
+            {/* Source-Filter Chips */}
+            {hasMixedSources && (
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                {([
+                  { key: "all" as const, label: "Alle" },
+                  { key: "direct" as const, label: "Direkt" },
+                  { key: "deal" as const, label: "via Deal" },
+                ]).map((chip) => {
+                  const isActive = sourceFilter === chip.key;
+                  return (
+                    <button
+                      key={chip.key}
+                      onClick={() => setSourceFilter(chip.key)}
+                      style={{
+                        padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: isActive ? 600 : 400,
+                        border: isActive ? "none" : "1px solid rgba(0,0,0,0.08)",
+                        background: isActive ? "var(--accent)" : "var(--card)",
+                        color: isActive ? "#fff" : "var(--t2)",
+                        cursor: "pointer", fontFamily: "inherit",
+                      }}
+                    >
+                      {chip.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Inline-Formular */}
             {openForm && (
               <div style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 14, padding: "16px 18px", flexShrink: 0, boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
@@ -939,6 +998,14 @@ export default function ContactDetailPage() {
                 </div>
               ) : (
                 timeline.map((item, i) => {
+                  const source = getSource(item);
+                  const dealBadge = source === "deal" ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11, color: "var(--t3)" }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                      <span>via Deal</span>
+                    </div>
+                  ) : null;
+
                   if (item.kind === "task") {
                     return (
                       <div key={item.id} style={{ paddingBottom: i < timeline.length - 1 ? 12 : 0 }}>
@@ -955,6 +1022,7 @@ export default function ContactDetailPage() {
                             <span style={{ fontSize: 11, color: "var(--t3)" }}>Priorität: {PRIORITY_LABELS[item.priority]}</span>
                             {item.due_date && <span style={{ fontSize: 11, color: "var(--t3)" }}>· Fällig: {fmtDateTime(item.due_date)}</span>}
                           </div>
+                          {dealBadge}
                         </div>
                       </div>
                     );
@@ -981,6 +1049,7 @@ export default function ContactDetailPage() {
                         {extraNotes && (
                           <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 4 }}>{extraNotes}</div>
                         )}
+                        {dealBadge}
                       </div>
                     </div>
                   );
