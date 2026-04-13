@@ -94,7 +94,7 @@ function ActivityIcon({ type, size = 13 }: { type: string; size?: number }) {
 }
 
 // ─── Verknüpfungs-Sektion (Placeholder) ─────────────────────────────────────
-function LinkSection({ icon, title, count, children }: { icon: React.ReactNode; title: string; count: number; children?: React.ReactNode }) {
+function LinkSection({ icon, title, count, onAdd, children }: { icon: React.ReactNode; title: string; count: number; onAdd?: () => void; children?: React.ReactNode }) {
   return (
     <div className="h-lift" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderBottom: "1px solid var(--border)" }}>
@@ -104,6 +104,11 @@ function LinkSection({ icon, title, count, children }: { icon: React.ReactNode; 
         <span style={{ fontSize: 13, fontWeight: 500, color: "var(--t1)", flex: 1 }}>{title}</span>
         {count > 0 && (
           <span style={{ fontSize: 11, fontWeight: 600, background: "rgba(194,105,42,0.1)", color: "var(--accent)", padding: "1px 7px", borderRadius: 8 }}>{count}</span>
+        )}
+        {onAdd && (
+          <button onClick={onAdd} className="h-icon-btn" style={{ width: 24, height: 24 }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
         )}
       </div>
       {children ?? (
@@ -1232,6 +1237,7 @@ export default function PropertyDetailPage() {
                   <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
                 </svg>
               }
+              onAdd={() => {}}
             >
               <div style={{ padding: "16px 14px", textAlign: "center", fontSize: 11, color: "var(--t3)", lineHeight: 1.5 }}>
                 Deal-Modul in Kürze
