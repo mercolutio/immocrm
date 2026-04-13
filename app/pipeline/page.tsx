@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/lib/supabase/client";
@@ -83,17 +83,8 @@ function parseNum(s: string): number | null {
 }
 
 // ─── Page ──────────────────────────────────────────────────────────────────
-export default function PipelinePageWrapper() {
-  return (
-    <Suspense>
-      <PipelinePage />
-    </Suspense>
-  );
-}
-
-function PipelinePage() {
+export default function PipelinePage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [deals, setDeals] = useState<DealRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,42 +119,6 @@ function PipelinePage() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchData(); }, []);
-
-  // Auto-open sheet from URL params (e.g. /pipeline?newDeal=true&contactId=xxx)
-  const prefillHandled = useRef(false);
-  useEffect(() => {
-    if (prefillHandled.current || loading || stages.length === 0) return;
-    const isNew = searchParams.get("newDeal");
-    const contactId = searchParams.get("contactId");
-    const propertyId = searchParams.get("propertyId");
-    if (isNew !== "true") return;
-    prefillHandled.current = true;
-
-    const prefill: NewDealForm = {
-      ...EMPTY,
-      stage_id: stages[0]?.id || "",
-      contact_id: contactId || "",
-      property_id: propertyId || "",
-    };
-    setForm(prefill);
-    setFormError(null);
-    setSheetOpen(true);
-
-    // Load display values for pre-filled IDs
-    const sb = createClient();
-    if (contactId) {
-      sb.from("contacts").select("first_name, last_name").eq("id", contactId).single()
-        .then(({ data }) => { if (data) setContactDisplay(`${data.first_name} ${data.last_name}`); });
-    }
-    if (propertyId) {
-      sb.from("properties").select("title").eq("id", propertyId).single()
-        .then(({ data }) => { if (data) setPropertyDisplay(data.title); });
-    }
-
-    // Clean URL without reload
-    window.history.replaceState({}, "", "/pipeline");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, stages, searchParams]);
 
   const filtered = useMemo(() => deals.filter((d) => {
     const q = search.toLowerCase();
@@ -421,11 +376,6 @@ function PipelinePage() {
                       {stageDeals.length}
                     </span>
                   </div>
-                  {total > 0 && (
-                    <div style={{ padding: "0 16px 10px", fontSize: 11, color: "var(--t3)", fontWeight: 500 }}>
-                      {formatEUR(total)}
-                    </div>
-                  )}
 
                   {/* Cards */}
                   <div style={{ flex: 1, overflowY: "auto", padding: "0 10px", display: "flex", flexDirection: "column", gap: 8, scrollbarWidth: "thin" }}>
@@ -486,7 +436,13 @@ function PipelinePage() {
                     ))}
                   </div>
 
-                  {/* Footer: + Button */}
+                  {/* Footer: Total + Button */}
+                  {total > 0 && (
+                    <div style={{ padding: "10px 16px 0", borderTop: "1px solid rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Provision</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--t1)", fontFamily: "var(--font-playfair, 'Playfair Display'), serif" }}>{formatEUR(total)}</span>
+                    </div>
+                  )}
                   <div style={{ padding: "10px 10px 12px" }}>
                     <button
                       onClick={() => openSheet(stage.id)}

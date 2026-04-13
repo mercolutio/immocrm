@@ -22,6 +22,13 @@ import {
   labelsToOptions,
 } from "@/lib/types";
 import AppSelect from "@/components/AppSelect";
+import SearchSelect from "@/components/SearchSelect";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 const inp: React.CSSProperties = {
@@ -172,6 +179,14 @@ export default function ContactDetailPage() {
   const [contactProperties, setContactProperties] = useState<Property[]>([]);
   const [contactDeals, setContactDeals] = useState<(Deal & { stage: Pick<PipelineStage, "id" | "name" | "color"> | null })[]>([]);
 
+  // Deal-Sheet State
+  const [dealSheetOpen, setDealSheetOpen] = useState(false);
+  const [dealStages, setDealStages] = useState<PipelineStage[]>([]);
+  const [dealForm, setDealForm] = useState({ property_id: "", stage_id: "", commission: "", probability: "", expected_close_date: "", notes: "" });
+  const [dealSaving, setDealSaving] = useState(false);
+  const [dealFormError, setDealFormError] = useState<string | null>(null);
+  const [dealPropertyDisplay, setDealPropertyDisplay] = useState("");
+
   const [activeTab, setActiveTab] = useState<ActiveTab>("all");
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
@@ -265,6 +280,41 @@ export default function ContactDetailPage() {
     setSpForms(forms);
     setIsDirty(false);
     setSaveError(null);
+  }
+
+  // ── Deal Sheet ────────────────────────────────────────────────────────────
+  async function openDealSheet() {
+    const supabase = createClient();
+    const { data: stagesData } = await supabase.from("pipeline_stages").select("*").order("position");
+    const stages = (stagesData ?? []) as PipelineStage[];
+    setDealStages(stages);
+    setDealForm({ property_id: "", stage_id: stages[0]?.id ?? "", commission: "", probability: "", expected_close_date: "", notes: "" });
+    setDealFormError(null);
+    setDealPropertyDisplay("");
+    setDealSheetOpen(true);
+  }
+
+  async function saveDeal() {
+    setDealSaving(true);
+    setDealFormError(null);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setDealFormError("Nicht eingeloggt."); setDealSaving(false); return; }
+    const parseNum = (s: string) => { if (!s.trim()) return null; const n = Number(s.replace(",", ".")); return Number.isFinite(n) ? n : null; };
+    const { data, error: err } = await supabase.from("deals").insert({
+      user_id: user.id,
+      contact_id: id,
+      property_id: dealForm.property_id || null,
+      stage_id: dealForm.stage_id || null,
+      commission: parseNum(dealForm.commission),
+      probability: parseNum(dealForm.probability),
+      expected_close_date: dealForm.expected_close_date || null,
+      notes: dealForm.notes.trim() || null,
+    }).select("id").single();
+    if (err) { setDealFormError(err.message); setDealSaving(false); return; }
+    setDealSheetOpen(false);
+    setDealSaving(false);
+    if (data?.id) router.push(`/pipeline/${data.id}`);
   }
 
   // ── Unsaved-changes guard ─────────────────────────────────────────────────
@@ -965,7 +1015,7 @@ export default function ContactDetailPage() {
                   <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
                 </svg>
               }
-              onAdd={() => router.push(`/pipeline?newDeal=true&contactId=${id}`)}
+              onAdd={openDealSheet}
             >
               {contactDeals.length > 0 ? (
                 <div style={{ display: "flex", flexDirection: "column" }}>
@@ -1099,6 +1149,99 @@ export default function ContactDetailPage() {
           {saving ? "Speichern…" : "Speichern"}
         </button>
       </div>
+      {/* DEAL SHEET */}
+      <Sheet open={dealSheetOpen} onOpenChange={setDealSheetOpen}>
+        <SheetContent style={{ background: "#fff", borderLeft: "1px solid rgba(0,0,0,0.08)", padding: 0, width: 420, maxWidth: "95vw", display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "26px 30px", borderBottom: "1px solid rgba(0,0,0,0.07)", flexShrink: 0 }}>
+            <SheetHeader>
+              <SheetTitle style={{ fontFamily: "var(--font-playfair, 'Playfair Display'), serif", fontSize: 22, fontWeight: 400, color: "var(--t1)" }}>
+                Neuer Deal
+              </SheetTitle>
+            </SheetHeader>
+          </div>
+          <div style={{ padding: "26px 30px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", flex: 1 }}>
+            {/* Contact (pre-filled, read-only) */}
+            <div>
+              <label style={lbl}>Kontakt</label>
+              <div style={{ ...inp, display: "flex", alignItems: "center", color: "var(--t1)", background: "var(--bg2)" }}>
+                {contact ? `${contact.first_name} ${contact.last_name}` : "—"}
+              </div>
+            </div>
+
+            <div>
+              <label style={lbl}>Objekt</label>
+              <SearchSelect
+                value={dealForm.property_id || null}
+                onChange={(v) => setDealForm((f) => ({ ...f, property_id: v || "" }))}
+                onSearch={async (q) => {
+                  const sb = createClient();
+                  let query = sb.from("properties").select("id, title").eq("is_archived", false).order("title").limit(20);
+                  if (q.trim()) query = query.ilike("title", `%${q}%`);
+                  const { data } = await query;
+                  return (data ?? []).map((p: { id: string; title: string }) => ({ value: p.id, label: p.title }));
+                }}
+                displayValue={dealPropertyDisplay}
+                placeholder="Objekt suchen…"
+                style={{ height: 38 }}
+              />
+            </div>
+
+            <div>
+              <label style={lbl}>Stage</label>
+              <AppSelect
+                value={dealForm.stage_id}
+                onChange={(v) => setDealForm((f) => ({ ...f, stage_id: v }))}
+                options={dealStages.map((s) => ({ value: s.id, label: s.name }))}
+                placeholder="Stage wählen…"
+                style={{ height: 38 }}
+              />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={lbl}>Provision (€)</label>
+                <input style={inp} type="text" inputMode="decimal" value={dealForm.commission} onChange={(e) => setDealForm((f) => ({ ...f, commission: e.target.value }))} placeholder="z.B. 15000" />
+              </div>
+              <div>
+                <label style={lbl}>Wahrscheinlichkeit (%)</label>
+                <input style={inp} type="number" min="0" max="100" value={dealForm.probability} onChange={(e) => setDealForm((f) => ({ ...f, probability: e.target.value }))} placeholder="0-100" />
+              </div>
+            </div>
+
+            <div>
+              <label style={lbl}>Erwarteter Abschluss</label>
+              <input style={inp} type="date" value={dealForm.expected_close_date} onChange={(e) => setDealForm((f) => ({ ...f, expected_close_date: e.target.value }))} />
+            </div>
+
+            <div>
+              <label style={lbl}>Notizen</label>
+              <textarea style={{ ...inp, height: 80, padding: "8px 11px", resize: "none" }} value={dealForm.notes} onChange={(e) => setDealForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Anmerkungen zum Deal…" />
+            </div>
+
+            {dealFormError && (
+              <div style={{ background: "rgba(201,59,46,0.08)", border: "1px solid rgba(201,59,46,0.2)", borderRadius: 8, padding: "10px 12px", fontSize: 13, color: "var(--red)" }}>
+                {dealFormError}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
+              <button
+                onClick={saveDeal}
+                disabled={dealSaving}
+                style={{ flex: 1, height: 40, background: dealSaving ? "var(--accent-mid)" : "var(--accent)", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: dealSaving ? "not-allowed" : "pointer", fontFamily: "inherit" }}
+              >
+                {dealSaving ? "Speichern…" : "Deal speichern"}
+              </button>
+              <button
+                onClick={() => setDealSheetOpen(false)}
+                style={{ height: 40, padding: "0 16px", background: "transparent", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 8, fontSize: 14, color: "var(--t2)", cursor: "pointer", fontFamily: "inherit" }}
+              >
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </DashboardLayout>
   );
 }

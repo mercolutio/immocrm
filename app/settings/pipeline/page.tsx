@@ -270,6 +270,10 @@ export default function SettingsPipelinePage() {
 
   return (
     <div style={{ maxWidth: 680, paddingBottom: isDirty ? 80 : 0 }}>
+      <style>{`
+        .stage-name-hover:hover { background: rgba(0,0,0,0.04); }
+        .stage-name-hover:hover .edit-icon { opacity: 1 !important; }
+      `}</style>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div>
@@ -362,9 +366,16 @@ export default function SettingsPipelinePage() {
                 ) : (
                   <div
                     onClick={() => { setEditingId(stage.id); setEditingName(stage.name); }}
-                    style={{ fontSize: 13.5, color: "var(--t1)", cursor: "text", padding: "4px 0" }}
+                    className="stage-name-hover"
+                    style={{ fontSize: 13.5, color: "var(--t1)", cursor: "pointer", padding: "4px 8px", borderRadius: 6, transition: "background 0.15s", margin: "0 -8px" }}
                   >
-                    {stage.name}
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {stage.name}
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ opacity: 0, transition: "opacity 0.15s", color: "var(--t3)" }} className="edit-icon">
+                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                    </span>
                   </div>
                 )}
               </div>
@@ -453,14 +464,21 @@ export default function SettingsPipelinePage() {
           </div>
         ))}
 
-        {/* Trailing insertion line (for dropping at end) */}
-        <div style={{
-          height: dropTargetIdx === stages.length && dragIdx !== null ? 2 : 0,
-          background: "var(--accent)",
-          borderRadius: 1,
-          margin: dropTargetIdx === stages.length && dragIdx !== null ? "4px 0" : "0",
-          transition: "height 0.12s, margin 0.12s",
-        }} />
+        {/* Trailing drop zone (for dropping after last item) */}
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDropTargetIdx(stages.length); }}
+          onDragLeave={() => { if (dropTargetIdx === stages.length) setDropTargetIdx(null); }}
+          onDrop={() => handleDrop(stages.length)}
+          style={{ minHeight: 8 }}
+        >
+          <div style={{
+            height: dropTargetIdx === stages.length && dragIdx !== null ? 2 : 0,
+            background: "var(--accent)",
+            borderRadius: 1,
+            margin: dropTargetIdx === stages.length && dragIdx !== null ? "4px 0" : "0",
+            transition: "height 0.12s, margin 0.12s",
+          }} />
+        </div>
 
         {/* Add Stage Button */}
         <button
