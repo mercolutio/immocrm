@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/lib/supabase/client";
-import type { Property, PropertyType, PropertyStatus, SearchType, Contact, Note, Activity, ActivityType, SearchProfile, Task, TaskPriority, PropertyImage } from "@/lib/types";
+import type { Property, PropertyType, PropertyStatus, SearchType, Contact, Note, Activity, ActivityType, SearchProfile, Task, TaskPriority, PropertyImage, Deal, PipelineStage } from "@/lib/types";
 import {
   PROPERTY_TYPE_LABELS,
   PROPERTY_STATUS_LABELS,
@@ -169,6 +169,7 @@ export default function PropertyDetailPage() {
 
   // ── Images ────────────────────────────────────────────────────────────────
   const [images, setImages] = useState<PropertyImage[]>([]);
+  const [propertyDeals, setPropertyDeals] = useState<(Deal & { stage: Pick<PipelineStage, "id" | "name" | "color"> | null; contact: Pick<Contact, "id" | "first_name" | "last_name"> | null })[]>([]);
   const [showGallery, setShowGallery] = useState(false);
   const [galleryIdx, setGalleryIdx] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -232,6 +233,14 @@ export default function PropertyDetailPage() {
       const interessentenRaw = (spRes.data ?? []) as (SearchProfile & { contact: (Pick<Contact, "id" | "first_name" | "last_name" | "type"> & { is_archived: boolean }) | null })[];
       setInteressenten(interessentenRaw.filter((sp) => !sp.contact?.is_archived) as (SearchProfile & { contact: Pick<Contact, "id" | "first_name" | "last_name" | "type"> | null })[]);
       setImages((imgRes.data ?? []) as PropertyImage[]);
+
+      // Deals des Objekts
+      const { data: dealsData } = await supabase
+        .from("deals")
+        .select("*, stage:pipeline_stages(id, name, color), contact:contacts(id, first_name, last_name)")
+        .eq("property_id", id)
+        .order("created_at", { ascending: false });
+      setPropertyDeals((dealsData ?? []) as typeof propertyDeals);
 
       setLoading(false);
     }
@@ -1392,20 +1401,38 @@ export default function PropertyDetailPage() {
               )}
             </LinkSection>
 
-            {/* Deals (Placeholder) */}
+            {/* Deals */}
             <LinkSection
               title="Deals"
-              count={0}
+              count={propertyDeals.length}
               icon={
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                   <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
                 </svg>
               }
-              onAdd={() => {}}
+              onAdd={() => router.push(`/pipeline?newDeal=true&propertyId=${id}`)}
             >
-              <div style={{ padding: "16px 14px", textAlign: "center", fontSize: 11, color: "var(--t3)", lineHeight: 1.5 }}>
-                Deal-Modul in Kürze
-              </div>
+              {propertyDeals.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {propertyDeals.map((deal) => (
+                    <Link
+                      key={deal.id}
+                      href={`/pipeline/${deal.id}`}
+                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid var(--border)", textDecoration: "none" }}
+                    >
+                      {deal.stage && <span style={{ width: 6, height: 6, borderRadius: "50%", background: deal.stage.color, flexShrink: 0 }} />}
+                      <span style={{ fontSize: 12.5, color: "var(--t1)", flex: 1 }}>
+                        {deal.contact ? `${deal.contact.first_name} ${deal.contact.last_name}` : "Ohne Kontakt"}
+                      </span>
+                      {deal.commission != null && (
+                        <span style={{ fontSize: 11, color: "var(--t2)", fontWeight: 500 }}>
+                          {deal.commission.toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
+                        </span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              ) : undefined}
             </LinkSection>
           </div>
 

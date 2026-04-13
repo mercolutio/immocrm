@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/lib/supabase/client";
-import type { Contact, Note, Activity, ActivityType, ContactType, ContactSource, SearchProfile, Property, PropertyType, SearchType, Task, TaskPriority } from "@/lib/types";
+import type { Contact, Note, Activity, ActivityType, ContactType, ContactSource, SearchProfile, Property, PropertyType, SearchType, Task, TaskPriority, Deal, PipelineStage } from "@/lib/types";
 import {
   CONTACT_TYPE_LABELS,
   CONTACT_TYPE_COLORS,
@@ -76,11 +76,13 @@ function LinkSection({
   icon,
   title,
   count,
+  onAdd,
   children,
 }: {
   icon: React.ReactNode;
   title: string;
   count: number;
+  onAdd?: () => void;
   children?: React.ReactNode;
 }) {
   return (
@@ -93,9 +95,11 @@ function LinkSection({
         {count > 0 && (
           <span style={{ fontSize: 11, fontWeight: 600, background: "rgba(194,105,42,0.1)", color: "var(--accent)", padding: "1px 7px", borderRadius: 8 }}>{count}</span>
         )}
-        <button className="h-icon-btn" style={{ width: 24, height: 24 }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </button>
+        {onAdd && (
+          <button onClick={onAdd} className="h-icon-btn" style={{ width: 24, height: 24 }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        )}
       </div>
       {children || (
         <div style={{ padding: "20px 14px", textAlign: "center", fontSize: 12, color: "var(--t3)" }}>
@@ -166,6 +170,7 @@ export default function ContactDetailPage() {
 
   const [archiving, setArchiving] = useState(false);
   const [contactProperties, setContactProperties] = useState<Property[]>([]);
+  const [contactDeals, setContactDeals] = useState<(Deal & { stage: Pick<PipelineStage, "id" | "name" | "color"> | null })[]>([]);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("all");
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -204,6 +209,14 @@ export default function ContactDetailPage() {
         .eq("is_archived", false)
         .order("created_at", { ascending: false });
       setContactProperties((propData ?? []) as Property[]);
+
+      // Deals des Kontakts
+      const { data: dealsData } = await supabase
+        .from("deals")
+        .select("*, stage:pipeline_stages(id, name, color)")
+        .eq("contact_id", id)
+        .order("created_at", { ascending: false });
+      setContactDeals((dealsData ?? []) as typeof contactDeals);
 
       setLoading(false);
     }
@@ -946,13 +959,34 @@ export default function ContactDetailPage() {
 
             <LinkSection
               title="Deals"
-              count={0}
+              count={contactDeals.length}
               icon={
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                   <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
                 </svg>
               }
-            />
+              onAdd={() => router.push(`/pipeline?newDeal=true&contactId=${id}`)}
+            >
+              {contactDeals.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {contactDeals.map((deal) => (
+                    <Link
+                      key={deal.id}
+                      href={`/pipeline/${deal.id}`}
+                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid var(--border)", textDecoration: "none" }}
+                    >
+                      {deal.stage && <span style={{ width: 6, height: 6, borderRadius: "50%", background: deal.stage.color, flexShrink: 0 }} />}
+                      <span style={{ fontSize: 12.5, color: "var(--t1)", flex: 1 }}>{deal.stage?.name ?? "Ohne Phase"}</span>
+                      {deal.commission != null && (
+                        <span style={{ fontSize: 11, color: "var(--t2)", fontWeight: 500 }}>
+                          {deal.commission.toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
+                        </span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              ) : undefined}
+            </LinkSection>
 
             <LinkSection
               title="Objekte"

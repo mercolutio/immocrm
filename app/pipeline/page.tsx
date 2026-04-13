@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -82,8 +83,17 @@ function parseNum(s: string): number | null {
 }
 
 // ─── Page ──────────────────────────────────────────────────────────────────
-export default function PipelinePage() {
+export default function PipelinePageWrapper() {
+  return (
+    <Suspense>
+      <PipelinePage />
+    </Suspense>
+  );
+}
+
+function PipelinePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [deals, setDeals] = useState<DealRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,7 +126,44 @@ export default function PipelinePage() {
     setLoading(false);
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchData(); }, []);
+
+  // Auto-open sheet from URL params (e.g. /pipeline?newDeal=true&contactId=xxx)
+  const prefillHandled = useRef(false);
+  useEffect(() => {
+    if (prefillHandled.current || loading || stages.length === 0) return;
+    const isNew = searchParams.get("newDeal");
+    const contactId = searchParams.get("contactId");
+    const propertyId = searchParams.get("propertyId");
+    if (isNew !== "true") return;
+    prefillHandled.current = true;
+
+    const prefill: NewDealForm = {
+      ...EMPTY,
+      stage_id: stages[0]?.id || "",
+      contact_id: contactId || "",
+      property_id: propertyId || "",
+    };
+    setForm(prefill);
+    setFormError(null);
+    setSheetOpen(true);
+
+    // Load display values for pre-filled IDs
+    const sb = createClient();
+    if (contactId) {
+      sb.from("contacts").select("first_name, last_name").eq("id", contactId).single()
+        .then(({ data }) => { if (data) setContactDisplay(`${data.first_name} ${data.last_name}`); });
+    }
+    if (propertyId) {
+      sb.from("properties").select("title").eq("id", propertyId).single()
+        .then(({ data }) => { if (data) setPropertyDisplay(data.title); });
+    }
+
+    // Clean URL without reload
+    window.history.replaceState({}, "", "/pipeline");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, stages, searchParams]);
 
   const filtered = useMemo(() => deals.filter((d) => {
     const q = search.toLowerCase();
@@ -182,6 +229,22 @@ export default function PipelinePage() {
       return sum + (d.commission ?? d.property?.price ?? d.property?.rent ?? 0);
     }, 0);
   }
+
+  // ─── Pipeline Stats ──────────────────────────────────────────────────────
+  const stats = useMemo(() => {
+    const totalCommission = deals.reduce((s, d) => s + (d.commission ?? 0), 0);
+    const weightedValue = deals.reduce((s, d) => {
+      return s + ((d.commission ?? 0) * (d.probability ?? 0) / 100);
+    }, 0);
+    const avgAge = deals.length > 0
+      ? Math.round(deals.reduce((s, d) => s + (Date.now() - new Date(d.created_at).getTime()) / (1000 * 60 * 60 * 24), 0) / deals.length)
+      : 0;
+    const staleCount = deals.filter((d) => {
+      const daysSinceUpdate = (Date.now() - new Date(d.updated_at).getTime()) / (1000 * 60 * 60 * 24);
+      return daysSinceUpdate >= 7;
+    }).length;
+    return { totalCommission, weightedValue, dealCount: deals.length, avgAge, staleCount };
+  }, [deals]);
 
   return (
     <DashboardLayout>
@@ -261,6 +324,22 @@ export default function PipelinePage() {
             </button>
           </div>
 
+          {/* Settings-Link */}
+          <Link
+            href="/settings/pipeline"
+            style={{
+              width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center",
+              borderRadius: 10, border: "1px solid rgba(0,0,0,0.11)", background: "var(--bg)",
+              color: "var(--t3)", cursor: "pointer", transition: "color 0.15s, border-color 0.15s",
+            }}
+            title="Pipeline-Einstellungen"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+            </svg>
+          </Link>
+
           {/* Neuer Deal */}
           <button onClick={() => openSheet()} className="hdr-add-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -270,6 +349,30 @@ export default function PipelinePage() {
           </button>
         </div>
       </header>
+
+      {/* STATS BAR */}
+      {!loading && !error && deals.length > 0 && (
+        <div style={{ padding: "0 30px", marginBottom: view === "kanban" ? 0 : 0 }}>
+          <div style={{ display: "flex", gap: 1, background: "var(--card)", borderRadius: 14, border: "1px solid rgba(0,0,0,0.05)", overflow: "hidden", boxShadow: "0 1px 4px rgba(28,24,20,0.03)" }}>
+            {[
+              { label: "Gesamt-Provision", value: formatEUR(stats.totalCommission), color: "var(--t1)" },
+              { label: "Gewichteter Wert", value: formatEUR(stats.weightedValue), color: "var(--accent)" },
+              { label: "Deals", value: String(stats.dealCount), color: "var(--t1)" },
+              { label: "Ø Alter", value: `${stats.avgAge} Tage`, color: "var(--t1)" },
+              { label: "Inaktiv 7+ Tage", value: String(stats.staleCount), color: stats.staleCount > 0 ? "var(--red, #EF4444)" : "var(--t1)" },
+            ].map((s, i) => (
+              <div key={i} style={{ flex: 1, padding: "14px 18px", borderRight: i < 4 ? "1px solid rgba(0,0,0,0.05)" : undefined }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+                  {s.label}
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 500, color: s.color, fontFamily: "var(--font-playfair, 'Playfair Display'), serif" }}>
+                  {s.value}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* BODY */}
       <div className="body-wrap" style={{ padding: view === "kanban" ? "0 0 26px 30px" : undefined }}>
