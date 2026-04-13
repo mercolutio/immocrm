@@ -14,7 +14,11 @@ import {
   PROPERTY_STATUS_COLORS,
   LISTING_TYPE_LABELS,
   ACTIVITY_TYPE_LABELS,
+  TASK_PRIORITY_LABELS,
+  labelsToOptions,
 } from "@/lib/types";
+import AppSelect from "@/components/AppSelect";
+import SearchSelect, { type SearchSelectItem } from "@/components/SearchSelect";
 import { formatEUR, propertyPrice, hasRooms } from "@/lib/property-helpers";
 import { resizeImage } from "@/lib/image-utils";
 
@@ -724,29 +728,31 @@ export default function PropertyDetailPage() {
               <div style={{ display: "flex", gap: 8 }}>
                 <div style={{ flex: 1 }}>
                   <label style={lbl}>Typ</label>
-                  <select style={{ ...inp, height: 36, cursor: "pointer" }} value={form.type ?? "apartment"} onChange={(e) => updateForm({ type: e.target.value as PropertyType })}>
-                    <option value="apartment">Wohnung</option>
-                    <option value="house">Haus</option>
-                    <option value="land">Grundstück</option>
-                    <option value="commercial">Gewerbe</option>
-                  </select>
+                  <AppSelect
+                    value={form.type ?? "apartment"}
+                    onChange={(v) => updateForm({ type: v as PropertyType })}
+                    options={labelsToOptions(PROPERTY_TYPE_LABELS)}
+                    style={{ height: 36 }}
+                  />
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={lbl}>Vermarktung</label>
-                  <select style={{ ...inp, height: 36, cursor: "pointer" }} value={form.listing_type ?? "buy"} onChange={(e) => updateForm({ listing_type: e.target.value as SearchType })}>
-                    <option value="buy">Kauf</option>
-                    <option value="rent">Miete</option>
-                  </select>
+                  <AppSelect
+                    value={form.listing_type ?? "buy"}
+                    onChange={(v) => updateForm({ listing_type: v as SearchType })}
+                    options={labelsToOptions(LISTING_TYPE_LABELS)}
+                    style={{ height: 36 }}
+                  />
                 </div>
               </div>
               <div>
                 <label style={lbl}>Status</label>
-                <select style={{ ...inp, height: 36, cursor: "pointer" }} value={form.status ?? "available"} onChange={(e) => updateForm({ status: e.target.value as PropertyStatus })}>
-                  <option value="available">Verfügbar</option>
-                  <option value="reserved">Reserviert</option>
-                  <option value="sold">Verkauft</option>
-                  <option value="rented">Vermietet</option>
-                </select>
+                <AppSelect
+                  value={form.status ?? "available"}
+                  onChange={(v) => updateForm({ status: v as PropertyStatus })}
+                  options={labelsToOptions(PROPERTY_STATUS_LABELS)}
+                  style={{ height: 36 }}
+                />
               </div>
               <div>
                 <label style={lbl}>Beschreibung</label>
@@ -759,12 +765,37 @@ export default function PropertyDetailPage() {
               </div>
               <div>
                 <label style={lbl}>Eigentümer</label>
-                <select style={{ ...inp, height: 36, cursor: "pointer" }} value={form.owner_contact_id ?? ""} onChange={(e) => updateForm({ owner_contact_id: e.target.value || null })}>
-                  <option value="">— Kein Eigentümer —</option>
-                  {owners.map((o) => (
-                    <option key={o.id} value={o.id}>{o.first_name} {o.last_name}{o.is_archived ? " (archiviert)" : ""}</option>
-                  ))}
-                </select>
+                <SearchSelect
+                  value={form.owner_contact_id ?? null}
+                  onChange={(v) => updateForm({ owner_contact_id: v || null })}
+                  onSearch={async (q) => {
+                    const supabase = createClient();
+                    let query = supabase
+                      .from("contacts")
+                      .select("id, first_name, last_name, is_archived")
+                      .in("type", ["seller", "landlord", "both"])
+                      .order("last_name")
+                      .limit(20);
+                    if (q.trim()) {
+                      query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`);
+                    }
+                    const { data } = await query;
+                    return (data ?? []).map((o: { id: string; first_name: string; last_name: string; is_archived: boolean }) => ({
+                      value: o.id,
+                      label: `${o.first_name} ${o.last_name}`,
+                      sublabel: o.is_archived ? "archiviert" : undefined,
+                    })) as SearchSelectItem[];
+                  }}
+                  displayValue={
+                    form.owner_contact_id
+                      ? owners.find((o) => o.id === form.owner_contact_id)
+                        ? `${owners.find((o) => o.id === form.owner_contact_id)!.first_name} ${owners.find((o) => o.id === form.owner_contact_id)!.last_name}`
+                        : undefined
+                      : undefined
+                  }
+                  placeholder="Eigentümer suchen…"
+                  style={{ height: 36 }}
+                />
               </div>
 
               {/* ── Sektion: Adresse ── */}
@@ -952,11 +983,12 @@ export default function PropertyDetailPage() {
                       </div>
                       <div style={{ flex: 1 }}>
                         <label style={lbl}>Ergebnis</label>
-                        <select style={{ ...inp, height: 36, cursor: "pointer" }} value={fCallResult} onChange={(e) => setFCallResult(e.target.value)}>
-                          <option value="reached">Erreicht</option>
-                          <option value="not_reached">Nicht erreicht</option>
-                          <option value="callback">Rückruf vereinbart</option>
-                        </select>
+                        <AppSelect
+                          value={fCallResult}
+                          onChange={(v) => setFCallResult(v)}
+                          options={labelsToOptions(CALL_RESULT_LABELS)}
+                          style={{ height: 36 }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -982,11 +1014,12 @@ export default function PropertyDetailPage() {
                       </div>
                       <div style={{ flex: 1 }}>
                         <label style={lbl}>Priorität</label>
-                        <select style={{ ...inp, height: 36, cursor: "pointer" }} value={fPriority} onChange={(e) => setFPriority(e.target.value as TaskPriority)}>
-                          <option value="low">Niedrig</option>
-                          <option value="medium">Mittel</option>
-                          <option value="high">Hoch</option>
-                        </select>
+                        <AppSelect
+                          value={fPriority}
+                          onChange={(v) => setFPriority(v as TaskPriority)}
+                          options={labelsToOptions(TASK_PRIORITY_LABELS)}
+                          style={{ height: 36 }}
+                        />
                       </div>
                     </div>
                   </div>

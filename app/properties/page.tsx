@@ -18,7 +18,9 @@ import {
   PROPERTY_TYPE_BG,
   PROPERTY_STATUS_COLORS,
   LISTING_TYPE_LABELS,
+  labelsToOptions,
 } from "@/lib/types";
+import AppSelect from "@/components/AppSelect";
 import { formatAddressShort, propertyPrice, hasRooms } from "@/lib/property-helpers";
 
 // ─── Shared input styles ────────────────────────────────────────────────────
@@ -238,41 +240,28 @@ export default function PropertiesPage() {
           </div>
 
           {/* Typ-Filter */}
-          <select
+          <AppSelect
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as PropertyType | "all")}
-            style={{ height: 36, padding: "0 10px", border: "1px solid rgba(0,0,0,0.11)", borderRadius: 10, fontSize: 13, color: "var(--t1)", background: "var(--bg)", outline: "none", cursor: "pointer", fontFamily: "inherit" }}
-          >
-            <option value="all">Alle Typen</option>
-            <option value="apartment">Wohnung</option>
-            <option value="house">Haus</option>
-            <option value="land">Grundstück</option>
-            <option value="commercial">Gewerbe</option>
-          </select>
+            onChange={(v) => setTypeFilter(v as PropertyType | "all")}
+            options={[{ value: "all", label: "Alle Typen" }, ...labelsToOptions(PROPERTY_TYPE_LABELS)]}
+            style={{ height: 36, borderRadius: 10, width: "auto", minWidth: 140 }}
+          />
 
           {/* Listing-Type-Filter */}
-          <select
+          <AppSelect
             value={listingFilter}
-            onChange={(e) => setListingFilter(e.target.value as SearchType | "all")}
-            style={{ height: 36, padding: "0 10px", border: "1px solid rgba(0,0,0,0.11)", borderRadius: 10, fontSize: 13, color: "var(--t1)", background: "var(--bg)", outline: "none", cursor: "pointer", fontFamily: "inherit" }}
-          >
-            <option value="all">Kauf & Miete</option>
-            <option value="buy">Kauf</option>
-            <option value="rent">Miete</option>
-          </select>
+            onChange={(v) => setListingFilter(v as SearchType | "all")}
+            options={[{ value: "all", label: "Kauf & Miete" }, ...labelsToOptions(LISTING_TYPE_LABELS)]}
+            style={{ height: 36, borderRadius: 10, width: "auto", minWidth: 140 }}
+          />
 
           {/* Status-Filter */}
-          <select
+          <AppSelect
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as PropertyStatus | "all")}
-            style={{ height: 36, padding: "0 10px", border: "1px solid rgba(0,0,0,0.11)", borderRadius: 10, fontSize: 13, color: "var(--t1)", background: "var(--bg)", outline: "none", cursor: "pointer", fontFamily: "inherit" }}
-          >
-            <option value="all">Alle Status</option>
-            <option value="available">Verfügbar</option>
-            <option value="reserved">Reserviert</option>
-            <option value="sold">Verkauft</option>
-            <option value="rented">Vermietet</option>
-          </select>
+            onChange={(v) => setStatusFilter(v as PropertyStatus | "all")}
+            options={[{ value: "all", label: "Alle Status" }, ...labelsToOptions(PROPERTY_STATUS_LABELS)]}
+            style={{ height: 36, borderRadius: 10, width: "auto", minWidth: 140 }}
+          />
 
           {/* Archiv-Toggle */}
           <button
@@ -445,30 +434,32 @@ export default function PropertiesPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
                 <label style={lbl}>Typ</label>
-                <select style={{ ...inp, cursor: "pointer" }} value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as PropertyType }))}>
-                  <option value="apartment">Wohnung</option>
-                  <option value="house">Haus</option>
-                  <option value="land">Grundstück</option>
-                  <option value="commercial">Gewerbe</option>
-                </select>
+                <AppSelect
+                  value={form.type}
+                  onChange={(v) => setForm((f) => ({ ...f, type: v as PropertyType }))}
+                  options={labelsToOptions(PROPERTY_TYPE_LABELS)}
+                  style={{ height: 38 }}
+                />
               </div>
               <div>
                 <label style={lbl}>Vermarktung</label>
-                <select style={{ ...inp, cursor: "pointer" }} value={form.listing_type} onChange={(e) => setForm((f) => ({ ...f, listing_type: e.target.value as SearchType }))}>
-                  <option value="buy">Kauf</option>
-                  <option value="rent">Miete</option>
-                </select>
+                <AppSelect
+                  value={form.listing_type}
+                  onChange={(v) => setForm((f) => ({ ...f, listing_type: v as SearchType }))}
+                  options={labelsToOptions(LISTING_TYPE_LABELS)}
+                  style={{ height: 38 }}
+                />
               </div>
             </div>
 
             <div>
               <label style={lbl}>Status</label>
-              <select style={{ ...inp, cursor: "pointer" }} value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as PropertyStatus }))}>
-                <option value="available">Verfügbar</option>
-                <option value="reserved">Reserviert</option>
-                <option value="sold">Verkauft</option>
-                <option value="rented">Vermietet</option>
-              </select>
+              <AppSelect
+                value={form.status}
+                onChange={(v) => setForm((f) => ({ ...f, status: v as PropertyStatus }))}
+                options={labelsToOptions(PROPERTY_STATUS_LABELS)}
+                style={{ height: 38 }}
+              />
             </div>
 
             <div style={{ fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>
@@ -524,16 +515,16 @@ export default function PropertiesPage() {
 
             <div>
               <label style={lbl}>Eigentümer</label>
-              <select
-                style={{ ...inp, cursor: "pointer" }}
+              <AppSelect
                 value={form.owner_contact_id}
-                onChange={(e) => setForm((f) => ({ ...f, owner_contact_id: e.target.value }))}
-              >
-                <option value="">— Kein Eigentümer —</option>
-                {owners.map((o) => (
-                  <option key={o.id} value={o.id}>{o.first_name} {o.last_name}</option>
-                ))}
-              </select>
+                onChange={(v) => setForm((f) => ({ ...f, owner_contact_id: v }))}
+                options={[
+                  { value: "", label: "— Kein Eigentümer —" },
+                  ...owners.map((o) => ({ value: o.id, label: `${o.first_name} ${o.last_name}` })),
+                ]}
+                placeholder="Eigentümer wählen…"
+                style={{ height: 38 }}
+              />
             </div>
 
             <div>

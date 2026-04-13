@@ -16,7 +16,9 @@ import {
   CONTACT_SOURCE_LABELS,
   CONTACT_TYPE_COLORS,
   CONTACT_TYPE_BG,
+  labelsToOptions,
 } from "@/lib/types";
+import AppSelect from "@/components/AppSelect";
 
 // ─── Shared input styles ────────────────────────────────────────────────────
 const inp: React.CSSProperties = {
@@ -186,18 +188,12 @@ export default function ContactsPage() {
           </div>
 
           {/* Typ-Filter */}
-          <select
+          <AppSelect
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as ContactType | "all")}
-            style={{ height: 36, padding: "0 10px", border: "1px solid rgba(0,0,0,0.11)", borderRadius: 10, fontSize: 13, color: "var(--t1)", background: "var(--bg)", outline: "none", cursor: "pointer", fontFamily: "inherit" }}
-          >
-            <option value="all">Alle Typen</option>
-            <option value="buyer">Käufer</option>
-            <option value="seller">Verkäufer</option>
-            <option value="both">Käufer & Verkäufer</option>
-            <option value="tenant">Mieter</option>
-            <option value="landlord">Vermieter</option>
-          </select>
+            onChange={(v) => setTypeFilter(v as ContactType | "all")}
+            options={[{ value: "all", label: "Alle Typen" }, ...labelsToOptions(CONTACT_TYPE_LABELS)]}
+            style={{ height: 36, borderRadius: 10, width: "auto", minWidth: 140 }}
+          />
 
           {/* Archiv-Toggle */}
           <button
@@ -380,23 +376,21 @@ export default function ContactsPage() {
             </div>
             <div>
               <label style={lbl}>Typ</label>
-              <select style={{ ...inp, height: 38, cursor: "pointer" }} value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as ContactType }))}>
-                <option value="buyer">Käufer</option>
-                <option value="seller">Verkäufer</option>
-                <option value="both">Käufer & Verkäufer</option>
-                <option value="tenant">Mieter</option>
-                <option value="landlord">Vermieter</option>
-              </select>
+              <AppSelect
+                value={form.type}
+                onChange={(v) => setForm((f) => ({ ...f, type: v as ContactType }))}
+                options={labelsToOptions(CONTACT_TYPE_LABELS)}
+                style={{ height: 38 }}
+              />
             </div>
             <div>
               <label style={lbl}>Quelle</label>
-              <select style={{ ...inp, height: 38, cursor: "pointer" }} value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value as ContactSource }))}>
-                <option value="website">Website</option>
-                <option value="referral">Empfehlung</option>
-                <option value="portal">Portal</option>
-                <option value="cold">Kaltakquise</option>
-                <option value="other">Sonstige</option>
-              </select>
+              <AppSelect
+                value={form.source}
+                onChange={(v) => setForm((f) => ({ ...f, source: v as ContactSource }))}
+                options={labelsToOptions(CONTACT_SOURCE_LABELS)}
+                style={{ height: 38 }}
+              />
             </div>
             <div>
               <label style={lbl}>Notizen</label>

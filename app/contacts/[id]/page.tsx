@@ -16,7 +16,12 @@ import {
   PROPERTY_TYPE_BG,
   PROPERTY_STATUS_LABELS,
   PROPERTY_STATUS_COLORS,
+  CONTACT_SOURCE_LABELS,
+  SEARCH_TYPE_LABELS,
+  TASK_PRIORITY_LABELS,
+  labelsToOptions,
 } from "@/lib/types";
+import AppSelect from "@/components/AppSelect";
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 const inp: React.CSSProperties = {
@@ -567,23 +572,21 @@ export default function ContactDetailPage() {
               </div>
               <div>
                 <label style={lbl}>Typ</label>
-                <select style={{ ...inp, height: 36, cursor: "pointer" }} value={form.type ?? "buyer"} onChange={(e) => updateForm({ type: e.target.value as ContactType })}>
-                  <option value="buyer">Käufer</option>
-                  <option value="seller">Verkäufer</option>
-                  <option value="both">Käufer & Verkäufer</option>
-                  <option value="tenant">Mieter</option>
-                  <option value="landlord">Vermieter</option>
-                </select>
+                <AppSelect
+                  value={form.type ?? "buyer"}
+                  onChange={(v) => updateForm({ type: v as ContactType })}
+                  options={labelsToOptions(CONTACT_TYPE_LABELS)}
+                  style={{ height: 36 }}
+                />
               </div>
               <div>
                 <label style={lbl}>Quelle</label>
-                <select style={{ ...inp, height: 36, cursor: "pointer" }} value={form.source ?? "other"} onChange={(e) => updateForm({ source: e.target.value as ContactSource })}>
-                  <option value="website">Website</option>
-                  <option value="referral">Empfehlung</option>
-                  <option value="portal">Portal</option>
-                  <option value="cold">Kaltakquise</option>
-                  <option value="other">Sonstige</option>
-                </select>
+                <AppSelect
+                  value={form.source ?? "other"}
+                  onChange={(v) => updateForm({ source: v as ContactSource })}
+                  options={labelsToOptions(CONTACT_SOURCE_LABELS)}
+                  style={{ height: 36 }}
+                />
               </div>
               <div>
                 <label style={lbl}>Interne Notizen</label>
@@ -665,19 +668,21 @@ export default function ContactDetailPage() {
                                   <div style={{ display: "flex", gap: 8 }}>
                                     <div style={{ flex: 1 }}>
                                       <label style={lbl}>Typ</label>
-                                      <select style={{ ...inp, height: 34, cursor: "pointer" }} value={f.type ?? "buy"} onChange={(e) => updateSpField(profile.id, { type: e.target.value as SearchType })}>
-                                        <option value="buy">Kaufen</option>
-                                        <option value="rent">Mieten</option>
-                                      </select>
+                                      <AppSelect
+                                        value={f.type ?? "buy"}
+                                        onChange={(v) => updateSpField(profile.id, { type: v as SearchType })}
+                                        options={labelsToOptions(SEARCH_TYPE_LABELS)}
+                                        style={{ height: 34 }}
+                                      />
                                     </div>
                                     <div style={{ flex: 1 }}>
                                       <label style={lbl}>Immobilientyp</label>
-                                      <select style={{ ...inp, height: 34, cursor: "pointer" }} value={f.property_type ?? "apartment"} onChange={(e) => updateSpField(profile.id, { property_type: e.target.value as PropertyType })}>
-                                        <option value="apartment">Wohnung</option>
-                                        <option value="house">Haus</option>
-                                        <option value="land">Grundstück</option>
-                                        <option value="commercial">Gewerbe</option>
-                                      </select>
+                                      <AppSelect
+                                        value={f.property_type ?? "apartment"}
+                                        onChange={(v) => updateSpField(profile.id, { property_type: v as PropertyType })}
+                                        options={labelsToOptions(PROPERTY_TYPE_LABELS)}
+                                        style={{ height: 34 }}
+                                      />
                                     </div>
                                   </div>
                                   <div>
@@ -809,11 +814,12 @@ export default function ContactDetailPage() {
                       </div>
                       <div style={{ flex: 1 }}>
                         <label style={lbl}>Ergebnis</label>
-                        <select style={{ ...inp, height: 36, cursor: "pointer" }} value={fCallResult} onChange={(e) => setFCallResult(e.target.value)}>
-                          <option value="reached">Erreicht</option>
-                          <option value="not_reached">Nicht erreicht</option>
-                          <option value="callback">Rückruf vereinbart</option>
-                        </select>
+                        <AppSelect
+                          value={fCallResult}
+                          onChange={(v) => setFCallResult(v)}
+                          options={labelsToOptions(CALL_RESULT_LABELS)}
+                          style={{ height: 36 }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -828,11 +834,12 @@ export default function ContactDetailPage() {
                       </div>
                       <div style={{ flex: 1 }}>
                         <label style={lbl}>Priorität</label>
-                        <select style={{ ...inp, height: 36, cursor: "pointer" }} value={fPriority} onChange={(e) => setFPriority(e.target.value as "low" | "medium" | "high")}>
-                          <option value="low">Niedrig</option>
-                          <option value="medium">Mittel</option>
-                          <option value="high">Hoch</option>
-                        </select>
+                        <AppSelect
+                          value={fPriority}
+                          onChange={(v) => setFPriority(v as TaskPriority)}
+                          options={labelsToOptions(TASK_PRIORITY_LABELS)}
+                          style={{ height: 36 }}
+                        />
                       </div>
                     </div>
                   </div>

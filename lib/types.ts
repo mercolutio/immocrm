@@ -87,6 +87,32 @@ export const CONTACT_TYPE_BG: Record<ContactType, string> = {
   landlord: 'rgba(194,105,42,0.1)',
 }
 
+export const TASK_PRIORITY_LABELS: Record<TaskPriority, string> = {
+  low: 'Niedrig',
+  medium: 'Mittel',
+  high: 'Hoch',
+}
+
+export const CALL_RESULT_LABELS: Record<string, string> = {
+  reached: 'Erreicht',
+  not_reached: 'Nicht erreicht',
+  callback: 'Rückruf vereinbart',
+}
+
+export const SEARCH_TYPE_LABELS: Record<SearchType, string> = {
+  buy: 'Kaufen',
+  rent: 'Mieten',
+}
+
+export function labelsToOptions<T extends string>(
+  labels: Record<T, string>
+): { value: T; label: string }[] {
+  return Object.entries(labels).map(([value, label]) => ({
+    value: value as T,
+    label: label as string,
+  }));
+}
+
 export interface Contact {
   id: string
   created_at: string
