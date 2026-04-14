@@ -307,91 +307,18 @@ export default function PropertiesPage() {
   return (
     <DashboardLayout>
       {/* HEADER */}
-      <header className="header">
-        <div className="hdr-greeting">
-          <div className="hdr-title">Objekte</div>
+      <header className="page-header">
+        <div className="page-header-left">
+          <h1 className="page-title">Objekte</h1>
           {!loading && (
-            <div className="hdr-date">
+            <div className="page-subtitle">
               {totalCount === 0 ? "Noch keine Objekte" : `${totalCount} ${totalCount === 1 ? "Objekt" : "Objekte"}`}
             </div>
           )}
         </div>
-        <div className="hdr-right">
-          {/* Suche */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: 7,
-            background: "var(--bg)", border: "1px solid rgba(0,0,0,0.11)",
-            borderRadius: 10, padding: "0 11px", height: 36, width: 220,
-          }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              type="text"
-              placeholder="Titel, Adresse…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ background: "transparent", border: "none", outline: "none", fontSize: 13, color: "var(--t1)", flex: 1, fontFamily: "inherit" }}
-            />
-            {search && (
-              <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--t3)", fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
-            )}
-          </div>
-
-          {/* Typ-Filter */}
-          <AppSelect
-            value={typeFilter}
-            onChange={(v) => setTypeFilter(v as PropertyType | "all")}
-            options={[{ value: "all", label: "Alle Typen" }, ...labelsToOptions(PROPERTY_TYPE_LABELS)]}
-            style={{ height: 36, borderRadius: 10, width: "auto", minWidth: 140 }}
-          />
-
-          {/* Listing-Type-Filter */}
-          <AppSelect
-            value={listingFilter}
-            onChange={(v) => setListingFilter(v as SearchType | "all")}
-            options={[{ value: "all", label: "Kauf & Miete" }, ...labelsToOptions(LISTING_TYPE_LABELS)]}
-            style={{ height: 36, borderRadius: 10, width: "auto", minWidth: 140 }}
-          />
-
-          {/* Status-Filter */}
-          <AppSelect
-            value={statusFilter}
-            onChange={(v) => setStatusFilter(v as PropertyStatus | "all")}
-            options={[{ value: "all", label: "Alle Status" }, ...labelsToOptions(PROPERTY_STATUS_LABELS)]}
-            style={{ height: 36, borderRadius: 10, width: "auto", minWidth: 140 }}
-          />
-
-          {/* Archiv-Toggle */}
-          <button
-            onClick={() => setShowArchived((v) => !v)}
-            style={{
-              height: 36,
-              padding: "0 12px",
-              border: showArchived ? "1px solid var(--accent)" : "1px solid rgba(0,0,0,0.11)",
-              borderRadius: 10,
-              fontSize: 13,
-              color: showArchived ? "var(--accent)" : "var(--t3)",
-              background: showArchived ? "rgba(194,105,42,0.08)" : "var(--bg)",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              transition: "all 0.15s",
-            }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="21 8 21 21 3 21 3 8"/>
-              <rect x="1" y="3" width="22" height="5"/>
-              <line x1="10" y1="12" x2="14" y2="12"/>
-            </svg>
-            Archiv
-          </button>
-
-          {/* Neues Objekt */}
-          <button onClick={openSheet} className="hdr-add-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <div className="page-header-right">
+          <button onClick={openSheet} className="btn-primary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
             Neues Objekt
@@ -399,8 +326,62 @@ export default function PropertiesPage() {
         </div>
       </header>
 
+      {/* TOOLBAR */}
+      <div className="page-toolbar" style={{ flexWrap: "wrap" }}>
+        <div className="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Titel, Adresse…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="search-clear" onClick={() => setSearch("")} aria-label="Suche zurücksetzen">×</button>
+          )}
+        </div>
+
+        <AppSelect
+          value={typeFilter}
+          onChange={(v) => setTypeFilter(v as PropertyType | "all")}
+          options={[{ value: "all", label: "Alle Typen" }, ...labelsToOptions(PROPERTY_TYPE_LABELS)]}
+          style={{ height: 37, borderRadius: 8, width: "auto", minWidth: 140 }}
+        />
+
+        <AppSelect
+          value={listingFilter}
+          onChange={(v) => setListingFilter(v as SearchType | "all")}
+          options={[{ value: "all", label: "Kauf & Miete" }, ...labelsToOptions(LISTING_TYPE_LABELS)]}
+          style={{ height: 37, borderRadius: 8, width: "auto", minWidth: 140 }}
+        />
+
+        <AppSelect
+          value={statusFilter}
+          onChange={(v) => setStatusFilter(v as PropertyStatus | "all")}
+          options={[{ value: "all", label: "Alle Status" }, ...labelsToOptions(PROPERTY_STATUS_LABELS)]}
+          style={{ height: 37, borderRadius: 8, width: "auto", minWidth: 140 }}
+        />
+
+        <button
+          onClick={() => setShowArchived((v) => !v)}
+          className={showArchived ? "btn-icon active" : "btn-icon"}
+          style={{ width: "auto", padding: "0 12px", gap: 6, fontSize: 13, color: showArchived ? "var(--accent)" : "var(--t3)" }}
+          title="Archiv anzeigen"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="21 8 21 21 3 21 3 8"/>
+            <rect x="1" y="3" width="22" height="5"/>
+            <line x1="10" y1="12" x2="14" y2="12"/>
+          </svg>
+          Archiv
+        </button>
+      </div>
+
       {/* BODY */}
-      <div className="body-wrap">
+      <div className="body-wrap" style={{ paddingTop: 16 }}>
         <BulkActionBar
           count={selectedCount}
           totalCount={totalCount}
@@ -535,7 +516,7 @@ export default function PropertiesPage() {
           </div>
         ) : (
           <>
-          <div style={{ background: "var(--card)", borderRadius: 12, border: "1px solid var(--border)", overflow: "hidden" }}>
+          <div className="list-table-wrap">
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "var(--surface-subtle)", borderBottom: "1px solid var(--border)" }}>
@@ -570,9 +551,9 @@ export default function PropertiesPage() {
                             <polyline points="9 22 9 12 15 12 15 22"/>
                           </svg>
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontWeight: 500, color: "var(--t1)", fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 220 }}>
+                            <span className="cell-primary" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 220 }}>
                               {p.title}
                             </span>
                             {p.is_archived && (
@@ -581,9 +562,7 @@ export default function PropertiesPage() {
                               </span>
                             )}
                           </div>
-                          <span style={{ fontSize: 11, color: "var(--t3)" }}>
-                            {LISTING_TYPE_LABELS[p.listing_type]}
-                          </span>
+                          <div className="cell-meta">{LISTING_TYPE_LABELS[p.listing_type]}</div>
                         </div>
                       </div>
                     </td>
@@ -615,24 +594,24 @@ export default function PropertiesPage() {
                 );})}
               </tbody>
             </table>
-          </div>
 
-          {/* Pagination Footer */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, gap: 12, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--t3)" }}>
-              <span>Pro Seite:</span>
-              <AppSelect
-                value={String(pageSize)}
-                onChange={(v) => setPageSize(Number(v))}
-                options={[{ value: "25", label: "25" }, { value: "50", label: "50" }, { value: "100", label: "100" }]}
-                style={{ height: 30, borderRadius: 8, width: 70, fontSize: 12 }}
-              />
-              <span>{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalCount)} von {totalCount}</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} style={{ ...actionBtn, opacity: page <= 1 ? 0.4 : 1, cursor: page <= 1 ? "not-allowed" : "pointer" }}>← Zurück</button>
-              <span style={{ fontSize: 12, color: "var(--t2)", padding: "0 8px" }}>Seite {page} von {totalPages}</span>
-              <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages} style={{ ...actionBtn, opacity: page >= totalPages ? 0.4 : 1, cursor: page >= totalPages ? "not-allowed" : "pointer" }}>Weiter →</button>
+            {/* Pagination Footer */}
+            <div className="table-footer">
+              <div className="table-footer-info">
+                <span>Pro Seite:</span>
+                <AppSelect
+                  value={String(pageSize)}
+                  onChange={(v) => setPageSize(Number(v))}
+                  options={[{ value: "25", label: "25" }, { value: "50", label: "50" }, { value: "100", label: "100" }]}
+                  style={{ height: 28, borderRadius: 6, width: 66, fontSize: 12 }}
+                />
+                <span>{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalCount)} von {totalCount}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button className="page-btn" onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1}>← Zurück</button>
+                <span style={{ fontSize: 12, color: "var(--t2)", padding: "0 8px" }}>Seite {page} von {totalPages}</span>
+                <button className="page-btn" onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages}>Weiter →</button>
+              </div>
             </div>
           </div>
           </>

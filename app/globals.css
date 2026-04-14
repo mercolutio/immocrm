@@ -671,6 +671,64 @@ body {
 input::placeholder, textarea::placeholder { color: var(--placeholder); opacity: 1; }
 .ki-inp::placeholder { color: rgba(255,255,255,0.2); opacity: 1; }
 
+/* ═══ LIST-PAGE STRUCTUR (Pipeline/Kontakte/Objekte) ══════════════════
+ * Exakt nach design-reference/immo_crm_pipeline_redesign.html
+ * Header → Stat-Strip → Toolbar → Content (table-wrap → table-footer)
+ * Dashboard-KPIs (.kpi-strip/.kpi) bleiben davon unberührt.
+ */
+
+/* Page-Header: nur Title/Subtitle + max 2 Buttons rechts */
+.page-header        { padding: 28px 36px 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-shrink: 0; }
+.page-header-left   { flex: 1; min-width: 0; }
+.page-header-right  { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.page-title         { font-family: var(--font-display); font-size: 26px; font-weight: 500; color: var(--t1); letter-spacing: -0.5px; line-height: 1.15; }
+.page-subtitle      { font-size: 13px; color: var(--t3); margin-top: 4px; font-weight: 400; }
+
+/* Stat-Strip: flach, mit Trennlinien (nicht .kpi-strip, das gehört dem Dashboard) */
+.stat-strip         { display: flex; padding: 20px 36px 0; gap: 0; flex-shrink: 0; }
+.stat-item          { flex: 1; padding: 0 24px 0 0; min-width: 0; }
+.stat-item:not(:last-child) { border-right: 1px solid var(--border-strong); margin-right: 24px; }
+.stat-label         { font-size: 11px; font-weight: 500; color: var(--t3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+.stat-value         { font-family: var(--font-display); font-size: 22px; font-weight: 500; color: var(--t1); line-height: 1.1; letter-spacing: -0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat-value.accent  { color: var(--accent); }
+.stat-value.warn    { color: var(--red); }
+
+/* Toolbar: Suche + Filter + View-Toggle in eigener Zeile */
+.page-toolbar       { padding: 20px 36px 0; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.search-wrap        { position: relative; flex: 1; max-width: 320px; }
+.search-wrap > svg  { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--placeholder); pointer-events: none; }
+.search-input       { width: 100%; background: var(--card); border: 1px solid var(--border-strong); border-radius: 8px; padding: 0 34px 0 34px; font-size: 13px; color: var(--t1); height: 37px; outline: none; font-family: inherit;
+                      transition: border-color var(--dur-out) var(--ease-out); }
+.search-input:hover { border-color: #C4B5A8; }
+.search-input:focus { border-color: var(--accent); transition-duration: var(--dur-in); }
+.search-clear       { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; border: none; background: transparent; color: var(--t3); cursor: pointer; font-size: 16px; line-height: 1; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
+.search-clear:hover { background: var(--surface-subtle); color: var(--t1); }
+.view-toggle        { display: flex; border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; height: 37px; flex-shrink: 0; }
+.view-toggle button { background: var(--card); border: none; padding: 0 12px; color: var(--t3); cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: inherit;
+                      transition: background-color var(--dur-out) var(--ease-out), color var(--dur-out) var(--ease-out); }
+.view-toggle button.active { background: var(--accent-soft); color: var(--accent); }
+.view-toggle button + button { border-left: 1px solid var(--border-strong); }
+
+/* Content-Bereich (Body-Padding nach Prototyp) */
+.page-content       { flex: 1; overflow-y: auto; padding: 16px 36px 36px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.page-content::-webkit-scrollbar { width: 4px; }
+.page-content::-webkit-scrollbar-thumb { background: var(--bg2); border-radius: 2px; }
+
+/* Table-Wrap + Footer-Innenteil (Pagination gehört IN den Wrap) */
+.list-table-wrap    { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+.table-footer       { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; background: var(--surface-subtle); border-top: 1px solid var(--border-subtle); flex-wrap: wrap; }
+.table-footer-info  { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--t3); }
+.page-btn           { background: var(--card); border: 1px solid var(--border-strong); padding: 6px 12px; border-radius: 6px; font-size: 12px; color: var(--t2); cursor: pointer; font-family: inherit; line-height: 1;
+                      transition: background-color var(--dur-out) var(--ease-out), border-color var(--dur-out) var(--ease-out), color var(--dur-out) var(--ease-out); }
+.page-btn:hover:not(:disabled) { background: var(--surface-subtle); transition-duration: var(--dur-in); }
+.page-btn.active    { background: var(--t1); color: #fff; border-color: var(--t1); }
+.page-btn:disabled  { opacity: 0.4; cursor: not-allowed; }
+
+/* Zellen-Stacks (Name+Email, Titel+Sub) */
+.cell-primary       { font-size: 13px; font-weight: 500; color: var(--t1); line-height: 1.3; }
+.cell-meta          { font-size: 11px; color: var(--t3); margin-top: 2px; line-height: 1.3; }
+.cell-secondary     { font-size: 13px; color: var(--t3); }
+
 /* ANIMATIONS */
 @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 .anim-0 { animation: fadeUp 0.28s ease both; animation-delay: 0.02s; }

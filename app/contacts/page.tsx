@@ -225,75 +225,18 @@ export default function ContactsPage() {
   return (
     <DashboardLayout>
       {/* HEADER */}
-      <header className="header">
-        <div className="hdr-greeting">
-          <div className="hdr-title">Kontakte</div>
+      <header className="page-header">
+        <div className="page-header-left">
+          <h1 className="page-title">Kontakte</h1>
           {!loading && (
-            <div className="hdr-date">
+            <div className="page-subtitle">
               {totalCount === 0 ? "Noch keine Kontakte" : `${totalCount} ${totalCount === 1 ? "Kontakt" : "Kontakte"}`}
             </div>
           )}
         </div>
-        <div className="hdr-right">
-          {/* Suche */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: 7,
-            background: "var(--bg)", border: "1px solid rgba(0,0,0,0.11)",
-            borderRadius: 10, padding: "0 11px", height: 36, width: 210,
-          }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              type="text"
-              placeholder="Name, E-Mail, Telefon…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ background: "transparent", border: "none", outline: "none", fontSize: 13, color: "var(--t1)", flex: 1, fontFamily: "inherit" }}
-            />
-            {search && (
-              <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--t3)", fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
-            )}
-          </div>
-
-          {/* Typ-Filter */}
-          <AppSelect
-            value={typeFilter}
-            onChange={(v) => setTypeFilter(v as ContactType | "all")}
-            options={[{ value: "all", label: "Alle Typen" }, ...labelsToOptions(CONTACT_TYPE_LABELS)]}
-            style={{ height: 36, borderRadius: 10, width: "auto", minWidth: 140 }}
-          />
-
-          {/* Archiv-Toggle */}
-          <button
-            onClick={() => setShowArchived((v) => !v)}
-            style={{
-              height: 36,
-              padding: "0 12px",
-              border: showArchived ? "1px solid var(--accent)" : "1px solid rgba(0,0,0,0.11)",
-              borderRadius: 10,
-              fontSize: 13,
-              color: showArchived ? "var(--accent)" : "var(--t3)",
-              background: showArchived ? "rgba(194,105,42,0.08)" : "var(--bg)",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              transition: "all 0.15s",
-            }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="21 8 21 21 3 21 3 8"/>
-              <rect x="1" y="3" width="22" height="5"/>
-              <line x1="10" y1="12" x2="14" y2="12"/>
-            </svg>
-            Archiv
-          </button>
-
-          {/* Neuer Kontakt */}
-          <button onClick={openSheet} className="hdr-add-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <div className="page-header-right">
+          <button onClick={openSheet} className="btn-primary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
             Neuer Kontakt
@@ -301,8 +244,48 @@ export default function ContactsPage() {
         </div>
       </header>
 
+      {/* TOOLBAR */}
+      <div className="page-toolbar">
+        <div className="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Name, E-Mail, Telefon…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="search-clear" onClick={() => setSearch("")} aria-label="Suche zurücksetzen">×</button>
+          )}
+        </div>
+
+        <AppSelect
+          value={typeFilter}
+          onChange={(v) => setTypeFilter(v as ContactType | "all")}
+          options={[{ value: "all", label: "Alle Typen" }, ...labelsToOptions(CONTACT_TYPE_LABELS)]}
+          style={{ height: 37, borderRadius: 8, width: "auto", minWidth: 140 }}
+        />
+
+        <button
+          onClick={() => setShowArchived((v) => !v)}
+          className={showArchived ? "btn-icon active" : "btn-icon"}
+          style={{ width: "auto", padding: "0 12px", gap: 6, fontSize: 13, color: showArchived ? "var(--accent)" : "var(--t3)" }}
+          title="Archiv anzeigen"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="21 8 21 21 3 21 3 8"/>
+            <rect x="1" y="3" width="22" height="5"/>
+            <line x1="10" y1="12" x2="14" y2="12"/>
+          </svg>
+          Archiv
+        </button>
+      </div>
+
       {/* BODY */}
-      <div className="body-wrap">
+      <div className="body-wrap" style={{ paddingTop: 16 }}>
         {/* BulkActionBar schiebt die Liste runter */}
         <BulkActionBar
           count={selectedCount}
@@ -386,7 +369,7 @@ export default function ContactsPage() {
 
         {loading ? (
           /* Skeleton */
-          <div style={{ background: "var(--card)", borderRadius: 12, border: "1px solid var(--border)", overflow: "hidden" }}>
+          <div className="list-table-wrap">
             {[...Array(6)].map((_, i) => (
               <div key={i} style={{ display: "flex", gap: 16, padding: "16px 22px", borderBottom: i < 5 ? "1px solid var(--border-subtle)" : "none" }}>
                 {[150, 80, 140, 110, 80, 75].map((w, j) => (
@@ -426,7 +409,7 @@ export default function ContactsPage() {
         ) : (
           /* Tabelle */
           <>
-            <div style={{ background: "var(--card)", borderRadius: 12, border: "1px solid var(--border)", overflow: "hidden" }}>
+            <div className="list-table-wrap">
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "var(--surface-subtle)", borderBottom: "1px solid var(--border)" }}>
@@ -471,14 +454,17 @@ export default function ContactsPage() {
                             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "var(--accent)", flexShrink: 0, letterSpacing: "0.02em" }}>
                               {c.first_name[0]?.toUpperCase()}{c.last_name[0]?.toUpperCase()}
                             </div>
-                            <span style={{ fontWeight: 500, color: "var(--t1)", fontSize: 13 }}>
-                              {c.first_name} {c.last_name}
-                            </span>
-                            {c.is_archived && (
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 20, background: "var(--badge-gray-bg)", color: "var(--badge-gray)" }}>
-                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--badge-gray)" }}/>Archiviert
-                              </span>
-                            )}
+                            <div style={{ minWidth: 0, display: "flex", flexDirection: "column" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span className="cell-primary">{c.first_name} {c.last_name}</span>
+                                {c.is_archived && (
+                                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 20, background: "var(--badge-gray-bg)", color: "var(--badge-gray)" }}>
+                                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--badge-gray)" }}/>Archiviert
+                                  </span>
+                                )}
+                              </div>
+                              {c.email && <div className="cell-meta">{c.email}</div>}
+                            </div>
                           </div>
                         </td>
                         <td style={{ padding: "16px 22px" }}>
@@ -500,40 +486,24 @@ export default function ContactsPage() {
                   })}
                 </tbody>
               </table>
-            </div>
 
-            {/* Pagination Footer */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, gap: 12, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--t3)" }}>
-                <span>Pro Seite:</span>
-                <AppSelect
-                  value={String(pageSize)}
-                  onChange={(v) => setPageSize(Number(v))}
-                  options={[{ value: "25", label: "25" }, { value: "50", label: "50" }, { value: "100", label: "100" }]}
-                  style={{ height: 30, borderRadius: 8, width: 70, fontSize: 12 }}
-                />
-                <span>
-                  {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalCount)} von {totalCount}
-                </span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <button
-                  onClick={() => setPage(Math.max(1, page - 1))}
-                  disabled={page <= 1}
-                  style={{ ...actionBtn, opacity: page <= 1 ? 0.4 : 1, cursor: page <= 1 ? "not-allowed" : "pointer" }}
-                >
-                  ← Zurück
-                </button>
-                <span style={{ fontSize: 12, color: "var(--t2)", padding: "0 8px" }}>
-                  Seite {page} von {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage(Math.min(totalPages, page + 1))}
-                  disabled={page >= totalPages}
-                  style={{ ...actionBtn, opacity: page >= totalPages ? 0.4 : 1, cursor: page >= totalPages ? "not-allowed" : "pointer" }}
-                >
-                  Weiter →
-                </button>
+              {/* Pagination Footer */}
+              <div className="table-footer">
+                <div className="table-footer-info">
+                  <span>Pro Seite:</span>
+                  <AppSelect
+                    value={String(pageSize)}
+                    onChange={(v) => setPageSize(Number(v))}
+                    options={[{ value: "25", label: "25" }, { value: "50", label: "50" }, { value: "100", label: "100" }]}
+                    style={{ height: 28, borderRadius: 6, width: 66, fontSize: 12 }}
+                  />
+                  <span>{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalCount)} von {totalCount}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <button className="page-btn" onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1}>← Zurück</button>
+                  <span style={{ fontSize: 12, color: "var(--t2)", padding: "0 8px" }}>Seite {page} von {totalPages}</span>
+                  <button className="page-btn" onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages}>Weiter →</button>
+                </div>
               </div>
             </div>
           </>

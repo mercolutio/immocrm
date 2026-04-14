@@ -15,21 +15,21 @@ test.describe("Navigation — Sidebar & Seiten-Ladecheck", () => {
     await page.goto("/");
     await page.getByRole("link", { name: "Pipeline" }).first().click();
     await expect(page).toHaveURL(/\/pipeline/);
-    await expect(page.locator(".hdr-title")).toContainText(/Pipeline/);
+    await expect(page.locator(".page-title")).toContainText(/Pipeline/);
   });
 
   test("Sidebar navigiert zu Objekte", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("link", { name: "Objekte" }).first().click();
     await expect(page).toHaveURL(/\/properties/);
-    await expect(page.locator(".hdr-title")).toContainText(/Objekte/);
+    await expect(page.locator(".page-title")).toContainText(/Objekte/);
   });
 
   test("Sidebar navigiert zu Kontakte", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("link", { name: "Kontakte" }).first().click();
     await expect(page).toHaveURL(/\/contacts/);
-    await expect(page.locator(".hdr-title")).toContainText(/Kontakte/);
+    await expect(page.locator(".page-title")).toContainText(/Kontakte/);
   });
 
   test("Settings-Seite lädt", async ({ page }) => {

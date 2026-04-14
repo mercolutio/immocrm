@@ -11,7 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import type { Deal, PipelineStage, Contact, Property } from "@/lib/types";
+import { PROPERTY_TYPE_LABELS, type Deal, type PipelineStage, type Contact, type Property } from "@/lib/types";
 import AppSelect from "@/components/AppSelect";
 import DatePicker from "@/components/DatePicker";
 import SearchSelect from "@/components/SearchSelect";
@@ -42,8 +42,8 @@ const actionBtn: React.CSSProperties = {
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 type DealRow = Deal & {
-  contact: Pick<Contact, "id" | "first_name" | "last_name"> | null;
-  property: Pick<Property, "id" | "title" | "price" | "rent"> | null;
+  contact: Pick<Contact, "id" | "first_name" | "last_name" | "email"> | null;
+  property: Pick<Property, "id" | "title" | "price" | "rent" | "city" | "type"> | null;
 };
 
 interface NewDealForm {
@@ -111,7 +111,7 @@ export default function PipelinePage() {
     const supabase = createClient();
     const [stagesRes, dealsRes] = await Promise.all([
       supabase.from("pipeline_stages").select("*").order("position"),
-      supabase.from("deals").select("*, contact:contacts(id, first_name, last_name), property:properties(id, title, price, rent)").order("created_at", { ascending: false }),
+      supabase.from("deals").select("*, contact:contacts(id, first_name, last_name, email), property:properties(id, title, price, rent, city, type)").order("created_at", { ascending: false }),
     ]);
     if (stagesRes.error) { setError(stagesRes.error.message); setLoading(false); return; }
     if (dealsRes.error) { setError(dealsRes.error.message); setLoading(false); return; }
@@ -295,100 +295,19 @@ export default function PipelinePage() {
   return (
     <DashboardLayout>
       {/* HEADER */}
-      <header className="header">
-        <div className="hdr-greeting">
-          <div className="hdr-title">Pipeline</div>
+      <header className="page-header">
+        <div className="page-header-left">
+          <h1 className="page-title">Pipeline</h1>
           {!loading && (
-            <div className="hdr-date">
+            <div className="page-subtitle">
               {deals.length === 0 ? "Noch keine Deals" : `${deals.length} ${deals.length === 1 ? "Deal" : "Deals"}`}
               {filtered.length !== deals.length && ` · ${filtered.length} angezeigt`}
             </div>
           )}
         </div>
-        <div className="hdr-right">
-          {/* Suche */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: 7,
-            background: "var(--bg)", border: "1px solid rgba(0,0,0,0.11)",
-            borderRadius: 10, padding: "0 11px", height: 36, width: 210,
-          }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              type="text"
-              placeholder="Kontakt, Objekt…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ background: "transparent", border: "none", outline: "none", fontSize: 13, color: "var(--t1)", flex: 1, fontFamily: "inherit" }}
-            />
-            {search && (
-              <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--t3)", fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
-            )}
-          </div>
-
-          {/* Stage-Filter (nur Liste) */}
-          {view === "list" && (
-            <AppSelect
-              value={stageFilter}
-              onChange={(v) => setStageFilter(v)}
-              options={[{ value: "all", label: "Alle Stages" }, ...stages.map((s) => ({ value: s.id, label: s.name }))]}
-              style={{ height: 36, borderRadius: 10, width: "auto", minWidth: 140 }}
-            />
-          )}
-
-          {/* View-Toggle */}
-          <div style={{ display: "flex", border: "1px solid rgba(0,0,0,0.11)", borderRadius: 10, overflow: "hidden" }}>
-            <button
-              onClick={() => setView("kanban")}
-              style={{
-                height: 36, width: 38, display: "flex", alignItems: "center", justifyContent: "center",
-                background: view === "kanban" ? "var(--accent)" : "var(--bg)",
-                border: "none", cursor: "pointer", color: view === "kanban" ? "#fff" : "var(--t3)",
-                transition: "all 0.15s",
-              }}
-              title="Kanban"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/>
-              </svg>
-            </button>
-            <button
-              onClick={() => setView("list")}
-              style={{
-                height: 36, width: 38, display: "flex", alignItems: "center", justifyContent: "center",
-                background: view === "list" ? "var(--accent)" : "var(--bg)",
-                border: "none", borderLeft: "1px solid rgba(0,0,0,0.11)", cursor: "pointer", color: view === "list" ? "#fff" : "var(--t3)",
-                transition: "all 0.15s",
-              }}
-              title="Liste"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-                <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-              </svg>
-            </button>
-          </div>
-
-          {/* Settings-Link */}
-          <Link
-            href="/settings/pipeline"
-            style={{
-              width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center",
-              borderRadius: 10, border: "1px solid rgba(0,0,0,0.11)", background: "var(--bg)",
-              color: "var(--t3)", cursor: "pointer", transition: "color 0.15s, border-color 0.15s",
-            }}
-            title="Pipeline-Einstellungen"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-            </svg>
-          </Link>
-
-          {/* Neuer Deal */}
-          <button onClick={() => openSheet()} className="hdr-add-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <div className="page-header-right">
+          <button onClick={() => openSheet()} className="btn-primary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
             Neuer Deal
@@ -396,32 +315,83 @@ export default function PipelinePage() {
         </div>
       </header>
 
-      {/* STATS BAR */}
+      {/* STATS STRIP */}
       {!loading && !error && deals.length > 0 && (
-        <div style={{ padding: "0 36px", marginBottom: 8 }}>
-          <div style={{ display: "flex", background: "transparent" }}>
-            {[
-              { label: "Gesamt-Provision", value: formatEUR(stats.totalCommission), color: "var(--t1)" },
-              { label: "Gewichteter Wert", value: formatEUR(stats.weightedValue), color: "var(--accent)" },
-              { label: "Deals", value: String(stats.dealCount), color: "var(--t1)" },
-              { label: "Ø Alter", value: `${stats.avgAge} Tage`, color: "var(--t1)" },
-              { label: "Inaktiv 7+ Tage", value: String(stats.staleCount), color: stats.staleCount > 0 ? "var(--red, #EF4444)" : "var(--t1)" },
-            ].map((s, i, arr) => (
-              <div key={i} style={{ flex: 1, padding: i === 0 ? "4px 24px 4px 0" : "4px 24px", borderRight: i < arr.length - 1 ? "1px solid var(--border-strong)" : undefined }}>
-                <div style={{ fontSize: 11, fontWeight: 500, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>
-                  {s.label}
-                </div>
-                <div style={{ fontSize: 22, fontWeight: 500, color: s.color, fontFamily: "var(--font-display)", lineHeight: 1.1, letterSpacing: "-0.3px" }}>
-                  {s.value}
-                </div>
-              </div>
-            ))}
+        <div className="stat-strip">
+          <div className="stat-item">
+            <div className="stat-label">Gesamt-Provision</div>
+            <div className="stat-value">{formatEUR(stats.totalCommission)}</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-label">Gewichteter Wert</div>
+            <div className="stat-value accent">{formatEUR(stats.weightedValue)}</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-label">Deals</div>
+            <div className="stat-value">{stats.dealCount}</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-label">Ø Alter</div>
+            <div className="stat-value">{stats.avgAge} Tage</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-label">Inaktiv 7+ Tage</div>
+            <div className={stats.staleCount > 0 ? "stat-value warn" : "stat-value"}>{stats.staleCount}</div>
           </div>
         </div>
       )}
 
+      {/* TOOLBAR */}
+      <div className="page-toolbar">
+        <div className="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Kontakt, Objekt…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="search-clear" onClick={() => setSearch("")} aria-label="Suche zurücksetzen">×</button>
+          )}
+        </div>
+
+        {view === "list" && (
+          <AppSelect
+            value={stageFilter}
+            onChange={(v) => setStageFilter(v)}
+            options={[{ value: "all", label: "Alle Stages" }, ...stages.map((s) => ({ value: s.id, label: s.name }))]}
+            style={{ height: 37, borderRadius: 8, width: "auto", minWidth: 140 }}
+          />
+        )}
+
+        <div className="view-toggle">
+          <button onClick={() => setView("kanban")} className={view === "kanban" ? "active" : ""} title="Kanban" aria-label="Kanban-Ansicht">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/>
+            </svg>
+          </button>
+          <button onClick={() => setView("list")} className={view === "list" ? "active" : ""} title="Liste" aria-label="Listen-Ansicht">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <Link href="/settings/pipeline" className="btn-icon" title="Pipeline-Einstellungen" aria-label="Pipeline-Einstellungen">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+        </Link>
+      </div>
+
       {/* BODY */}
-      <div className="body-wrap" style={{ padding: view === "kanban" ? "0 0 26px 30px" : undefined }}>
+      <div className="body-wrap" style={{ padding: view === "kanban" ? "16px 0 26px 30px" : "16px 36px 40px" }}>
         {loading ? (
           <div style={{ display: "flex", gap: 16, padding: view === "kanban" ? "26px 0" : undefined }}>
             {[1, 2, 3, 4].map((i) => (
@@ -693,7 +663,7 @@ export default function PipelinePage() {
               </button>
             </BulkActionBar>
 
-            <div style={{ background: "var(--card)", borderRadius: 12, border: "1px solid var(--border)", overflow: "hidden" }}>
+            <div className="list-table-wrap">
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "var(--surface-subtle)", borderBottom: "1px solid var(--border)" }}>
@@ -711,6 +681,9 @@ export default function PipelinePage() {
                   {paginated.map((d, i) => {
                     const stage = stages.find((s) => s.id === d.stage_id);
                     const isSelected = selectedIds.has(d.id);
+                    const propSub = d.property
+                      ? [d.property.city, PROPERTY_TYPE_LABELS[d.property.type]].filter(Boolean).join(" · ")
+                      : "";
                     return (
                       <tr
                         key={d.id}
@@ -732,16 +705,24 @@ export default function PipelinePage() {
                               }}>
                                 {d.contact.first_name[0]?.toUpperCase()}{d.contact.last_name[0]?.toUpperCase()}
                               </div>
-                              <span style={{ fontWeight: 500, color: "var(--t1)", fontSize: 13 }}>
-                                {d.contact.first_name} {d.contact.last_name}
-                              </span>
+                              <div style={{ minWidth: 0 }}>
+                                <div className="cell-primary">{d.contact.first_name} {d.contact.last_name}</div>
+                                {d.contact.email && <div className="cell-meta">{d.contact.email}</div>}
+                              </div>
                             </div>
                           ) : (
                             <span style={{ color: "var(--t3)" }}>—</span>
                           )}
                         </td>
-                        <td style={{ padding: "16px 22px", fontSize: 13, color: "var(--t2)" }}>
-                          {d.property?.title ?? "—"}
+                        <td style={{ padding: "16px 22px" }}>
+                          {d.property ? (
+                            <div style={{ minWidth: 0 }}>
+                              <div className="cell-primary" style={{ color: "var(--t2)", fontWeight: 400 }}>{d.property.title}</div>
+                              {propSub && <div className="cell-meta">{propSub}</div>}
+                            </div>
+                          ) : (
+                            <span style={{ color: "var(--t3)" }}>—</span>
+                          )}
                         </td>
                         <td style={{ padding: "16px 22px" }}>
                           {stage ? (
@@ -770,24 +751,24 @@ export default function PipelinePage() {
                   })}
                 </tbody>
               </table>
-            </div>
 
-            {/* Pagination Footer */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, gap: 12, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--t3)" }}>
-                <span>Pro Seite:</span>
-                <AppSelect
-                  value={String(pageSize)}
-                  onChange={(v) => setPageSize(Number(v))}
-                  options={[{ value: "25", label: "25" }, { value: "50", label: "50" }, { value: "100", label: "100" }]}
-                  style={{ height: 30, borderRadius: 8, width: 70, fontSize: 12 }}
-                />
-                <span>{totalCount === 0 ? 0 : (page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalCount)} von {totalCount}</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} style={{ ...actionBtn, opacity: page <= 1 ? 0.4 : 1, cursor: page <= 1 ? "not-allowed" : "pointer" }}>← Zurück</button>
-                <span style={{ fontSize: 12, color: "var(--t2)", padding: "0 8px" }}>Seite {page} von {totalPages}</span>
-                <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages} style={{ ...actionBtn, opacity: page >= totalPages ? 0.4 : 1, cursor: page >= totalPages ? "not-allowed" : "pointer" }}>Weiter →</button>
+              {/* Pagination Footer (innerhalb des Wraps) */}
+              <div className="table-footer">
+                <div className="table-footer-info">
+                  <span>Pro Seite:</span>
+                  <AppSelect
+                    value={String(pageSize)}
+                    onChange={(v) => setPageSize(Number(v))}
+                    options={[{ value: "25", label: "25" }, { value: "50", label: "50" }, { value: "100", label: "100" }]}
+                    style={{ height: 28, borderRadius: 6, width: 66, fontSize: 12 }}
+                  />
+                  <span>{totalCount === 0 ? 0 : (page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalCount)} von {totalCount}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <button className="page-btn" onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1}>← Zurück</button>
+                  <span style={{ fontSize: 12, color: "var(--t2)", padding: "0 8px" }}>Seite {page} von {totalPages}</span>
+                  <button className="page-btn" onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages}>Weiter →</button>
+                </div>
               </div>
             </div>
             </>
