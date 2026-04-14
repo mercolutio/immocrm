@@ -17,9 +17,9 @@ export default function BulkActionBar({ count, totalCount, onSelectAll, onClear,
   return (
     <div
       style={{
-        maxHeight: open ? 80 : 0,
+        maxHeight: open ? 400 : 0,
         opacity: open ? 1 : 0,
-        overflow: "hidden",
+        overflow: open ? "visible" : "hidden",
         transform: open ? "translateY(0)" : "translateY(-6px)",
         transition: "max-height 180ms ease, opacity 180ms ease, transform 180ms ease, margin 180ms ease",
         marginBottom: open ? 14 : 0,

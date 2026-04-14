@@ -441,7 +441,7 @@ export default function PropertiesPage() {
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             {bulkDropdown === "status" && (
-              <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, background: "#fff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 8, boxShadow: "0 6px 20px rgba(0,0,0,0.12)", minWidth: 160, zIndex: 10, padding: 4 }}>
+              <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, background: "#fff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 8, boxShadow: "0 6px 20px rgba(0,0,0,0.12)", minWidth: 160, zIndex: 50, padding: 4 }}>
                 {(Object.keys(PROPERTY_STATUS_LABELS) as PropertyStatus[]).map((s) => (
                   <button
                     key={s}
@@ -468,7 +468,7 @@ export default function PropertiesPage() {
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             {bulkDropdown === "owner" && (
-              <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, background: "#fff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 8, boxShadow: "0 6px 20px rgba(0,0,0,0.12)", minWidth: 240, maxHeight: 280, zIndex: 10, padding: 6, display: "flex", flexDirection: "column" }}>
+              <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, background: "#fff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 8, boxShadow: "0 6px 20px rgba(0,0,0,0.12)", minWidth: 240, maxHeight: 280, zIndex: 50, padding: 6, display: "flex", flexDirection: "column" }}>
                 <input
                   placeholder="Eigentümer suchen…"
                   value={ownerSearchText}
