@@ -732,13 +732,15 @@ input::placeholder, textarea::placeholder { color: var(--placeholder); opacity: 
 /* ═══ DETAIL-HEADER (Kontakt/Objekt/Deal [id]) ════════════════════════
  * Breadcrumb-Pattern: Back-Link + Chevron + Titel Playfair 22 + Actions rechts.
  */
-.detail-header      { display: flex; align-items: center; gap: 8px; padding: 20px 36px 0; min-height: 50px; flex-shrink: 0; }
+.detail-header      { display: flex; align-items: center; gap: 10px; padding: 16px 28px; min-height: 56px; border-bottom: 1px solid var(--border-subtle); flex-shrink: 0; }
 .detail-back        { display: flex; align-items: center; gap: 5px; color: var(--t2); font-size: 13px; text-decoration: none; flex-shrink: 0;
                       transition: color var(--dur-out) var(--ease-out); }
 .detail-back:hover  { color: var(--t1); transition-duration: var(--dur-in); }
-.detail-sep         { color: var(--t3); flex-shrink: 0; margin: 0 4px; }
-.detail-title       { font-family: var(--font-display); font-size: 22px; font-weight: 500; color: var(--t1); letter-spacing: -0.3px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.detail-sep         { color: var(--t3); flex-shrink: 0; margin: 0 2px; }
+.detail-title       { font-family: var(--font-display); font-size: 16px; font-weight: 500; color: var(--t1); letter-spacing: -0.2px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .detail-actions     { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+/* Icon-Buttons im Detail-Header kompakter (matcht Prototyp 34×34) */
+.detail-actions .btn-icon { width: 34px; height: 34px; }
 
 /* ANIMATIONS */
 @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
