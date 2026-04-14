@@ -25,28 +25,7 @@ import BulkActionBar from "@/components/BulkActionBar";
 import SelectionCheckbox from "@/components/SelectionCheckbox";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { exportToCsv } from "@/lib/csv-export";
-
-// ─── Shared input styles ────────────────────────────────────────────────────
-const inp: React.CSSProperties = {
-  width: "100%",
-  height: 38,
-  border: "1px solid rgba(0,0,0,0.12)",
-  borderRadius: 7,
-  padding: "0 11px",
-  fontSize: 13,
-  color: "var(--t1)",
-  background: "#fff",
-  outline: "none",
-  fontFamily: "inherit",
-  boxSizing: "border-box",
-};
-const lbl: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 500,
-  color: "var(--t2)",
-  display: "block",
-  marginBottom: 5,
-};
+import { inp, lbl } from "@/lib/ui-tokens";
 
 const actionBtn: React.CSSProperties = {
   height: 32,
@@ -452,7 +431,7 @@ export default function ContactsPage() {
             <div style={{ background: "var(--card)", borderRadius: 20, border: "1px solid rgba(0,0,0,0.05)", overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "var(--bg)", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+                  <tr style={{ background: "var(--thead-bg)", borderBottom: "1px solid var(--row-divider)" }}>
                     <th style={{ padding: "12px 14px 12px 22px", width: 36, textAlign: "left" }}>
                       <SelectionCheckbox
                         checked={isAllSelected}
@@ -462,7 +441,7 @@ export default function ContactsPage() {
                       />
                     </th>
                     {[...["Name", "Typ", "E-Mail", "Telefon", "Quelle", "Erstellt"]].map((h) => (
-                      <th key={h} style={{ padding: "12px 22px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
+                      <th key={h} style={{ padding: "14px 22px", textAlign: "left", fontSize: 13, fontWeight: 600, color: "var(--label)", whiteSpace: "nowrap" }}>
                         {h}
                       </th>
                     ))}
@@ -477,19 +456,19 @@ export default function ContactsPage() {
                         className="h-row"
                         onClick={() => router.push(`/contacts/${c.id}`)}
                         style={{
-                          borderBottom: i < filtered.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none",
+                          borderBottom: i < filtered.length - 1 ? "1px solid var(--row-divider)" : "none",
                           opacity: c.is_archived ? 0.6 : 1,
                           background: isSelected ? "rgba(194,105,42,0.04)" : undefined,
                         }}
                       >
-                        <td style={{ padding: "14px 14px 14px 22px", width: 36 }} onClick={(e) => e.stopPropagation()}>
+                        <td style={{ padding: "17px 14px 17px 22px", width: 36 }} onClick={(e) => e.stopPropagation()}>
                           <SelectionCheckbox
                             checked={isSelected}
                             onChange={() => toggle(c.id)}
                             ariaLabel={`${c.first_name} ${c.last_name} auswählen`}
                           />
                         </td>
-                        <td style={{ padding: "14px 22px" }}>
+                        <td style={{ padding: "17px 22px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #C2692A, #E8955A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "#fff", flexShrink: 0, letterSpacing: "0.02em" }}>
                               {c.first_name[0]?.toUpperCase()}{c.last_name[0]?.toUpperCase()}
@@ -498,21 +477,21 @@ export default function ContactsPage() {
                               {c.first_name} {c.last_name}
                             </span>
                             {c.is_archived && (
-                              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: "var(--bg2)", color: "var(--t3)" }}>Archiviert</span>
+                              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: "var(--bg2)", color: "var(--t2)" }}>Archiviert</span>
                             )}
                           </div>
                         </td>
-                        <td style={{ padding: "14px 22px" }}>
+                        <td style={{ padding: "17px 22px" }}>
                           <span style={{ display: "inline-flex", alignItems: "center", fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: CONTACT_TYPE_BG[c.type], color: CONTACT_TYPE_COLORS[c.type] }}>
                             {CONTACT_TYPE_LABELS[c.type]}
                           </span>
                         </td>
-                        <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>{c.email ?? "—"}</td>
-                        <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>{c.phone ?? "—"}</td>
-                        <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>
+                        <td style={{ padding: "17px 22px", fontSize: 13, color: "var(--t2)" }}>{c.email ?? "—"}</td>
+                        <td style={{ padding: "17px 22px", fontSize: 13, color: "var(--t2)" }}>{c.phone ?? "—"}</td>
+                        <td style={{ padding: "17px 22px", fontSize: 13, color: "var(--t2)" }}>
                           {CONTACT_SOURCE_LABELS[c.source] ?? c.source}
                         </td>
-                        <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t3)", whiteSpace: "nowrap" }}>
+                        <td style={{ padding: "17px 22px", fontSize: 13, color: "var(--t2)", whiteSpace: "nowrap" }}>
                           {fmtDate(c.created_at)}
                         </td>
                       </tr>

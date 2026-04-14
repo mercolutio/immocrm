@@ -22,6 +22,7 @@ import {
   labelsToOptions,
 } from "@/lib/types";
 import AppSelect from "@/components/AppSelect";
+import DatePicker from "@/components/DatePicker";
 import SearchSelect from "@/components/SearchSelect";
 import {
   Sheet,
@@ -30,29 +31,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
-// ─── Styles ─────────────────────────────────────────────────────────────────
-const inp: React.CSSProperties = {
-  width: "100%",
-  height: 37,
-  border: "1px solid rgba(0,0,0,0.11)",
-  borderRadius: 8,
-  padding: "0 11px",
-  fontSize: 13,
-  color: "var(--t1)",
-  background: "var(--bg)",
-  outline: "none",
-  fontFamily: "inherit",
-  boxSizing: "border-box",
-};
-const lbl: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 500,
-  color: "var(--t3)",
-  display: "block",
-  marginBottom: 4,
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
-};
+import { inp, lbl } from "@/lib/ui-tokens";
 
 const ACTIVITY_COLORS: Record<string, { bg: string; color: string }> = {
   note:        { bg: "var(--blu-bg)",  color: "var(--blu)" },
@@ -109,7 +88,7 @@ function LinkSection({
         )}
       </div>
       {children || (
-        <div style={{ padding: "20px 14px", textAlign: "center", fontSize: 12, color: "var(--t3)" }}>
+        <div style={{ padding: "20px 14px", textAlign: "center", fontSize: 12, color: "var(--t2)" }}>
           Noch keine Verknüpfungen
         </div>
       )}
@@ -736,7 +715,7 @@ export default function ContactDetailPage() {
                     {/* Profil-Karten */}
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                         {searchProfiles.length === 0 && (
-                          <div style={{ fontSize: 12, color: "var(--t3)", padding: "6px 0" }}>Noch keine Suchprofile</div>
+                          <div style={{ fontSize: 12, color: "var(--t2)", padding: "6px 0" }}>Noch keine Suchprofile</div>
                         )}
                         {searchProfiles.map((profile) => {
                           const f = spForms[profile.id] ?? {};
@@ -817,7 +796,7 @@ export default function ContactDetailPage() {
 
             </div>
 
-            <div style={{ flexShrink: 0, padding: "10px 20px", borderTop: "1px solid var(--border)", fontSize: 11, color: "var(--t3)", lineHeight: 1.6 }}>
+            <div style={{ flexShrink: 0, padding: "10px 20px", borderTop: "1px solid var(--border)", fontSize: 11, color: "var(--t2)", lineHeight: 1.6 }}>
               Erstellt {contact ? fmtDate(contact.created_at) : "—"}<br />
               Geändert {contact ? fmtDate(contact.updated_at) : "—"}
             </div>
@@ -993,14 +972,14 @@ export default function ContactDetailPage() {
             {/* Timeline */}
             <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
               {timeline.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "40px 0", fontSize: 13, color: "var(--t3)" }}>
+                <div style={{ textAlign: "center", padding: "40px 0", fontSize: 13, color: "var(--t2)" }}>
                   Noch keine Aktivitäten vorhanden
                 </div>
               ) : (
                 timeline.map((item, i) => {
                   const source = getSource(item);
                   const dealBadge = source === "deal" ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11, color: "var(--t3)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11, color: "var(--t2)" }}>
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                       <span>via Deal</span>
                     </div>
@@ -1015,12 +994,12 @@ export default function ContactDetailPage() {
                               <ActivityIcon type="task" size={11} />
                             </div>
                             <span style={{ fontSize: 11, fontWeight: 600, color: ACTIVITY_COLORS.task.color, textTransform: "uppercase", letterSpacing: "0.07em" }}>Aufgabe</span>
-                            <span style={{ fontSize: 11, color: "var(--t3)", marginLeft: "auto" }}>{fmtDateTime(item.created_at)}</span>
+                            <span style={{ fontSize: 11, color: "var(--t2)", marginLeft: "auto" }}>{fmtDateTime(item.created_at)}</span>
                           </div>
                           <div style={{ fontSize: 13, color: "var(--t1)", lineHeight: 1.6 }}>{item.title}</div>
                           <div style={{ display: "flex", gap: 8, marginTop: 5 }}>
-                            <span style={{ fontSize: 11, color: "var(--t3)" }}>Priorität: {PRIORITY_LABELS[item.priority]}</span>
-                            {item.due_date && <span style={{ fontSize: 11, color: "var(--t3)" }}>· Fällig: {fmtDateTime(item.due_date)}</span>}
+                            <span style={{ fontSize: 11, color: "var(--t2)" }}>Priorität: {PRIORITY_LABELS[item.priority]}</span>
+                            {item.due_date && <span style={{ fontSize: 11, color: "var(--t2)" }}>· Fällig: {fmtDateTime(item.due_date)}</span>}
                           </div>
                           {dealBadge}
                         </div>
@@ -1043,11 +1022,11 @@ export default function ContactDetailPage() {
                             <ActivityIcon type={itemType} size={11} />
                           </div>
                           <span style={{ fontSize: 11, fontWeight: 600, color: ACTIVITY_COLORS[itemType]?.color ?? "var(--t3)", textTransform: "uppercase", letterSpacing: "0.07em" }}>{typeLabel}</span>
-                          <span style={{ fontSize: 11, color: "var(--t3)", marginLeft: "auto" }}>{fmtDateTime(dateStr)}</span>
+                          <span style={{ fontSize: 11, color: "var(--t2)", marginLeft: "auto" }}>{fmtDateTime(dateStr)}</span>
                         </div>
                         <div style={{ fontSize: 13, color: "var(--t1)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{content}</div>
                         {extraNotes && (
-                          <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 4 }}>{extraNotes}</div>
+                          <div style={{ fontSize: 12, color: "var(--t2)", marginTop: 4 }}>{extraNotes}</div>
                         )}
                         {dealBadge}
                       </div>
@@ -1136,7 +1115,7 @@ export default function ContactDetailPage() {
                         <div style={{ fontSize: 13, fontWeight: 500, color: "var(--t1)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {p.title}
                         </div>
-                        <div style={{ fontSize: 11, color: "var(--t3)" }}>
+                        <div style={{ fontSize: 11, color: "var(--t2)" }}>
                           {PROPERTY_TYPE_LABELS[p.type]}
                         </div>
                       </div>
@@ -1279,7 +1258,7 @@ export default function ContactDetailPage() {
 
             <div>
               <label style={lbl}>Erwarteter Abschluss</label>
-              <input style={inp} type="date" value={dealForm.expected_close_date} onChange={(e) => setDealForm((f) => ({ ...f, expected_close_date: e.target.value }))} />
+              <DatePicker value={dealForm.expected_close_date || null} onChange={(v) => setDealForm((f) => ({ ...f, expected_close_date: v ?? "" }))} />
             </div>
 
             <div>

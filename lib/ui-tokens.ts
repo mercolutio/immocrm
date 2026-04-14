@@ -4,25 +4,23 @@ import type { CSSProperties } from "react";
 export const inp: CSSProperties = {
   width: "100%",
   height: 37,
-  border: "1px solid rgba(0,0,0,0.11)",
+  border: "1px solid var(--input-border)",
   borderRadius: 8,
   padding: "0 11px",
   fontSize: 13,
   color: "var(--t1)",
-  background: "var(--bg)",
+  background: "var(--input-bg)",
   outline: "none",
   fontFamily: "inherit",
   boxSizing: "border-box",
 };
 
 export const lbl: CSSProperties = {
-  fontSize: 11,
+  fontSize: 13,
   fontWeight: 500,
-  color: "var(--t3)",
+  color: "var(--label)",
   display: "block",
-  marginBottom: 4,
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
+  marginBottom: 6,
 };
 
 // ─── Activity-Typ-Farben (Timeline, Icons, Badges) ─────────────────────────

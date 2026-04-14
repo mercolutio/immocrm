@@ -28,28 +28,7 @@ import BulkActionBar from "@/components/BulkActionBar";
 import SelectionCheckbox from "@/components/SelectionCheckbox";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { exportToCsv } from "@/lib/csv-export";
-
-// ─── Shared input styles ────────────────────────────────────────────────────
-const inp: React.CSSProperties = {
-  width: "100%",
-  height: 38,
-  border: "1px solid rgba(0,0,0,0.12)",
-  borderRadius: 7,
-  padding: "0 11px",
-  fontSize: 13,
-  color: "var(--t1)",
-  background: "#fff",
-  outline: "none",
-  fontFamily: "inherit",
-  boxSizing: "border-box",
-};
-const lbl: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 500,
-  color: "var(--t2)",
-  display: "block",
-  marginBottom: 5,
-};
+import { inp, lbl } from "@/lib/ui-tokens";
 
 const actionBtn: React.CSSProperties = {
   height: 32,
@@ -561,12 +540,12 @@ export default function PropertiesPage() {
           <div style={{ background: "var(--card)", borderRadius: 20, border: "1px solid rgba(0,0,0,0.05)", overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "var(--bg)", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
-                  <th style={{ padding: "12px 14px 12px 22px", width: 36, textAlign: "left" }}>
+                <tr style={{ background: "var(--thead-bg)", borderBottom: "1px solid var(--row-divider)" }}>
+                  <th style={{ padding: "14px 14px 14px 22px", width: 36, textAlign: "left" }}>
                     <SelectionCheckbox checked={isAllSelected} indeterminate={isSomeSelected} onChange={toggleAll} ariaLabel="Alle auswählen" />
                   </th>
                   {["Objekt", "Typ", "Adresse", "Status", "Preis", "Eigentümer", "Erstellt"].map((h) => (
-                    <th key={h} style={{ padding: "12px 22px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
+                    <th key={h} style={{ padding: "14px 22px", textAlign: "left", fontSize: 13, fontWeight: 600, color: "var(--label)", whiteSpace: "nowrap" }}>
                       {h}
                     </th>
                   ))}
@@ -580,12 +559,12 @@ export default function PropertiesPage() {
                     key={p.id}
                     className="h-row"
                     onClick={() => router.push(`/properties/${p.id}`)}
-                    style={{ borderBottom: i < filtered.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none", opacity: p.is_archived ? 0.6 : 1, background: isSelected ? "rgba(194,105,42,0.04)" : undefined }}
+                    style={{ borderBottom: i < filtered.length - 1 ? "1px solid var(--row-divider)" : "none", opacity: p.is_archived ? 0.6 : 1, background: isSelected ? "rgba(194,105,42,0.04)" : undefined }}
                   >
-                    <td style={{ padding: "14px 14px 14px 22px", width: 36 }} onClick={(e) => e.stopPropagation()}>
+                    <td style={{ padding: "17px 14px 17px 22px", width: 36 }} onClick={(e) => e.stopPropagation()}>
                       <SelectionCheckbox checked={isSelected} onChange={() => toggle(p.id)} ariaLabel={`${p.title} auswählen`} />
                     </td>
-                    <td style={{ padding: "14px 22px" }}>
+                    <td style={{ padding: "17px 22px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <div style={{ width: 32, height: 32, borderRadius: 8, background: PROPERTY_TYPE_BG[p.type], display: "flex", alignItems: "center", justifyContent: "center", color: PROPERTY_TYPE_COLORS[p.type], flexShrink: 0 }}>
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -599,35 +578,35 @@ export default function PropertiesPage() {
                               {p.title}
                             </span>
                             {p.is_archived && (
-                              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: "var(--bg2)", color: "var(--t3)" }}>Archiviert</span>
+                              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: "var(--bg2)", color: "var(--t2)" }}>Archiviert</span>
                             )}
                           </div>
-                          <span style={{ fontSize: 11, color: "var(--t3)" }}>
+                          <span style={{ fontSize: 11, color: "var(--t2)" }}>
                             {LISTING_TYPE_LABELS[p.listing_type]}
                           </span>
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: "14px 22px" }}>
+                    <td style={{ padding: "17px 22px" }}>
                       <span style={{ display: "inline-flex", alignItems: "center", fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: PROPERTY_TYPE_BG[p.type], color: PROPERTY_TYPE_COLORS[p.type] }}>
                         {PROPERTY_TYPE_LABELS[p.type]}
                       </span>
                     </td>
-                    <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>
+                    <td style={{ padding: "17px 22px", fontSize: 13, color: "var(--t2)" }}>
                       {formatAddressShort(p)}
                     </td>
-                    <td style={{ padding: "14px 22px" }}>
+                    <td style={{ padding: "17px 22px" }}>
                       <span style={{ display: "inline-flex", alignItems: "center", fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: PROPERTY_STATUS_COLORS[p.status].bg, color: PROPERTY_STATUS_COLORS[p.status].fg }}>
                         {PROPERTY_STATUS_LABELS[p.status]}
                       </span>
                     </td>
-                    <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t1)", fontWeight: 500, whiteSpace: "nowrap" }}>
+                    <td style={{ padding: "17px 22px", fontSize: 13, color: "var(--t1)", fontWeight: 500, whiteSpace: "nowrap" }}>
                       {propertyPrice(p)}
                     </td>
-                    <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>
+                    <td style={{ padding: "17px 22px", fontSize: 13, color: "var(--t2)" }}>
                       {p.owner ? `${p.owner.first_name} ${p.owner.last_name}` : "—"}
                     </td>
-                    <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t3)", whiteSpace: "nowrap" }}>
+                    <td style={{ padding: "17px 22px", fontSize: 13, color: "var(--t2)", whiteSpace: "nowrap" }}>
                       {fmtDate(p.created_at)}
                     </td>
                   </tr>

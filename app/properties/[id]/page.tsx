@@ -24,6 +24,7 @@ import {
   labelsToOptions,
 } from "@/lib/types";
 import AppSelect from "@/components/AppSelect";
+import DatePicker from "@/components/DatePicker";
 import SearchSelect, { type SearchSelectItem } from "@/components/SearchSelect";
 import { formatEUR, propertyPrice, hasRooms } from "@/lib/property-helpers";
 import { resizeImage } from "@/lib/image-utils";
@@ -34,29 +35,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
-// ─── Styles ─────────────────────────────────────────────────────────────────
-const inp: React.CSSProperties = {
-  width: "100%",
-  height: 37,
-  border: "1px solid rgba(0,0,0,0.11)",
-  borderRadius: 8,
-  padding: "0 11px",
-  fontSize: 13,
-  color: "var(--t1)",
-  background: "var(--bg)",
-  outline: "none",
-  fontFamily: "inherit",
-  boxSizing: "border-box",
-};
-const lbl: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 500,
-  color: "var(--t3)",
-  display: "block",
-  marginBottom: 4,
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
-};
+import { inp, lbl } from "@/lib/ui-tokens";
 
 const ACTIVITY_COLORS: Record<string, { bg: string; color: string }> = {
   note:    { bg: "var(--blu-bg)", color: "var(--blu)" },
@@ -124,7 +103,7 @@ function LinkSection({ icon, title, count, onAdd, children }: { icon: React.Reac
         )}
       </div>
       {children ?? (
-        <div style={{ padding: "20px 14px", textAlign: "center", fontSize: 12, color: "var(--t3)" }}>
+        <div style={{ padding: "20px 14px", textAlign: "center", fontSize: 12, color: "var(--t2)" }}>
           Noch keine Einträge
         </div>
       )}
@@ -803,7 +782,7 @@ export default function PropertyDetailPage() {
                         <circle cx="8.5" cy="8.5" r="1.5"/>
                         <polyline points="21 15 16 10 5 21"/>
                       </svg>
-                      <span style={{ fontSize: 12, color: "var(--t3)", fontWeight: 500 }}>Fotos hinzufügen</span>
+                      <span style={{ fontSize: 12, color: "var(--t2)", fontWeight: 500 }}>Fotos hinzufügen</span>
                     </>
                   )}
                 </div>
@@ -1154,7 +1133,7 @@ export default function PropertyDetailPage() {
 
             </div>
 
-            <div style={{ flexShrink: 0, padding: "10px 20px", borderTop: "1px solid var(--border)", fontSize: 11, color: "var(--t3)", lineHeight: 1.6 }}>
+            <div style={{ flexShrink: 0, padding: "10px 20px", borderTop: "1px solid var(--border)", fontSize: 11, color: "var(--t2)", lineHeight: 1.6 }}>
               Erstellt {property ? fmtDate(property.created_at) : "—"}<br />
               Geändert {property ? fmtDate(property.updated_at) : "—"}
             </div>
@@ -1327,14 +1306,14 @@ export default function PropertyDetailPage() {
             {/* Timeline */}
             <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
               {timeline.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "40px 0", fontSize: 13, color: "var(--t3)" }}>
+                <div style={{ textAlign: "center", padding: "40px 0", fontSize: 13, color: "var(--t2)" }}>
                   Noch keine Aktivitäten vorhanden
                 </div>
               ) : (
                 timeline.map((item, i) => {
                   const source = getSource(item);
                   const dealBadge = source === "deal" ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11, color: "var(--t3)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11, color: "var(--t2)" }}>
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                       <span>via Deal</span>
                     </div>
@@ -1349,12 +1328,12 @@ export default function PropertyDetailPage() {
                               <ActivityIcon type="task" size={11} />
                             </div>
                             <span style={{ fontSize: 11, fontWeight: 600, color: ACTIVITY_COLORS.task.color, textTransform: "uppercase", letterSpacing: "0.07em" }}>Aufgabe</span>
-                            <span style={{ fontSize: 11, color: "var(--t3)", marginLeft: "auto" }}>{fmtDateTime(item.created_at)}</span>
+                            <span style={{ fontSize: 11, color: "var(--t2)", marginLeft: "auto" }}>{fmtDateTime(item.created_at)}</span>
                           </div>
                           <div style={{ fontSize: 13, color: "var(--t1)", lineHeight: 1.6 }}>{item.title}</div>
                           <div style={{ display: "flex", gap: 8, marginTop: 5 }}>
-                            <span style={{ fontSize: 11, color: "var(--t3)" }}>Priorität: {PRIORITY_LABELS[item.priority]}</span>
-                            {item.due_date && <span style={{ fontSize: 11, color: "var(--t3)" }}>· Fällig: {fmtDateTime(item.due_date)}</span>}
+                            <span style={{ fontSize: 11, color: "var(--t2)" }}>Priorität: {PRIORITY_LABELS[item.priority]}</span>
+                            {item.due_date && <span style={{ fontSize: 11, color: "var(--t2)" }}>· Fällig: {fmtDateTime(item.due_date)}</span>}
                           </div>
                           {dealBadge}
                         </div>
@@ -1377,11 +1356,11 @@ export default function PropertyDetailPage() {
                             <ActivityIcon type={itemType} size={11} />
                           </div>
                           <span style={{ fontSize: 11, fontWeight: 600, color: ACTIVITY_COLORS[itemType]?.color ?? "var(--t3)", textTransform: "uppercase", letterSpacing: "0.07em" }}>{typeLabel}</span>
-                          <span style={{ fontSize: 11, color: "var(--t3)", marginLeft: "auto" }}>{fmtDateTime(dateStr)}</span>
+                          <span style={{ fontSize: 11, color: "var(--t2)", marginLeft: "auto" }}>{fmtDateTime(dateStr)}</span>
                         </div>
                         <div style={{ fontSize: 13, color: "var(--t1)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{content}</div>
                         {extraNotes && (
-                          <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 4 }}>{extraNotes}</div>
+                          <div style={{ fontSize: 12, color: "var(--t2)", marginTop: 4 }}>{extraNotes}</div>
                         )}
                         {dealBadge}
                       </div>
@@ -1416,24 +1395,24 @@ export default function PropertyDetailPage() {
                 <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t3)", marginBottom: 10 }}>Eckdaten</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-                    <span style={{ color: "var(--t3)" }}>{property.listing_type === "rent" ? "Miete" : "Preis"}</span>
+                    <span style={{ color: "var(--t2)" }}>{property.listing_type === "rent" ? "Miete" : "Preis"}</span>
                     <span style={{ color: "var(--t1)", fontWeight: 500 }}>{propertyPrice(property)}</span>
                   </div>
                   {property.area_sqm != null && (
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-                      <span style={{ color: "var(--t3)" }}>Fläche</span>
+                      <span style={{ color: "var(--t2)" }}>Fläche</span>
                       <span style={{ color: "var(--t1)", fontWeight: 500 }}>{property.area_sqm} m²</span>
                     </div>
                   )}
                   {property.rooms != null && (
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-                      <span style={{ color: "var(--t3)" }}>Zimmer</span>
+                      <span style={{ color: "var(--t2)" }}>Zimmer</span>
                       <span style={{ color: "var(--t1)", fontWeight: 500 }}>{property.rooms}</span>
                     </div>
                   )}
                   {property.area_sqm != null && property.price != null && property.listing_type === "buy" && (
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, paddingTop: 6, borderTop: "1px dashed var(--border)" }}>
-                      <span style={{ color: "var(--t3)" }}>Preis/m²</span>
+                      <span style={{ color: "var(--t2)" }}>Preis/m²</span>
                       <span style={{ color: "var(--t1)", fontWeight: 500 }}>{formatEUR(Math.round(property.price / property.area_sqm))}</span>
                     </div>
                   )}
@@ -1465,7 +1444,7 @@ export default function PropertyDetailPage() {
                       )}
                     </div>
                     {owner.email && (
-                      <div style={{ fontSize: 11, color: "var(--t3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ fontSize: 11, color: "var(--t2)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {owner.email}
                       </div>
                     )}
@@ -1489,7 +1468,7 @@ export default function PropertyDetailPage() {
               }
             >
               {interessenten.length === 0 ? (
-                <div style={{ padding: "16px 14px", textAlign: "center", fontSize: 12, color: "var(--t3)" }}>
+                <div style={{ padding: "16px 14px", textAlign: "center", fontSize: 12, color: "var(--t2)" }}>
                   Keine passenden Suchprofile
                 </div>
               ) : (
@@ -1509,7 +1488,7 @@ export default function PropertyDetailPage() {
                           {sp.contact.first_name} {sp.contact.last_name}
                         </div>
                         {sp.max_price && (
-                          <div style={{ fontSize: 10, color: "var(--t3)" }}>
+                          <div style={{ fontSize: 10, color: "var(--t2)" }}>
                             max. {formatEUR(sp.max_price)}
                           </div>
                         )}
@@ -1600,7 +1579,7 @@ export default function PropertyDetailPage() {
             <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid var(--border)", flexShrink: 0, gap: 10 }}>
               <div style={{ fontSize: 15, fontWeight: 500, color: "var(--t1)", flex: 1 }}>
                 Fotos verwalten
-                <span style={{ fontSize: 12, fontWeight: 400, color: "var(--t3)", marginLeft: 8 }}>{images.length} Foto{images.length !== 1 ? "s" : ""}</span>
+                <span style={{ fontSize: 12, fontWeight: 400, color: "var(--t2)", marginLeft: 8 }}>{images.length} Foto{images.length !== 1 ? "s" : ""}</span>
               </div>
 
               {/* Cover Button — always visible when images exist */}
@@ -1690,7 +1669,7 @@ export default function PropertyDetailPage() {
                   <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
                 </svg>
                 <span style={{ fontSize: 14, color: "var(--t2)", fontWeight: 500 }}>Fotos hierher ziehen</span>
-                <span style={{ fontSize: 12, color: "var(--t3)" }}>oder</span>
+                <span style={{ fontSize: 12, color: "var(--t2)" }}>oder</span>
                 <button
                   onClick={() => galleryFileRef.current?.click()}
                   className="btn-primary"
@@ -1880,7 +1859,7 @@ export default function PropertyDetailPage() {
 
             <div>
               <label style={lbl}>Erwarteter Abschluss</label>
-              <input style={inp} type="date" value={dealForm.expected_close_date} onChange={(e) => setDealForm((f) => ({ ...f, expected_close_date: e.target.value }))} />
+              <DatePicker value={dealForm.expected_close_date || null} onChange={(v) => setDealForm((f) => ({ ...f, expected_close_date: v ?? "" }))} />
             </div>
 
             <div>
