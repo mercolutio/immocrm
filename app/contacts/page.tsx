@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/lib/supabase/client";
@@ -19,6 +19,12 @@ import {
   labelsToOptions,
 } from "@/lib/types";
 import AppSelect from "@/components/AppSelect";
+import { useSelection } from "@/hooks/useSelection";
+import { usePagination } from "@/hooks/usePagination";
+import BulkActionBar from "@/components/BulkActionBar";
+import SelectionCheckbox from "@/components/SelectionCheckbox";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { exportToCsv } from "@/lib/csv-export";
 
 // ─── Shared input styles ────────────────────────────────────────────────────
 const inp: React.CSSProperties = {
@@ -40,6 +46,22 @@ const lbl: React.CSSProperties = {
   color: "var(--t2)",
   display: "block",
   marginBottom: 5,
+};
+
+const actionBtn: React.CSSProperties = {
+  height: 32,
+  padding: "0 12px",
+  fontSize: 12,
+  fontWeight: 500,
+  color: "var(--t1)",
+  background: "var(--bg)",
+  border: "1px solid rgba(0,0,0,0.1)",
+  borderRadius: 7,
+  cursor: "pointer",
+  fontFamily: "inherit",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
 };
 
 // ─── Form type ──────────────────────────────────────────────────────────────
@@ -67,6 +89,7 @@ const EMPTY: NewContactForm = {
 export default function ContactsPage() {
   const router = useRouter();
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -77,38 +100,106 @@ export default function ContactsPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
+  const { page, setPage, pageSize, setPageSize } = usePagination("contacts");
+  const { selectedIds, toggle, toggleAll, clear, setAll, isAllSelected, isSomeSelected, selectedCount } = useSelection(contacts);
+
+  const [bulkActionOpen, setBulkActionOpen] = useState<null | "type" | "archive">(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  // Build the filter-predicate for a Supabase query (used by list + "select all")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function applyFilters(q: any): any {
+    let query = q.eq("is_archived", showArchived);
+    if (typeFilter !== "all") query = query.eq("type", typeFilter);
+    if (search.trim()) {
+      const s = search.trim().replace(/[,()]/g, " ");
+      query = query.or(
+        `first_name.ilike.%${s}%,last_name.ilike.%${s}%,email.ilike.%${s}%,phone.ilike.%${s}%`
+      );
+    }
+    return query;
+  }
+
   async function fetchContacts() {
     setLoading(true);
     setError(null);
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from("contacts")
-      .select("*")
-      .eq("is_archived", showArchived)
-      .order("created_at", { ascending: false });
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    let query = supabase.from("contacts").select("*", { count: "exact" });
+    query = applyFilters(query);
+    query = query.order("created_at", { ascending: false }).range(from, to);
+    const { data, error, count } = await query;
     if (error) setError(error.message);
-    else setContacts(data ?? []);
+    else {
+      setContacts(data ?? []);
+      setTotalCount(count ?? 0);
+    }
     setLoading(false);
   }
 
-  useEffect(() => { fetchContacts(); }, [showArchived]);
+  useEffect(() => { fetchContacts(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [showArchived, typeFilter, search, page, pageSize]);
 
-  async function handleRestore(contactId: string) {
+  // Reset page to 1 when filters change (search handled via debouncing would be nicer, but ok)
+  useEffect(() => { setPage(1); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [showArchived, typeFilter, search]);
+
+  async function handleSelectAllAcrossPages() {
     const supabase = createClient();
-    await supabase.from("contacts").update({ is_archived: false }).eq("id", contactId);
-    setContacts((prev) => prev.filter((c) => c.id !== contactId));
+    let query = supabase.from("contacts").select("id");
+    query = applyFilters(query);
+    const { data } = await query;
+    if (data) setAll((data as { id: string }[]).map((d) => d.id));
   }
 
-  const filtered = useMemo(() => contacts.filter((c) => {
-    const q = search.toLowerCase();
-    const matchSearch =
-      !q ||
-      `${c.first_name} ${c.last_name}`.toLowerCase().includes(q) ||
-      (c.email?.toLowerCase().includes(q) ?? false) ||
-      (c.phone?.includes(q) ?? false);
-    const matchType = typeFilter === "all" || c.type === typeFilter;
-    return matchSearch && matchType;
-  }), [contacts, search, typeFilter]);
+  async function handleBulkTypeChange(newType: ContactType) {
+    setBulkBusy(true);
+    const supabase = createClient();
+    await supabase.from("contacts").update({ type: newType }).in("id", Array.from(selectedIds));
+    setBulkActionOpen(null);
+    clear();
+    await fetchContacts();
+    setBulkBusy(false);
+  }
+
+  async function handleBulkArchiveToggle() {
+    setBulkBusy(true);
+    const supabase = createClient();
+    await supabase.from("contacts").update({ is_archived: !showArchived }).in("id", Array.from(selectedIds));
+    clear();
+    await fetchContacts();
+    setBulkBusy(false);
+  }
+
+  async function handleBulkDelete() {
+    setBulkBusy(true);
+    const supabase = createClient();
+    await supabase.from("contacts").delete().in("id", Array.from(selectedIds));
+    setConfirmDelete(false);
+    clear();
+    await fetchContacts();
+    setBulkBusy(false);
+  }
+
+  async function handleBulkExport() {
+    // Fetch ALL selected (could be across pages)
+    const supabase = createClient();
+    const { data } = await supabase.from("contacts").select("*").in("id", Array.from(selectedIds));
+    if (!data || data.length === 0) return;
+    const rows = (data as Contact[]).map((c) => ({
+      Vorname: c.first_name,
+      Nachname: c.last_name,
+      "E-Mail": c.email ?? "",
+      Telefon: c.phone ?? "",
+      Typ: CONTACT_TYPE_LABELS[c.type] ?? c.type,
+      Quelle: CONTACT_SOURCE_LABELS[c.source] ?? c.source,
+      Notizen: c.notes ?? "",
+      Erstellt: new Date(c.created_at).toLocaleDateString("de-DE"),
+    }));
+    exportToCsv(`kontakte-${new Date().toISOString().slice(0, 10)}`, rows);
+  }
+
+  const filtered = contacts; // filtering now done server-side
 
   function openSheet() {
     setForm(EMPTY);
@@ -152,6 +243,8 @@ export default function ContactsPage() {
     });
   }
 
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
   return (
     <DashboardLayout>
       {/* HEADER */}
@@ -160,8 +253,7 @@ export default function ContactsPage() {
           <div className="hdr-title">Kontakte</div>
           {!loading && (
             <div className="hdr-date">
-              {contacts.length === 0 ? "Noch keine Kontakte" : `${contacts.length} ${contacts.length === 1 ? "Kontakt" : "Kontakte"}`}
-              {filtered.length !== contacts.length && ` · ${filtered.length} angezeigt`}
+              {totalCount === 0 ? "Noch keine Kontakte" : `${totalCount} ${totalCount === 1 ? "Kontakt" : "Kontakte"}`}
             </div>
           )}
         </div>
@@ -234,6 +326,87 @@ export default function ContactsPage() {
 
       {/* BODY */}
       <div className="body-wrap">
+        {/* BulkActionBar schiebt die Liste runter */}
+        <BulkActionBar
+          count={selectedCount}
+          totalCount={totalCount}
+          onSelectAll={handleSelectAllAcrossPages}
+          onClear={clear}
+        >
+          {/* Typ ändern */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setBulkActionOpen((v) => (v === "type" ? null : "type"))}
+              style={actionBtn}
+              disabled={bulkBusy}
+            >
+              Typ ändern
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            {bulkActionOpen === "type" && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 4px)",
+                  left: 0,
+                  background: "#fff",
+                  border: "1px solid rgba(0,0,0,0.1)",
+                  borderRadius: 8,
+                  boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
+                  minWidth: 160,
+                  zIndex: 10,
+                  padding: 4,
+                }}
+              >
+                {(Object.keys(CONTACT_TYPE_LABELS) as ContactType[]).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => handleBulkTypeChange(t)}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "7px 10px",
+                      fontSize: 13,
+                      background: "transparent",
+                      border: "none",
+                      borderRadius: 6,
+                      cursor: "pointer",
+                      color: "var(--t1)",
+                      fontFamily: "inherit",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    {CONTACT_TYPE_LABELS[t]}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Archivieren / Wiederherstellen */}
+          <button onClick={handleBulkArchiveToggle} style={actionBtn} disabled={bulkBusy}>
+            {showArchived ? "Wiederherstellen" : "Archivieren"}
+          </button>
+
+          {/* Löschen (nur im Archiv) */}
+          {showArchived && (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              style={{ ...actionBtn, color: "var(--red, #C93B2E)", borderColor: "rgba(201,59,46,0.25)" }}
+              disabled={bulkBusy}
+            >
+              Löschen
+            </button>
+          )}
+
+          {/* Export */}
+          <button onClick={handleBulkExport} style={actionBtn} disabled={bulkBusy}>
+            Exportieren
+          </button>
+        </BulkActionBar>
+
         {loading ? (
           /* Skeleton */
           <div style={{ background: "var(--card)", borderRadius: 20, border: "1px solid rgba(0,0,0,0.05)", overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
@@ -275,72 +448,128 @@ export default function ContactsPage() {
           </div>
         ) : (
           /* Tabelle */
-          <div style={{ background: "var(--card)", borderRadius: 20, border: "1px solid rgba(0,0,0,0.05)", overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "var(--bg)", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
-                  {[...["Name", "Typ", "E-Mail", "Telefon", "Quelle", "Erstellt"], ...(showArchived ? ["Aktion"] : [])].map((h) => (
-                    <th key={h} style={{ padding: "12px 22px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
-                      {h}
+          <>
+            <div style={{ background: "var(--card)", borderRadius: 20, border: "1px solid rgba(0,0,0,0.05)", overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "var(--bg)", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+                    <th style={{ padding: "12px 14px 12px 22px", width: 36, textAlign: "left" }}>
+                      <SelectionCheckbox
+                        checked={isAllSelected}
+                        indeterminate={isSomeSelected}
+                        onChange={toggleAll}
+                        ariaLabel="Alle auswählen"
+                      />
                     </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((c, i) => (
-                  <tr
-                    key={c.id}
-                    className="h-row"
-                    onClick={() => router.push(`/contacts/${c.id}`)}
-                    style={{ borderBottom: i < filtered.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none", opacity: c.is_archived ? 0.6 : 1 }}
-                  >
-                    <td style={{ padding: "14px 22px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #C2692A, #E8955A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "#fff", flexShrink: 0, letterSpacing: "0.02em" }}>
-                          {c.first_name[0]?.toUpperCase()}{c.last_name[0]?.toUpperCase()}
-                        </div>
-                        <span style={{ fontWeight: 500, color: "var(--t1)", fontSize: 14 }}>
-                          {c.first_name} {c.last_name}
-                        </span>
-                        {c.is_archived && (
-                          <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: "var(--bg2)", color: "var(--t3)" }}>Archiviert</span>
-                        )}
-                      </div>
-                    </td>
-                    <td style={{ padding: "14px 22px" }}>
-                      <span style={{ display: "inline-flex", alignItems: "center", fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: CONTACT_TYPE_BG[c.type], color: CONTACT_TYPE_COLORS[c.type] }}>
-                        {CONTACT_TYPE_LABELS[c.type]}
-                      </span>
-                    </td>
-                    <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>{c.email ?? "—"}</td>
-                    <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>{c.phone ?? "—"}</td>
-                    <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>
-                      {CONTACT_SOURCE_LABELS[c.source] ?? c.source}
-                    </td>
-                    <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t3)", whiteSpace: "nowrap" }}>
-                      {fmtDate(c.created_at)}
-                    </td>
-                    {showArchived && (
-                      <td style={{ padding: "14px 22px" }}>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleRestore(c.id); }}
-                          style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,0.1)", background: "var(--bg)", fontSize: 12, fontWeight: 500, color: "var(--accent)", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", transition: "all 0.15s" }}
-                        >
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                            <polyline points="1 4 1 10 7 10"/>
-                            <path d="M3.51 15a9 9 0 105.64-11.36L1 10"/>
-                          </svg>
-                          Wiederherstellen
-                        </button>
-                      </td>
-                    )}
+                    {[...["Name", "Typ", "E-Mail", "Telefon", "Quelle", "Erstellt"]].map((h) => (
+                      <th key={h} style={{ padding: "12px 22px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filtered.map((c, i) => {
+                    const isSelected = selectedIds.has(c.id);
+                    return (
+                      <tr
+                        key={c.id}
+                        className="h-row"
+                        onClick={() => router.push(`/contacts/${c.id}`)}
+                        style={{
+                          borderBottom: i < filtered.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none",
+                          opacity: c.is_archived ? 0.6 : 1,
+                          background: isSelected ? "rgba(194,105,42,0.04)" : undefined,
+                        }}
+                      >
+                        <td style={{ padding: "14px 14px 14px 22px", width: 36 }} onClick={(e) => e.stopPropagation()}>
+                          <SelectionCheckbox
+                            checked={isSelected}
+                            onChange={() => toggle(c.id)}
+                            ariaLabel={`${c.first_name} ${c.last_name} auswählen`}
+                          />
+                        </td>
+                        <td style={{ padding: "14px 22px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #C2692A, #E8955A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "#fff", flexShrink: 0, letterSpacing: "0.02em" }}>
+                              {c.first_name[0]?.toUpperCase()}{c.last_name[0]?.toUpperCase()}
+                            </div>
+                            <span style={{ fontWeight: 500, color: "var(--t1)", fontSize: 14 }}>
+                              {c.first_name} {c.last_name}
+                            </span>
+                            {c.is_archived && (
+                              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: "var(--bg2)", color: "var(--t3)" }}>Archiviert</span>
+                            )}
+                          </div>
+                        </td>
+                        <td style={{ padding: "14px 22px" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: CONTACT_TYPE_BG[c.type], color: CONTACT_TYPE_COLORS[c.type] }}>
+                            {CONTACT_TYPE_LABELS[c.type]}
+                          </span>
+                        </td>
+                        <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>{c.email ?? "—"}</td>
+                        <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>{c.phone ?? "—"}</td>
+                        <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>
+                          {CONTACT_SOURCE_LABELS[c.source] ?? c.source}
+                        </td>
+                        <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t3)", whiteSpace: "nowrap" }}>
+                          {fmtDate(c.created_at)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Footer */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, gap: 12, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--t3)" }}>
+                <span>Pro Seite:</span>
+                <AppSelect
+                  value={String(pageSize)}
+                  onChange={(v) => setPageSize(Number(v))}
+                  options={[{ value: "25", label: "25" }, { value: "50", label: "50" }, { value: "100", label: "100" }]}
+                  style={{ height: 30, borderRadius: 8, width: 70, fontSize: 12 }}
+                />
+                <span>
+                  {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalCount)} von {totalCount}
+                </span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page <= 1}
+                  style={{ ...actionBtn, opacity: page <= 1 ? 0.4 : 1, cursor: page <= 1 ? "not-allowed" : "pointer" }}
+                >
+                  ← Zurück
+                </button>
+                <span style={{ fontSize: 12, color: "var(--t2)", padding: "0 8px" }}>
+                  Seite {page} von {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  disabled={page >= totalPages}
+                  style={{ ...actionBtn, opacity: page >= totalPages ? 0.4 : 1, cursor: page >= totalPages ? "not-allowed" : "pointer" }}
+                >
+                  Weiter →
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
+
+      {/* Confirm Delete */}
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Kontakte endgültig löschen?"
+        message={`${selectedCount} Kontakt${selectedCount === 1 ? "" : "e"} werden unwiderruflich gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.`}
+        confirmLabel="Endgültig löschen"
+        destructive
+        onConfirm={handleBulkDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
 
       {/* SHEET: Neuer Kontakt */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

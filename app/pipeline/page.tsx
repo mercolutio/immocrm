@@ -14,6 +14,11 @@ import {
 import type { Deal, PipelineStage, Contact, Property } from "@/lib/types";
 import AppSelect from "@/components/AppSelect";
 import SearchSelect from "@/components/SearchSelect";
+import { useSelection } from "@/hooks/useSelection";
+import { usePagination } from "@/hooks/usePagination";
+import BulkActionBar from "@/components/BulkActionBar";
+import SelectionCheckbox from "@/components/SelectionCheckbox";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 // ─── Styles ────────────────────────────────────────────────────────────────
 const inp: React.CSSProperties = {
@@ -35,6 +40,22 @@ const lbl: React.CSSProperties = {
   color: "var(--t2)",
   display: "block",
   marginBottom: 5,
+};
+
+const actionBtn: React.CSSProperties = {
+  height: 32,
+  padding: "0 12px",
+  fontSize: 12,
+  fontWeight: 500,
+  color: "var(--t1)",
+  background: "var(--bg)",
+  border: "1px solid rgba(0,0,0,0.1)",
+  borderRadius: 7,
+  cursor: "pointer",
+  fontFamily: "inherit",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
 };
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -128,6 +149,94 @@ export default function PipelinePage() {
     const matchStage = stageFilter === "all" || d.stage_id === stageFilter;
     return matchSearch && matchStage;
   }), [deals, search, stageFilter]);
+
+  // Pagination + Selection nur im List-Modus
+  const { page, setPage, pageSize, setPageSize } = usePagination("deals");
+  const totalCount = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const paginated = useMemo(
+    () => filtered.slice((page - 1) * pageSize, page * pageSize),
+    [filtered, page, pageSize]
+  );
+  const { selectedIds, toggle, toggleAll, clear, setAll, isAllSelected, isSomeSelected, selectedCount } = useSelection(paginated);
+
+  useEffect(() => { setPage(1); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [search, stageFilter, view]);
+
+  const [bulkDropdown, setBulkDropdown] = useState<null | "stage" | "contact" | "property">(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [contactSearchOpts, setContactSearchOpts] = useState<{ id: string; first_name: string; last_name: string }[]>([]);
+  const [propertySearchOpts, setPropertySearchOpts] = useState<{ id: string; title: string }[]>([]);
+  const [contactSearchText, setContactSearchText] = useState("");
+  const [propertySearchText, setPropertySearchText] = useState("");
+
+  useEffect(() => {
+    if (bulkDropdown !== "contact") return;
+    (async () => {
+      const supabase = createClient();
+      let query = supabase.from("contacts").select("id, first_name, last_name").eq("is_archived", false).order("last_name").limit(20);
+      if (contactSearchText.trim()) query = query.or(`first_name.ilike.%${contactSearchText}%,last_name.ilike.%${contactSearchText}%`);
+      const { data } = await query;
+      setContactSearchOpts((data ?? []) as { id: string; first_name: string; last_name: string }[]);
+    })();
+  }, [bulkDropdown, contactSearchText]);
+
+  useEffect(() => {
+    if (bulkDropdown !== "property") return;
+    (async () => {
+      const supabase = createClient();
+      let query = supabase.from("properties").select("id, title").eq("is_archived", false).order("title").limit(20);
+      if (propertySearchText.trim()) query = query.ilike("title", `%${propertySearchText}%`);
+      const { data } = await query;
+      setPropertySearchOpts((data ?? []) as { id: string; title: string }[]);
+    })();
+  }, [bulkDropdown, propertySearchText]);
+
+  async function handleBulkStageChange(newStageId: string) {
+    setBulkBusy(true);
+    const supabase = createClient();
+    await supabase.from("deals").update({ stage_id: newStageId }).in("id", Array.from(selectedIds));
+    setBulkDropdown(null);
+    clear();
+    await fetchData();
+    setBulkBusy(false);
+  }
+
+  async function handleBulkContactAssign(contactId: string) {
+    setBulkBusy(true);
+    const supabase = createClient();
+    await supabase.from("deals").update({ contact_id: contactId }).in("id", Array.from(selectedIds));
+    setBulkDropdown(null);
+    setContactSearchText("");
+    clear();
+    await fetchData();
+    setBulkBusy(false);
+  }
+
+  async function handleBulkPropertyAssign(propertyId: string | null) {
+    setBulkBusy(true);
+    const supabase = createClient();
+    await supabase.from("deals").update({ property_id: propertyId }).in("id", Array.from(selectedIds));
+    setBulkDropdown(null);
+    setPropertySearchText("");
+    clear();
+    await fetchData();
+    setBulkBusy(false);
+  }
+
+  async function handleBulkDelete() {
+    setBulkBusy(true);
+    const supabase = createClient();
+    await supabase.from("deals").delete().in("id", Array.from(selectedIds));
+    setConfirmDelete(false);
+    clear();
+    await fetchData();
+    setBulkBusy(false);
+  }
+
+  function handleSelectAllAcrossPages() {
+    setAll(filtered.map((d) => d.id));
+  }
 
   function openSheet(stageId?: string) {
     setForm({ ...EMPTY, stage_id: stageId || stages[0]?.id || "" });
@@ -491,10 +600,124 @@ export default function PipelinePage() {
               )}
             </div>
           ) : (
+            <>
+            <BulkActionBar
+              count={selectedCount}
+              totalCount={totalCount}
+              onSelectAll={handleSelectAllAcrossPages}
+              onClear={clear}
+            >
+              {/* Phase ändern */}
+              <div style={{ position: "relative" }}>
+                <button onClick={() => setBulkDropdown((v) => v === "stage" ? null : "stage")} style={actionBtn} disabled={bulkBusy}>
+                  Phase ändern
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {bulkDropdown === "stage" && (
+                  <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, background: "#fff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 8, boxShadow: "0 6px 20px rgba(0,0,0,0.12)", minWidth: 180, zIndex: 10, padding: 4 }}>
+                    {stages.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => handleBulkStageChange(s.id)}
+                        style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left", padding: "7px 10px", fontSize: 13, background: "transparent", border: "none", borderRadius: 6, cursor: "pointer", color: "var(--t1)", fontFamily: "inherit" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                      >
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: s.color }} />
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Kontakt zuweisen */}
+              <div style={{ position: "relative" }}>
+                <button onClick={() => setBulkDropdown((v) => v === "contact" ? null : "contact")} style={actionBtn} disabled={bulkBusy}>
+                  Kontakt zuweisen
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {bulkDropdown === "contact" && (
+                  <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, background: "#fff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 8, boxShadow: "0 6px 20px rgba(0,0,0,0.12)", minWidth: 240, maxHeight: 280, zIndex: 10, padding: 6, display: "flex", flexDirection: "column" }}>
+                    <input
+                      placeholder="Kontakt suchen…"
+                      value={contactSearchText}
+                      onChange={(e) => setContactSearchText(e.target.value)}
+                      style={{ ...inp, height: 32, fontSize: 12, marginBottom: 4 }}
+                    />
+                    <div style={{ overflowY: "auto", flex: 1 }}>
+                      {contactSearchOpts.map((o) => (
+                        <button
+                          key={o.id}
+                          onClick={() => handleBulkContactAssign(o.id)}
+                          style={{ display: "block", width: "100%", textAlign: "left", padding: "7px 10px", fontSize: 13, background: "transparent", border: "none", borderRadius: 6, cursor: "pointer", color: "var(--t1)", fontFamily: "inherit" }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                        >
+                          {o.first_name} {o.last_name}
+                        </button>
+                      ))}
+                      {contactSearchOpts.length === 0 && <div style={{ padding: "8px 10px", fontSize: 12, color: "var(--t3)" }}>Keine Kontakte</div>}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Objekt zuweisen */}
+              <div style={{ position: "relative" }}>
+                <button onClick={() => setBulkDropdown((v) => v === "property" ? null : "property")} style={actionBtn} disabled={bulkBusy}>
+                  Objekt zuweisen
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {bulkDropdown === "property" && (
+                  <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, background: "#fff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 8, boxShadow: "0 6px 20px rgba(0,0,0,0.12)", minWidth: 240, maxHeight: 280, zIndex: 10, padding: 6, display: "flex", flexDirection: "column" }}>
+                    <input
+                      placeholder="Objekt suchen…"
+                      value={propertySearchText}
+                      onChange={(e) => setPropertySearchText(e.target.value)}
+                      style={{ ...inp, height: 32, fontSize: 12, marginBottom: 4 }}
+                    />
+                    <div style={{ overflowY: "auto", flex: 1 }}>
+                      <button
+                        onClick={() => handleBulkPropertyAssign(null)}
+                        style={{ display: "block", width: "100%", textAlign: "left", padding: "7px 10px", fontSize: 13, background: "transparent", border: "none", borderRadius: 6, cursor: "pointer", color: "var(--t3)", fontStyle: "italic", fontFamily: "inherit" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                      >
+                        — Kein Objekt —
+                      </button>
+                      {propertySearchOpts.map((o) => (
+                        <button
+                          key={o.id}
+                          onClick={() => handleBulkPropertyAssign(o.id)}
+                          style={{ display: "block", width: "100%", textAlign: "left", padding: "7px 10px", fontSize: 13, background: "transparent", border: "none", borderRadius: 6, cursor: "pointer", color: "var(--t1)", fontFamily: "inherit" }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                        >
+                          {o.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => setConfirmDelete(true)}
+                style={{ ...actionBtn, color: "var(--red, #C93B2E)", borderColor: "rgba(201,59,46,0.25)" }}
+                disabled={bulkBusy}
+              >
+                Löschen
+              </button>
+            </BulkActionBar>
+
             <div style={{ background: "var(--card)", borderRadius: 20, border: "1px solid rgba(0,0,0,0.05)", overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "var(--bg)", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+                    <th style={{ padding: "12px 14px 12px 22px", width: 36, textAlign: "left" }}>
+                      <SelectionCheckbox checked={isAllSelected} indeterminate={isSomeSelected} onChange={toggleAll} ariaLabel="Alle auswählen" />
+                    </th>
                     {["Kontakt", "Objekt", "Stage", "Provision", "Wahrscheinlichkeit", "Abschluss", "Erstellt"].map((h) => (
                       <th key={h} style={{ padding: "12px 22px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
                         {h}
@@ -503,15 +726,19 @@ export default function PipelinePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((d, i) => {
+                  {paginated.map((d, i) => {
                     const stage = stages.find((s) => s.id === d.stage_id);
+                    const isSelected = selectedIds.has(d.id);
                     return (
                       <tr
                         key={d.id}
                         className="h-row"
                         onClick={() => router.push(`/pipeline/${d.id}`)}
-                        style={{ borderBottom: i < filtered.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none" }}
+                        style={{ borderBottom: i < paginated.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none", background: isSelected ? "rgba(194,105,42,0.04)" : undefined }}
                       >
+                        <td style={{ padding: "14px 14px 14px 22px", width: 36 }} onClick={(e) => e.stopPropagation()}>
+                          <SelectionCheckbox checked={isSelected} onChange={() => toggle(d.id)} ariaLabel="Deal auswählen" />
+                        </td>
                         <td style={{ padding: "14px 22px" }}>
                           {d.contact ? (
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -562,9 +789,39 @@ export default function PipelinePage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Footer */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, gap: 12, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--t3)" }}>
+                <span>Pro Seite:</span>
+                <AppSelect
+                  value={String(pageSize)}
+                  onChange={(v) => setPageSize(Number(v))}
+                  options={[{ value: "25", label: "25" }, { value: "50", label: "50" }, { value: "100", label: "100" }]}
+                  style={{ height: 30, borderRadius: 8, width: 70, fontSize: 12 }}
+                />
+                <span>{totalCount === 0 ? 0 : (page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalCount)} von {totalCount}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} style={{ ...actionBtn, opacity: page <= 1 ? 0.4 : 1, cursor: page <= 1 ? "not-allowed" : "pointer" }}>← Zurück</button>
+                <span style={{ fontSize: 12, color: "var(--t2)", padding: "0 8px" }}>Seite {page} von {totalPages}</span>
+                <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages} style={{ ...actionBtn, opacity: page >= totalPages ? 0.4 : 1, cursor: page >= totalPages ? "not-allowed" : "pointer" }}>Weiter →</button>
+              </div>
+            </div>
+            </>
           )
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Deals endgültig löschen?"
+        message={`${selectedCount} Deal${selectedCount === 1 ? "" : "s"} werden unwiderruflich gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.`}
+        confirmLabel="Endgültig löschen"
+        destructive
+        onConfirm={handleBulkDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
 
       {/* SHEET: Neuer Deal */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

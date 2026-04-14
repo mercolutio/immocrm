@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/lib/supabase/client";
@@ -22,6 +22,12 @@ import {
 } from "@/lib/types";
 import AppSelect from "@/components/AppSelect";
 import { formatAddressShort, propertyPrice, hasRooms } from "@/lib/property-helpers";
+import { useSelection } from "@/hooks/useSelection";
+import { usePagination } from "@/hooks/usePagination";
+import BulkActionBar from "@/components/BulkActionBar";
+import SelectionCheckbox from "@/components/SelectionCheckbox";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { exportToCsv } from "@/lib/csv-export";
 
 // ─── Shared input styles ────────────────────────────────────────────────────
 const inp: React.CSSProperties = {
@@ -43,6 +49,22 @@ const lbl: React.CSSProperties = {
   color: "var(--t2)",
   display: "block",
   marginBottom: 5,
+};
+
+const actionBtn: React.CSSProperties = {
+  height: 32,
+  padding: "0 12px",
+  fontSize: 12,
+  fontWeight: 500,
+  color: "var(--t1)",
+  background: "var(--bg)",
+  border: "1px solid rgba(0,0,0,0.1)",
+  borderRadius: 7,
+  cursor: "pointer",
+  fontFamily: "inherit",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
 };
 
 // ─── Row aus Query mit geladenem Eigentümer ────────────────────────────────
@@ -95,6 +117,7 @@ function parseNum(s: string): number | null {
 export default function PropertiesPage() {
   const router = useRouter();
   const [properties, setProperties] = useState<PropertyRow[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [owners, setOwners] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,17 +131,44 @@ export default function PropertiesPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
+  const { page, setPage, pageSize, setPageSize } = usePagination("properties");
+  const { selectedIds, toggle, toggleAll, clear, setAll, isAllSelected, isSomeSelected, selectedCount } = useSelection(properties);
+
+  const [bulkDropdown, setBulkDropdown] = useState<null | "status" | "owner">(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [ownerSearchText, setOwnerSearchText] = useState("");
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function applyFilters(q: any): any {
+    let query = q.eq("is_archived", showArchived);
+    if (typeFilter !== "all") query = query.eq("type", typeFilter);
+    if (listingFilter !== "all") query = query.eq("listing_type", listingFilter);
+    if (statusFilter !== "all") query = query.eq("status", statusFilter);
+    if (search.trim()) {
+      const s = search.trim().replace(/[,()]/g, " ");
+      query = query.or(`title.ilike.%${s}%,street.ilike.%${s}%,city.ilike.%${s}%,zip.ilike.%${s}%`);
+    }
+    return query;
+  }
+
   async function fetchProperties() {
     setLoading(true);
     setError(null);
     const supabase = createClient();
-    const { data, error } = await supabase
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    let query = supabase
       .from("properties")
-      .select("*, owner:contacts!owner_contact_id(first_name, last_name)")
-      .eq("is_archived", showArchived)
-      .order("created_at", { ascending: false });
+      .select("*, owner:contacts!owner_contact_id(first_name, last_name)", { count: "exact" });
+    query = applyFilters(query);
+    query = query.order("created_at", { ascending: false }).range(from, to);
+    const { data, error, count } = await query;
     if (error) setError(error.message);
-    else setProperties((data ?? []) as PropertyRow[]);
+    else {
+      setProperties((data ?? []) as PropertyRow[]);
+      setTotalCount(count ?? 0);
+    }
     setLoading(false);
   }
 
@@ -133,17 +183,90 @@ export default function PropertiesPage() {
     setOwners((data ?? []) as Contact[]);
   }
 
-  useEffect(() => { fetchProperties(); fetchOwners(); }, [showArchived]);
+  useEffect(() => { fetchOwners(); }, []);
+  useEffect(() => { fetchProperties(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [showArchived, typeFilter, listingFilter, statusFilter, search, page, pageSize]);
+  useEffect(() => { setPage(1); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [showArchived, typeFilter, listingFilter, statusFilter, search]);
 
-  const filtered = useMemo(() => properties.filter((p) => {
-    const q = search.toLowerCase();
-    const addr = `${p.street ?? ""} ${p.house_number ?? ""} ${p.zip ?? ""} ${p.city ?? ""}`.toLowerCase();
-    const matchSearch = !q || p.title.toLowerCase().includes(q) || addr.includes(q);
-    const matchType = typeFilter === "all" || p.type === typeFilter;
-    const matchListing = listingFilter === "all" || p.listing_type === listingFilter;
-    const matchStatus = statusFilter === "all" || p.status === statusFilter;
-    return matchSearch && matchType && matchListing && matchStatus;
-  }), [properties, search, typeFilter, listingFilter, statusFilter]);
+  async function handleSelectAllAcrossPages() {
+    const supabase = createClient();
+    let query = supabase.from("properties").select("id");
+    query = applyFilters(query);
+    const { data } = await query;
+    if (data) setAll((data as { id: string }[]).map((d) => d.id));
+  }
+
+  async function handleBulkStatusChange(newStatus: PropertyStatus) {
+    setBulkBusy(true);
+    const supabase = createClient();
+    await supabase.from("properties").update({ status: newStatus }).in("id", Array.from(selectedIds));
+    setBulkDropdown(null);
+    clear();
+    await fetchProperties();
+    setBulkBusy(false);
+  }
+
+  async function handleBulkOwnerAssign(ownerId: string | null) {
+    setBulkBusy(true);
+    const supabase = createClient();
+    await supabase.from("properties").update({ owner_contact_id: ownerId }).in("id", Array.from(selectedIds));
+    setBulkDropdown(null);
+    setOwnerSearchText("");
+    clear();
+    await fetchProperties();
+    setBulkBusy(false);
+  }
+
+  async function handleBulkArchiveToggle() {
+    setBulkBusy(true);
+    const supabase = createClient();
+    await supabase.from("properties").update({ is_archived: !showArchived }).in("id", Array.from(selectedIds));
+    clear();
+    await fetchProperties();
+    setBulkBusy(false);
+  }
+
+  async function handleBulkDelete() {
+    setBulkBusy(true);
+    const supabase = createClient();
+    await supabase.from("properties").delete().in("id", Array.from(selectedIds));
+    setConfirmDelete(false);
+    clear();
+    await fetchProperties();
+    setBulkBusy(false);
+  }
+
+  async function handleBulkExport() {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("properties")
+      .select("*, owner:contacts!owner_contact_id(first_name, last_name)")
+      .in("id", Array.from(selectedIds));
+    if (!data || data.length === 0) return;
+    const rows = (data as PropertyRow[]).map((p) => ({
+      Titel: p.title,
+      Typ: PROPERTY_TYPE_LABELS[p.type] ?? p.type,
+      Vermarktung: LISTING_TYPE_LABELS[p.listing_type] ?? p.listing_type,
+      Status: PROPERTY_STATUS_LABELS[p.status] ?? p.status,
+      Straße: p.street ?? "",
+      Hausnummer: p.house_number ?? "",
+      PLZ: p.zip ?? "",
+      Ort: p.city ?? "",
+      Preis: p.price ?? "",
+      Miete: p.rent ?? "",
+      "Fläche m²": p.area_sqm ?? "",
+      Zimmer: p.rooms ?? "",
+      Eigentümer: p.owner ? `${p.owner.first_name} ${p.owner.last_name}` : "",
+      Erstellt: new Date(p.created_at).toLocaleDateString("de-DE"),
+    }));
+    exportToCsv(`objekte-${new Date().toISOString().slice(0, 10)}`, rows);
+  }
+
+  const filtered = properties;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const ownerSearchLower = ownerSearchText.toLowerCase();
+  const filteredOwners = owners.filter((o) =>
+    !ownerSearchLower || `${o.first_name} ${o.last_name}`.toLowerCase().includes(ownerSearchLower)
+  );
 
   function openSheet() {
     setForm(EMPTY);
@@ -212,8 +335,7 @@ export default function PropertiesPage() {
           <div className="hdr-title">Objekte</div>
           {!loading && (
             <div className="hdr-date">
-              {properties.length === 0 ? "Noch keine Objekte" : `${properties.length} ${properties.length === 1 ? "Objekt" : "Objekte"}`}
-              {filtered.length !== properties.length && ` · ${filtered.length} angezeigt`}
+              {totalCount === 0 ? "Noch keine Objekte" : `${totalCount} ${totalCount === 1 ? "Objekt" : "Objekte"}`}
             </div>
           )}
         </div>
@@ -302,6 +424,101 @@ export default function PropertiesPage() {
 
       {/* BODY */}
       <div className="body-wrap">
+        <BulkActionBar
+          count={selectedCount}
+          totalCount={totalCount}
+          onSelectAll={handleSelectAllAcrossPages}
+          onClear={clear}
+        >
+          {/* Status ändern */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setBulkDropdown((v) => (v === "status" ? null : "status"))}
+              style={actionBtn}
+              disabled={bulkBusy}
+            >
+              Status ändern
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            {bulkDropdown === "status" && (
+              <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, background: "#fff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 8, boxShadow: "0 6px 20px rgba(0,0,0,0.12)", minWidth: 160, zIndex: 10, padding: 4 }}>
+                {(Object.keys(PROPERTY_STATUS_LABELS) as PropertyStatus[]).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => handleBulkStatusChange(s)}
+                    style={{ display: "block", width: "100%", textAlign: "left", padding: "7px 10px", fontSize: 13, background: "transparent", border: "none", borderRadius: 6, cursor: "pointer", color: "var(--t1)", fontFamily: "inherit" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    {PROPERTY_STATUS_LABELS[s]}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Eigentümer zuweisen */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setBulkDropdown((v) => (v === "owner" ? null : "owner"))}
+              style={actionBtn}
+              disabled={bulkBusy}
+            >
+              Eigentümer zuweisen
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            {bulkDropdown === "owner" && (
+              <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, background: "#fff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 8, boxShadow: "0 6px 20px rgba(0,0,0,0.12)", minWidth: 240, maxHeight: 280, zIndex: 10, padding: 6, display: "flex", flexDirection: "column" }}>
+                <input
+                  placeholder="Eigentümer suchen…"
+                  value={ownerSearchText}
+                  onChange={(e) => setOwnerSearchText(e.target.value)}
+                  style={{ ...inp, height: 32, fontSize: 12, marginBottom: 4 }}
+                />
+                <div style={{ overflowY: "auto", flex: 1 }}>
+                  <button
+                    onClick={() => handleBulkOwnerAssign(null)}
+                    style={{ display: "block", width: "100%", textAlign: "left", padding: "7px 10px", fontSize: 13, background: "transparent", border: "none", borderRadius: 6, cursor: "pointer", color: "var(--t3)", fontStyle: "italic", fontFamily: "inherit" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    — Kein Eigentümer —
+                  </button>
+                  {filteredOwners.map((o) => (
+                    <button
+                      key={o.id}
+                      onClick={() => handleBulkOwnerAssign(o.id)}
+                      style={{ display: "block", width: "100%", textAlign: "left", padding: "7px 10px", fontSize: 13, background: "transparent", border: "none", borderRadius: 6, cursor: "pointer", color: "var(--t1)", fontFamily: "inherit" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    >
+                      {o.first_name} {o.last_name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button onClick={handleBulkArchiveToggle} style={actionBtn} disabled={bulkBusy}>
+            {showArchived ? "Wiederherstellen" : "Archivieren"}
+          </button>
+
+          {showArchived && (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              style={{ ...actionBtn, color: "var(--red, #C93B2E)", borderColor: "rgba(201,59,46,0.25)" }}
+              disabled={bulkBusy}
+            >
+              Löschen
+            </button>
+          )}
+
+          <button onClick={handleBulkExport} style={actionBtn} disabled={bulkBusy}>
+            Exportieren
+          </button>
+        </BulkActionBar>
+
         {loading ? (
           <div style={{ background: "var(--card)", borderRadius: 20, border: "1px solid rgba(0,0,0,0.05)", overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
             {[...Array(6)].map((_, i) => (
@@ -340,10 +557,14 @@ export default function PropertiesPage() {
             )}
           </div>
         ) : (
+          <>
           <div style={{ background: "var(--card)", borderRadius: 20, border: "1px solid rgba(0,0,0,0.05)", overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "var(--bg)", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+                  <th style={{ padding: "12px 14px 12px 22px", width: 36, textAlign: "left" }}>
+                    <SelectionCheckbox checked={isAllSelected} indeterminate={isSomeSelected} onChange={toggleAll} ariaLabel="Alle auswählen" />
+                  </th>
                   {["Objekt", "Typ", "Adresse", "Status", "Preis", "Eigentümer", "Erstellt"].map((h) => (
                     <th key={h} style={{ padding: "12px 22px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
                       {h}
@@ -352,13 +573,18 @@ export default function PropertiesPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p, i) => (
+                {filtered.map((p, i) => {
+                  const isSelected = selectedIds.has(p.id);
+                  return (
                   <tr
                     key={p.id}
                     className="h-row"
                     onClick={() => router.push(`/properties/${p.id}`)}
-                    style={{ borderBottom: i < filtered.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none", opacity: p.is_archived ? 0.6 : 1 }}
+                    style={{ borderBottom: i < filtered.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none", opacity: p.is_archived ? 0.6 : 1, background: isSelected ? "rgba(194,105,42,0.04)" : undefined }}
                   >
+                    <td style={{ padding: "14px 14px 14px 22px", width: 36 }} onClick={(e) => e.stopPropagation()}>
+                      <SelectionCheckbox checked={isSelected} onChange={() => toggle(p.id)} ariaLabel={`${p.title} auswählen`} />
+                    </td>
                     <td style={{ padding: "14px 22px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <div style={{ width: 32, height: 32, borderRadius: 8, background: PROPERTY_TYPE_BG[p.type], display: "flex", alignItems: "center", justifyContent: "center", color: PROPERTY_TYPE_COLORS[p.type], flexShrink: 0 }}>
@@ -405,12 +631,42 @@ export default function PropertiesPage() {
                       {fmtDate(p.created_at)}
                     </td>
                   </tr>
-                ))}
+                );})}
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Footer */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, gap: 12, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--t3)" }}>
+              <span>Pro Seite:</span>
+              <AppSelect
+                value={String(pageSize)}
+                onChange={(v) => setPageSize(Number(v))}
+                options={[{ value: "25", label: "25" }, { value: "50", label: "50" }, { value: "100", label: "100" }]}
+                style={{ height: 30, borderRadius: 8, width: 70, fontSize: 12 }}
+              />
+              <span>{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalCount)} von {totalCount}</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} style={{ ...actionBtn, opacity: page <= 1 ? 0.4 : 1, cursor: page <= 1 ? "not-allowed" : "pointer" }}>← Zurück</button>
+              <span style={{ fontSize: 12, color: "var(--t2)", padding: "0 8px" }}>Seite {page} von {totalPages}</span>
+              <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages} style={{ ...actionBtn, opacity: page >= totalPages ? 0.4 : 1, cursor: page >= totalPages ? "not-allowed" : "pointer" }}>Weiter →</button>
+            </div>
+          </div>
+          </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Objekte endgültig löschen?"
+        message={`${selectedCount} Objekt${selectedCount === 1 ? "" : "e"} werden unwiderruflich gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.`}
+        confirmLabel="Endgültig löschen"
+        destructive
+        onConfirm={handleBulkDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
 
       {/* SHEET: Neues Objekt */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
