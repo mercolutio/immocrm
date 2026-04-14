@@ -1,7 +1,5 @@
 import { test as setup, expect } from "@playwright/test";
-import path from "path";
-
-export const STORAGE_STATE = path.join(__dirname, ".auth/user.json");
+import { STORAGE_STATE } from "./storage";
 
 /**
  * Auth-Setup: loggt einen Test-User per UI ein und speichert die Session

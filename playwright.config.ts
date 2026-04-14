@@ -37,11 +37,18 @@ export default defineConfig({
       testMatch: /auth\.setup\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
+    // Seed-Setup: legt Kontakte/Objekte/Deals an, wenn Account leer ist
+    {
+      name: "seed",
+      testMatch: /seed\.setup\.ts/,
+      dependencies: ["setup"],
+      use: { ...devices["Desktop Chrome"] },
+    },
     // Authentifizierte Tests — nutzen Storage aus setup
     {
       name: "authenticated",
-      testIgnore: [/smoke\.spec\.ts/, /auth\.setup\.ts/],
-      dependencies: ["setup"],
+      testIgnore: [/smoke\.spec\.ts/, /auth\.setup\.ts/, /seed\.setup\.ts/],
+      dependencies: ["seed"],
       use: { ...devices["Desktop Chrome"] },
     },
   ],
