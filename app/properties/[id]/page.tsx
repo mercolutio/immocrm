@@ -627,11 +627,8 @@ export default function PropertyDetailPage() {
   return (
     <DashboardLayout>
       {/* HEADER */}
-      <header className="header">
-        <Link
-          href="/properties"
-          style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--t2)", fontSize: 13, textDecoration: "none", flexShrink: 0 }}
-        >
+      <header className="detail-header">
+        <Link href="/properties" className="detail-back">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
@@ -640,22 +637,21 @@ export default function PropertyDetailPage() {
 
         {property && (
           <>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--t3)", flexShrink: 0, margin: "0 4px" }}>
+            <svg className="detail-sep" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <polyline points="9 18 15 12 9 6"/>
             </svg>
-            <div className="hdr-title" style={{ fontSize: 18, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 420 }}>
+            <div className="detail-title" style={{ maxWidth: 420 }}>
               {property.title}
             </div>
           </>
         )}
 
-        <div style={{ flex: 1 }} />
-
-        <div className="hdr-right">
+        <div className="detail-actions">
           <div style={{ position: "relative" }}>
             <button
               onClick={() => setShowMoreMenu((v) => !v)}
-              style={{ width: 34, height: 34, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--t2)" }}
+              className="btn-icon"
+              aria-label="Weitere Optionen"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>

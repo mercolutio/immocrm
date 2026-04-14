@@ -34,7 +34,7 @@ export default function LoginPage() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#F5F3EF",
+      background: "var(--bg)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -42,19 +42,19 @@ export default function LoginPage() {
       padding: "24px",
     }}>
       <div style={{
-        background: "#fff",
+        background: "var(--card)",
         borderRadius: 16,
         padding: "40px 36px",
         width: "100%",
         maxWidth: 420,
-        border: "1px solid rgba(0,0,0,0.07)",
+        border: "1px solid var(--border)",
         boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
       }}>
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
           <div style={{
             width: 32, height: 32, borderRadius: 8,
-            background: "#C2692A",
+            background: "var(--accent)",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -63,53 +63,49 @@ export default function LoginPage() {
             </svg>
           </div>
           <span style={{
-            fontFamily: "var(--font-playfair, 'Playfair Display'), serif",
-            fontSize: 18, fontWeight: 500, color: "#1C1814",
+            fontFamily: "var(--font-display)",
+            fontSize: 18, fontWeight: 500, color: "var(--t1)",
           }}>Immo CRM</span>
         </div>
 
         <h1 style={{
-          fontFamily: "var(--font-playfair, 'Playfair Display'), serif",
-          fontSize: 22, fontWeight: 400, color: "#1C1814",
+          fontFamily: "var(--font-display)",
+          fontSize: 22, fontWeight: 500, color: "var(--t1)",
           marginBottom: 6, letterSpacing: "-0.3px",
         }}>Willkommen zurück</h1>
-        <p style={{ fontSize: 13, color: "#A8A49F", marginBottom: 28 }}>
+        <p style={{ fontSize: 13, color: "var(--t3)", marginBottom: 28 }}>
           Melden Sie sich bei Ihrem Konto an
         </p>
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 500, color: "#6A6460", display: "block", marginBottom: 6 }}>
-              E-Mail-Adresse
-            </label>
+            <label style={labelStyle}>E-Mail-Adresse</label>
             <input
               type="email"
               required
               placeholder="max@beispiel.de"
               value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              style={inputStyle}
+              className="input-field"
             />
           </div>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 500, color: "#6A6460", display: "block", marginBottom: 6 }}>
-              Passwort
-            </label>
+            <label style={labelStyle}>Passwort</label>
             <input
               type="password"
               required
               placeholder="Ihr Passwort"
               value={form.password}
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-              style={inputStyle}
+              className="input-field"
             />
           </div>
 
           {error && (
             <div style={{
-              background: "rgba(201,59,46,0.08)", border: "1px solid rgba(201,59,46,0.2)",
+              background: "var(--red-bg)", border: "1px solid rgba(201,59,46,0.2)",
               borderRadius: 8, padding: "10px 12px",
-              fontSize: 13, color: "#C93B2E",
+              fontSize: 13, color: "var(--red)",
             }}>
               {error}
             </div>
@@ -120,9 +116,9 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p style={{ fontSize: 13, color: "#A8A49F", marginTop: 20, textAlign: "center" }}>
+        <p style={{ fontSize: 13, color: "var(--t3)", marginTop: 20, textAlign: "center" }}>
           Noch kein Konto?{" "}
-          <a href="/auth/register" style={{ color: "#C2692A", fontWeight: 500, textDecoration: "none" }}>
+          <a href="/auth/register" style={{ color: "var(--accent)", fontWeight: 500, textDecoration: "none" }}>
             Kostenlos registrieren
           </a>
         </p>
@@ -131,25 +127,16 @@ export default function LoginPage() {
   );
 }
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  height: 40,
-  border: "1px solid rgba(0,0,0,0.11)",
-  borderRadius: 8,
-  padding: "0 12px",
-  fontSize: 14,
-  color: "#1C1814",
-  background: "#fff",
-  outline: "none",
-  fontFamily: "inherit",
-  boxSizing: "border-box",
+const labelStyle: React.CSSProperties = {
+  fontSize: 13, fontWeight: 500, color: "var(--label)",
+  display: "block", marginBottom: 6,
 };
 
 function submitStyle(loading: boolean): React.CSSProperties {
   return {
     width: "100%",
     height: 42,
-    background: loading ? "#D97D3A" : "#C2692A",
+    background: loading ? "var(--accent-hover)" : "var(--accent)",
     color: "#fff",
     border: "none",
     borderRadius: 8,

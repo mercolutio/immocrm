@@ -332,8 +332,8 @@ export default function DealDetailPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <header className="header">
-          <Link href="/pipeline" style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--t2)", fontSize: 13, textDecoration: "none" }}>
+        <header className="detail-header">
+          <Link href="/pipeline" className="detail-back">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             Pipeline
           </Link>
@@ -355,8 +355,8 @@ export default function DealDetailPage() {
   if (error || !deal) {
     return (
       <DashboardLayout>
-        <header className="header">
-          <Link href="/pipeline" style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--t2)", fontSize: 13, textDecoration: "none" }}>
+        <header className="detail-header">
+          <Link href="/pipeline" className="detail-back">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             Pipeline
           </Link>
@@ -373,25 +373,22 @@ export default function DealDetailPage() {
   return (
     <DashboardLayout>
       {/* HEADER */}
-      <header className="header">
-        <Link href="/pipeline" style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--t2)", fontSize: 13, textDecoration: "none", flexShrink: 0 }}>
+      <header className="detail-header">
+        <Link href="/pipeline" className="detail-back">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
           Pipeline
         </Link>
-        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, minWidth: 0, marginLeft: 16 }}>
-          <div style={{
-            fontFamily: "var(--font-playfair, 'Playfair Display'), serif",
-            fontSize: 22, fontWeight: 400, color: "var(--t1)",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          }}>
-            {contact ? `${contact.first_name} ${contact.last_name}` : "Deal"}
-          </div>
-          {currentStage && (
-            <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: `${currentStage.color}18`, color: currentStage.color, flexShrink: 0 }}>
-              {currentStage.name}
-            </span>
-          )}
+        <svg className="detail-sep" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+        <div className="detail-title">
+          {contact ? `${contact.first_name} ${contact.last_name}` : "Deal"}
         </div>
+        {currentStage && (
+          <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: `${currentStage.color}18`, color: currentStage.color, flexShrink: 0 }}>
+            {currentStage.name}
+          </span>
+        )}
       </header>
 
       {/* THREE COLUMNS */}

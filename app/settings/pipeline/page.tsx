@@ -19,22 +19,8 @@ const DEFAULT_STAGES = [
   { name: "Verloren",       color: "#6B7280", position: 5 },
 ];
 
-// ─── Styles ───────────────────────────────────────────────────────────────
-const card: React.CSSProperties = {
-  background: "#fff",
-  borderRadius: 12,
-  boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)",
-  border: "1px solid rgba(0,0,0,0.05)",
-  padding: "22px 24px",
-};
-
-const lbl: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 500,
-  color: "var(--t3)",
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
-};
+// Card-Padding für den Stages-Table-Wrap (über .card Utility mit Padding-Override)
+const cardInner: React.CSSProperties = { padding: "22px 24px" };
 
 // ─── Page ─────────────────────────────────────────────────────────────────
 export default function SettingsPipelinePage() {
@@ -275,22 +261,20 @@ export default function SettingsPipelinePage() {
         .stage-name-hover:hover .edit-icon { opacity: 1 !important; }
       `}</style>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--t1)" }}>Pipeline-Phasen</div>
-          <div style={{ fontSize: 12.5, color: "var(--t3)", marginTop: 2 }}>
-            Verwalte die Phasen deiner Deal-Pipeline. Ziehe Phasen per Drag & Drop um sie neu zu ordnen.
-          </div>
-        </div>
+      <div style={{ marginBottom: 18 }}>
+        <h1 className="page-title" style={{ fontSize: 22, letterSpacing: "-0.3px" }}>Pipeline-Phasen</h1>
+        <p className="page-subtitle">
+          Verwalte die Phasen deiner Deal-Pipeline. Ziehe Phasen per Drag &amp; Drop um sie neu zu ordnen.
+        </p>
       </div>
 
       {/* Stages Table */}
-      <div style={card}>
+      <div className="card" style={cardInner}>
         {/* Column Headers */}
-        <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 60px 50px", gap: 12, alignItems: "center", padding: "0 0 10px", borderBottom: "1px solid rgba(0,0,0,0.06)", marginBottom: 4 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 60px 50px", gap: 12, alignItems: "center", padding: "0 0 10px", borderBottom: "1px solid var(--border-subtle)", marginBottom: 4 }}>
           <div />
-          <div style={lbl}>Phase</div>
-          <div style={{ ...lbl, textAlign: "center" }}>Farbe</div>
+          <div className="stat-label" style={{ marginBottom: 0 }}>Phase</div>
+          <div className="stat-label" style={{ marginBottom: 0, textAlign: "center" }}>Farbe</div>
           <div />
         </div>
 
@@ -327,7 +311,7 @@ export default function SettingsPipelinePage() {
               }}
             >
               {/* Grip Handle */}
-              <div style={{ display: "flex", justifyContent: "center", color: "var(--t4)" }}>
+              <div style={{ display: "flex", justifyContent: "center", color: "var(--t3)" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                   <circle cx="9" cy="6" r="1.5" />
                   <circle cx="15" cy="6" r="1.5" />
@@ -443,7 +427,7 @@ export default function SettingsPipelinePage() {
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    color: "var(--t4)",
+                    color: "var(--t3)",
                     padding: 4,
                     borderRadius: 4,
                     display: "flex",
@@ -451,7 +435,7 @@ export default function SettingsPipelinePage() {
                     transition: "color 0.15s",
                   }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--red)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--t4)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--t3)"; }}
                   title="Phase löschen"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
