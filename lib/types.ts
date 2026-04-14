@@ -35,10 +35,10 @@ export const PROPERTY_TYPE_BG: Record<PropertyType, string> = {
 }
 
 export const PROPERTY_STATUS_COLORS: Record<PropertyStatus, { fg: string; bg: string }> = {
-  available: { fg: 'var(--grn)', bg: 'var(--grn-bg)' },
-  reserved:  { fg: 'var(--amb)', bg: 'var(--amb-bg)' },
-  sold:      { fg: 'var(--t3)',  bg: 'var(--bg2)'   },
-  rented:    { fg: 'var(--t3)',  bg: 'var(--bg2)'   },
+  available: { fg: 'var(--badge-green)',  bg: 'var(--badge-green-bg)'  },
+  reserved:  { fg: 'var(--badge-orange)', bg: 'var(--badge-orange-bg)' },
+  sold:      { fg: 'var(--badge-gray)',   bg: 'var(--badge-gray-bg)'   },
+  rented:    { fg: 'var(--badge-gray)',   bg: 'var(--badge-gray-bg)'   },
 }
 
 export const LISTING_TYPE_LABELS: Record<SearchType, string> = {

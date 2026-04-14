@@ -398,20 +398,20 @@ export default function PipelinePage() {
 
       {/* STATS BAR */}
       {!loading && !error && deals.length > 0 && (
-        <div style={{ padding: "0 30px", marginBottom: view === "kanban" ? 0 : 0 }}>
-          <div style={{ display: "flex", gap: 1, background: "var(--card)", borderRadius: 14, border: "1px solid rgba(0,0,0,0.05)", overflow: "hidden", boxShadow: "0 1px 4px rgba(28,24,20,0.03)" }}>
+        <div style={{ padding: "0 36px", marginBottom: 8 }}>
+          <div style={{ display: "flex", background: "transparent" }}>
             {[
               { label: "Gesamt-Provision", value: formatEUR(stats.totalCommission), color: "var(--t1)" },
               { label: "Gewichteter Wert", value: formatEUR(stats.weightedValue), color: "var(--accent)" },
               { label: "Deals", value: String(stats.dealCount), color: "var(--t1)" },
               { label: "Ø Alter", value: `${stats.avgAge} Tage`, color: "var(--t1)" },
               { label: "Inaktiv 7+ Tage", value: String(stats.staleCount), color: stats.staleCount > 0 ? "var(--red, #EF4444)" : "var(--t1)" },
-            ].map((s, i) => (
-              <div key={i} style={{ flex: 1, padding: "14px 18px", borderRight: i < 4 ? "1px solid rgba(0,0,0,0.05)" : undefined }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: "var(--t2)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+            ].map((s, i, arr) => (
+              <div key={i} style={{ flex: 1, padding: i === 0 ? "4px 24px 4px 0" : "4px 24px", borderRight: i < arr.length - 1 ? "1px solid var(--border-strong)" : undefined }}>
+                <div style={{ fontSize: 11, fontWeight: 500, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>
                   {s.label}
                 </div>
-                <div style={{ fontSize: 16, fontWeight: 500, color: s.color, fontFamily: "var(--font-playfair, 'Playfair Display'), serif" }}>
+                <div style={{ fontSize: 22, fontWeight: 500, color: s.color, fontFamily: "var(--font-display)", lineHeight: 1.1, letterSpacing: "-0.3px" }}>
                   {s.value}
                 </div>
               </div>
@@ -693,15 +693,15 @@ export default function PipelinePage() {
               </button>
             </BulkActionBar>
 
-            <div style={{ background: "var(--card)", borderRadius: 20, border: "1px solid rgba(0,0,0,0.05)", overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
+            <div style={{ background: "var(--card)", borderRadius: 12, border: "1px solid var(--border)", overflow: "hidden" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "var(--thead-bg)", borderBottom: "1px solid var(--row-divider)" }}>
-                    <th style={{ padding: "14px 14px 14px 22px", width: 36, textAlign: "left" }}>
+                  <tr style={{ background: "var(--surface-subtle)", borderBottom: "1px solid var(--border)" }}>
+                    <th style={{ padding: "12px 14px 12px 22px", width: 36, textAlign: "left" }}>
                       <SelectionCheckbox checked={isAllSelected} indeterminate={isSomeSelected} onChange={toggleAll} ariaLabel="Alle auswählen" />
                     </th>
                     {["Kontakt", "Objekt", "Stage", "Provision", "Wahrscheinlichkeit", "Abschluss", "Erstellt"].map((h) => (
-                      <th key={h} style={{ padding: "14px 22px", textAlign: "left", fontSize: 13, fontWeight: 600, color: "var(--label)", whiteSpace: "nowrap" }}>
+                      <th key={h} style={{ padding: "12px 22px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
                         {h}
                       </th>
                     ))}
@@ -716,23 +716,23 @@ export default function PipelinePage() {
                         key={d.id}
                         className="h-row"
                         onClick={() => router.push(`/pipeline/${d.id}`)}
-                        style={{ borderBottom: i < paginated.length - 1 ? "1px solid var(--row-divider)" : "none", background: isSelected ? "rgba(194,105,42,0.04)" : undefined }}
+                        style={{ borderBottom: i < paginated.length - 1 ? "1px solid var(--border-subtle)" : "none", background: isSelected ? "rgba(194,105,42,0.04)" : undefined }}
                       >
-                        <td style={{ padding: "17px 14px 17px 22px", width: 36 }} onClick={(e) => e.stopPropagation()}>
+                        <td style={{ padding: "16px 14px 16px 22px", width: 36 }} onClick={(e) => e.stopPropagation()}>
                           <SelectionCheckbox checked={isSelected} onChange={() => toggle(d.id)} ariaLabel="Deal auswählen" />
                         </td>
-                        <td style={{ padding: "17px 22px" }}>
+                        <td style={{ padding: "16px 22px" }}>
                           {d.contact ? (
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                               <div style={{
                                 width: 32, height: 32, borderRadius: "50%",
-                                background: "linear-gradient(135deg, #C2692A, #E8955A)",
+                                background: "var(--accent-soft)",
                                 display: "flex", alignItems: "center", justifyContent: "center",
-                                fontSize: 11, fontWeight: 600, color: "#fff", flexShrink: 0,
+                                fontSize: 11, fontWeight: 600, color: "var(--accent)", flexShrink: 0,
                               }}>
                                 {d.contact.first_name[0]?.toUpperCase()}{d.contact.last_name[0]?.toUpperCase()}
                               </div>
-                              <span style={{ fontWeight: 500, color: "var(--t1)", fontSize: 14 }}>
+                              <span style={{ fontWeight: 500, color: "var(--t1)", fontSize: 13 }}>
                                 {d.contact.first_name} {d.contact.last_name}
                               </span>
                             </div>
@@ -740,12 +740,12 @@ export default function PipelinePage() {
                             <span style={{ color: "var(--t3)" }}>—</span>
                           )}
                         </td>
-                        <td style={{ padding: "17px 22px", fontSize: 13, color: "var(--t2)" }}>
+                        <td style={{ padding: "16px 22px", fontSize: 13, color: "var(--t2)" }}>
                           {d.property?.title ?? "—"}
                         </td>
-                        <td style={{ padding: "17px 22px" }}>
+                        <td style={{ padding: "16px 22px" }}>
                           {stage ? (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: `${stage.color}18`, color: stage.color }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 20, background: `${stage.color}18`, color: stage.color }}>
                               <span style={{ width: 6, height: 6, borderRadius: "50%", background: stage.color }} />
                               {stage.name}
                             </span>
@@ -753,16 +753,16 @@ export default function PipelinePage() {
                             <span style={{ color: "var(--t3)", fontSize: 12 }}>Ohne Stage</span>
                           )}
                         </td>
-                        <td style={{ padding: "17px 22px", fontSize: 13, color: "var(--t1)", fontWeight: 500, whiteSpace: "nowrap" }}>
+                        <td style={{ padding: "16px 22px", fontSize: 13, color: "var(--t1)", fontWeight: 500, whiteSpace: "nowrap" }}>
                           {d.commission ? formatEUR(d.commission) : "—"}
                         </td>
-                        <td style={{ padding: "17px 22px", fontSize: 13, color: "var(--t2)" }}>
+                        <td style={{ padding: "16px 22px", fontSize: 13, color: "var(--t2)" }}>
                           {d.probability != null ? `${d.probability} %` : "—"}
                         </td>
-                        <td style={{ padding: "17px 22px", fontSize: 13, color: "var(--t2)", whiteSpace: "nowrap" }}>
+                        <td style={{ padding: "16px 22px", fontSize: 12, color: "var(--t3)", whiteSpace: "nowrap" }}>
                           {d.expected_close_date ? fmtDate(d.expected_close_date) : "—"}
                         </td>
-                        <td style={{ padding: "17px 22px", fontSize: 13, color: "var(--t2)", whiteSpace: "nowrap" }}>
+                        <td style={{ padding: "16px 22px", fontSize: 12, color: "var(--t3)", whiteSpace: "nowrap" }}>
                           {fmtDate(d.created_at)}
                         </td>
                       </tr>

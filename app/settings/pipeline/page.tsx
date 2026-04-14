@@ -684,10 +684,10 @@ export default function SettingsPipelinePage() {
         pointerEvents: isDirty ? "auto" : "none",
         transition: "opacity 0.2s ease, transform 0.2s ease",
         zIndex: 1000,
-        background: "var(--accent)",
+        background: "#18120E",
         border: "none",
-        borderRadius: 12,
-        boxShadow: "0 8px 32px rgba(194,105,42,0.35), 0 2px 8px rgba(0,0,0,0.1)",
+        borderRadius: 10,
+        boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
         padding: "13px 18px",
         display: "flex",
         alignItems: "center",
@@ -696,23 +696,23 @@ export default function SettingsPipelinePage() {
       }}>
         <div style={{ position: "relative", width: 8, height: 8, flexShrink: 0 }}>
           <div style={{
-            position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(255,255,255,0.5)",
+            position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(232,139,80,0.5)",
             animation: "pulse-ring-settings 1.6s ease-out infinite",
           }} />
-          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "#fff" }} />
+          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "var(--accent-light)" }} />
         </div>
-        <span style={{ fontSize: 14, color: "rgba(255,255,255,0.95)", fontWeight: 500, flex: 1 }}>Ungespeicherte Änderungen</span>
+        <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", fontWeight: 500, flex: 1 }}>Ungespeicherte Änderungen</span>
         <button
           onClick={handleDiscard}
           disabled={saving}
-          style={{ height: 32, padding: "0 12px", background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 7, fontSize: 13, color: "rgba(255,255,255,0.8)", cursor: "pointer", fontFamily: "inherit" }}
+          style={{ height: 32, padding: "0 12px", background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 7, fontSize: 13, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}
         >
           Verwerfen
         </button>
         <button
           onClick={handleSave}
           disabled={saving}
-          style={{ height: 32, padding: "0 14px", background: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, color: "var(--accent)", cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: saving ? 0.7 : 1 }}
+          style={{ height: 32, padding: "0 14px", background: "var(--accent)", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 500, color: "#fff", cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: saving ? 0.7 : 1 }}
         >
           {saving ? "Speichern…" : "Speichern"}
         </button>

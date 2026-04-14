@@ -1,0 +1,278 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@500&display=swap');
+
+  .crm-wrap { font-family: 'DM Sans', sans-serif; background: #F5F3EF; min-height: 600px; display: flex; }
+
+  .crm-sidebar {
+    width: 220px; min-width: 220px; background: #18120E; display: flex; flex-direction: column; padding: 0;
+  }
+  .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .sidebar-logo-name { font-family: 'Playfair Display', serif; color: #F5F3EF; font-size: 16px; letter-spacing: 0.01em; }
+  .sidebar-logo-sub { font-size: 10px; color: rgba(255,255,255,0.35); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+  .sidebar-section { padding: 20px 12px 8px; }
+  .sidebar-label { font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 0.1em; text-transform: uppercase; padding: 0 8px 8px; }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px;
+    color: rgba(255,255,255,0.5); font-size: 13px; cursor: pointer; margin-bottom: 2px; transition: all 0.15s;
+  }
+  .sidebar-item:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8); }
+  .sidebar-item.active { background: rgba(194,105,42,0.18); color: #E88B50; }
+  .sidebar-icon { width: 16px; height: 16px; opacity: 0.7; }
+  .sidebar-item.active .sidebar-icon { opacity: 1; }
+  .sidebar-badge { margin-left: auto; background: #C2692A; color: white; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px; }
+  .sidebar-footer { margin-top: auto; padding: 16px 12px; border-top: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; gap: 10px; }
+  .sidebar-avatar { width: 30px; height: 30px; border-radius: 50%; background: #C2692A; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: white; }
+  .sidebar-user-name { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 500; }
+  .sidebar-user-plan { font-size: 10px; color: #C2692A; }
+
+  .crm-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .crm-header {
+    background: #F5F3EF; padding: 28px 36px 0; display: flex; align-items: flex-start; justify-content: space-between;
+  }
+  .crm-header-left h1 { font-family: 'Playfair Display', serif; font-size: 26px; color: #18120E; font-weight: 500; margin: 0 0 4px; }
+  .crm-header-left p { font-size: 13px; color: #8C7B70; margin: 0; }
+  .crm-header-right { display: flex; align-items: center; gap: 10px; }
+
+  .btn-primary {
+    background: #C2692A; color: white; border: none; padding: 9px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-secondary {
+    background: white; color: #3D2E26; border: 1px solid #E0D8D0; padding: 8px 14px; border-radius: 8px;
+    font-size: 13px; font-weight: 400; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-icon {
+    background: white; border: 1px solid #E0D8D0; padding: 8px 10px; border-radius: 8px;
+    cursor: pointer; display: flex; align-items: center; color: #6B5B50;
+  }
+  .btn-icon.active { background: #F0EBE4; border-color: #C4B5A8; color: #3D2E26; }
+
+  .kpi-strip { display: flex; padding: 20px 36px 0; gap: 0; }
+  .kpi-item { flex: 1; padding: 0 24px 0 0; }
+  .kpi-item:not(:last-child) { border-right: 1px solid #E0D8D0; margin-right: 24px; }
+  .kpi-label { font-size: 11px; color: #8C7B70; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; }
+  .kpi-value { font-size: 22px; font-weight: 500; color: #18120E; font-family: 'Playfair Display', serif; }
+  .kpi-value.accent { color: #C2692A; }
+  .kpi-sub { font-size: 11px; color: #8C7B70; margin-top: 2px; }
+
+  .crm-toolbar { padding: 20px 36px 0; display: flex; align-items: center; gap: 10px; }
+  .search-wrap { position: relative; flex: 1; max-width: 320px; }
+  .search-input {
+    width: 100%; background: white; border: 1px solid #E0D8D0; border-radius: 8px;
+    padding: 8px 12px 8px 34px; font-size: 13px; color: #3D2E26; font-family: 'DM Sans', sans-serif;
+    outline: none; box-sizing: border-box;
+  }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #A09080; }
+  .filter-select {
+    background: white; border: 1px solid #E0D8D0; border-radius: 8px; padding: 8px 12px;
+    font-size: 13px; color: #4A3F35; font-family: 'DM Sans', sans-serif; cursor: pointer; outline: none;
+  }
+  .view-toggle { display: flex; gap: 4px; margin-left: auto; }
+
+  .crm-content { padding: 16px 36px 36px; flex: 1; overflow: auto; }
+
+  .table-wrap { background: white; border-radius: 12px; border: 1px solid #E8E2DA; overflow: hidden; }
+  .table-head { display: grid; grid-template-columns: 2fr 2fr 1.2fr 1fr 1fr 1fr 0.8fr; padding: 0 20px; background: #FAF8F5; border-bottom: 1px solid #E8E2DA; }
+  .table-head-cell { padding: 12px 8px; font-size: 11px; font-weight: 600; color: #6B5B50; letter-spacing: 0.06em; text-transform: uppercase; }
+  .table-row { display: grid; grid-template-columns: 2fr 2fr 1.2fr 1fr 1fr 1fr 0.8fr; padding: 0 20px; border-bottom: 1px solid #F0EBE4; align-items: center; cursor: pointer; transition: background 0.1s; }
+  .table-row:last-child { border-bottom: none; }
+  .table-row:hover { background: #FAF8F5; }
+  .table-row:hover .row-arrow { opacity: 1; }
+  .table-cell { padding: 16px 8px; font-size: 13px; color: #3D2E26; }
+  .table-cell.secondary { color: #8C7B70; font-size: 12px; }
+
+  .contact-cell { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #F0EBE4; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #C2692A; flex-shrink: 0; }
+  .contact-name { font-size: 13px; font-weight: 500; color: #18120E; }
+  .contact-email { font-size: 11px; color: #8C7B70; }
+
+  .property-title { font-size: 13px; color: #3D2E26; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+  .property-sub { font-size: 11px; color: #8C7B70; }
+
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .badge-qual { background: #EEF2FF; color: #4F46E5; }
+  .badge-qual .badge-dot { background: #4F46E5; }
+  .badge-ver { background: #FFF7ED; color: #C2692A; }
+  .badge-ver .badge-dot { background: #C2692A; }
+  .badge-bes { background: #F0FDF4; color: #16A34A; }
+  .badge-bes .badge-dot { background: #16A34A; }
+
+  .row-arrow { opacity: 0; color: #A09080; transition: opacity 0.15s; font-size: 14px; }
+
+  .no-data { padding: 60px 20px; text-align: center; color: #8C7B70; font-size: 14px; }
+
+  .table-footer { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid #F0EBE4; background: #FAF8F5; }
+  .table-footer-text { font-size: 12px; color: #8C7B70; }
+  .pagination { display: flex; gap: 4px; }
+  .page-btn { padding: 4px 10px; border-radius: 6px; font-size: 12px; border: 1px solid #E0D8D0; background: white; color: #4A3F35; cursor: pointer; }
+  .page-btn.active { background: #18120E; color: white; border-color: #18120E; }
+</style>
+
+<div class="crm-wrap">
+  <div class="crm-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-name">Immo CRM</div>
+      <div class="sidebar-logo-sub">Einzelmakler · DACH</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Hauptmenü</div>
+      <div class="sidebar-item"><svg class="sidebar-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>Dashboard</div>
+      <div class="sidebar-item active"><svg class="sidebar-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,12 5,7 9,9 15,3"/></svg>Pipeline<span class="sidebar-badge">18</span></div>
+      <div class="sidebar-item"><svg class="sidebar-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="11" rx="1.5"/><polyline points="1,6 8,10 15,6"/></svg>Objekte</div>
+      <div class="sidebar-item"><svg class="sidebar-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Kontakte</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Kommunikation</div>
+      <div class="sidebar-item"><svg class="sidebar-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="1.5"/><polyline points="1,5 8,9 15,5"/></svg>Mails<span class="sidebar-badge">3</span></div>
+      <div class="sidebar-item"><svg class="sidebar-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="13" rx="1.5"/><line x1="5" y1="1" x2="5" y2="4"/><line x1="11" y1="1" x2="11" y2="4"/><line x1="1" y1="7" x2="15" y2="7"/></svg>Kalender</div>
+      <div class="sidebar-item"><svg class="sidebar-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,4 6,8 2,12"/><line x1="8" y1="12" x2="14" y2="12"/></svg>Aufgaben<span class="sidebar-badge">2</span></div>
+      <div class="sidebar-item" style="color: #E88B50; background: rgba(194,105,42,0.08);"><svg class="sidebar-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><line x1="8" y1="5" x2="8" y2="8"/><line x1="8" y1="11" x2="8" y2="11"/></svg>KI-Berater<span class="sidebar-badge">3</span></div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-avatar">BJ</div>
+      <div>
+        <div class="sidebar-user-name">Bilal El-Jourani</div>
+        <div class="sidebar-user-plan">Trial-Plan</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="crm-main">
+    <div class="crm-header">
+      <div class="crm-header-left">
+        <h1>Pipeline</h1>
+        <p>2 aktive Deals · Zuletzt aktualisiert heute</p>
+      </div>
+      <div class="crm-header-right">
+        <button class="btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="4"/><line x1="9.5" y1="9.5" x2="14" y2="14"/></svg>
+          Suchen
+        </button>
+        <button class="btn-primary">+ Neuer Deal</button>
+      </div>
+    </div>
+
+    <div class="kpi-strip">
+      <div class="kpi-item">
+        <div class="kpi-label">Gesamt-Provision</div>
+        <div class="kpi-value">35.000 €</div>
+        <div class="kpi-sub">2 Deals</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Gewichteter Wert</div>
+        <div class="kpi-value accent">3.500 €</div>
+        <div class="kpi-sub">Ø Wahrscheinlichkeit 10%</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Ø Alter</div>
+        <div class="kpi-value">1 Tag</div>
+        <div class="kpi-sub">Alle Deals</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Inaktiv 7+ Tage</div>
+        <div class="kpi-value">0</div>
+        <div class="kpi-sub">Keine Handlung nötig</div>
+      </div>
+    </div>
+
+    <div class="crm-toolbar">
+      <div class="search-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="4"/><line x1="9.5" y1="9.5" x2="14" y2="14"/></svg>
+        <input class="search-input" placeholder="Kontakt, Objekt...">
+      </div>
+      <select class="filter-select">
+        <option>Alle Stages</option>
+        <option>Qualifizierung</option>
+        <option>Besichtigung</option>
+        <option>Verhandlung</option>
+        <option>Notariat</option>
+        <option>Abschluss</option>
+      </select>
+      <div class="view-toggle">
+        <button class="btn-icon active">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="1" y1="4" x2="15" y2="4"/><line x1="1" y1="8" x2="15" y2="8"/><line x1="1" y1="12" x2="15" y2="12"/></svg>
+        </button>
+        <button class="btn-icon">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="14" rx="1"/><rect x="9" y="1" width="6" height="14" rx="1"/></svg>
+        </button>
+        <button class="btn-icon">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><line x1="8" y1="1" x2="8" y2="4"/><line x1="8" y1="12" x2="8" y2="15"/><line x1="1" y1="8" x2="4" y2="8"/><line x1="12" y1="8" x2="15" y2="8"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="crm-content">
+      <div class="table-wrap">
+        <div class="table-head">
+          <div class="table-head-cell">Kontakt</div>
+          <div class="table-head-cell">Objekt</div>
+          <div class="table-head-cell">Stage</div>
+          <div class="table-head-cell">Provision</div>
+          <div class="table-head-cell">Wahrsch.</div>
+          <div class="table-head-cell">Abschluss</div>
+          <div class="table-head-cell">Erstellt</div>
+        </div>
+
+        <div class="table-row">
+          <div class="table-cell">
+            <div class="contact-cell">
+              <div class="avatar">BJ</div>
+              <div>
+                <div class="contact-name">Bilal El-Jourani</div>
+                <div class="contact-email">b.eljourani@gmail.com</div>
+              </div>
+            </div>
+          </div>
+          <div class="table-cell">
+            <div class="property-title">3 Zimmerwohnung Neubaugebiet Lengede</div>
+            <div class="property-sub">Brückenweg 23 · Kaufobjekt</div>
+          </div>
+          <div class="table-cell">
+            <span class="badge badge-qual"><span class="badge-dot"></span>Qualifizierung</span>
+          </div>
+          <div class="table-cell">—</div>
+          <div class="table-cell secondary">—</div>
+          <div class="table-cell secondary">—</div>
+          <div class="table-cell secondary">13.04.2026</div>
+        </div>
+
+        <div class="table-row">
+          <div class="table-cell">
+            <div class="contact-cell">
+              <div class="avatar">BJ</div>
+              <div>
+                <div class="contact-name">Bilal El-Jourani</div>
+                <div class="contact-email">b.eljourani@gmail.com</div>
+              </div>
+            </div>
+          </div>
+          <div class="table-cell">
+            <div class="property-title">3 Zimmerwohnung Neubaugebiet Lengede</div>
+            <div class="property-sub">Brückenweg 23 · Kaufobjekt</div>
+          </div>
+          <div class="table-cell">
+            <span class="badge badge-ver"><span class="badge-dot"></span>Verhandlung</span>
+          </div>
+          <div class="table-cell" style="font-weight: 500;">5.000 €</div>
+          <div class="table-cell secondary">10 %</div>
+          <div class="table-cell secondary">30.04.2026</div>
+          <div class="table-cell secondary">13.04.2026</div>
+        </div>
+
+        <div class="table-footer">
+          <div class="table-footer-text">1–2 von 2 Deals</div>
+          <div class="pagination">
+            <button class="page-btn">← Zurück</button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">Weiter →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
