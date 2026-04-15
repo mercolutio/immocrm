@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import AppSelect from "@/components/AppSelect";
 import TaskSheet from "@/components/TaskSheet";
+import DatePicker from "@/components/DatePicker";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { createClient } from "@/lib/supabase/client";
 import { useOrganization } from "@/lib/hooks/useOrganization";
@@ -27,6 +28,7 @@ interface TaskRow extends Task {
   _attachments: number;
   _subtasks: number;
   _linked_label?: string;
+  _linked_kind?: "contact" | "property" | "deal";
 }
 
 // ============================================================
@@ -89,6 +91,12 @@ export default function TasksPage() {
 
   const searchRef = useRef<HTMLInputElement>(null);
   const quickAddRef = useRef<HTMLInputElement>(null);
+  const [flashQuickAdd, setFlashQuickAdd] = useState(0);
+
+  const focusQuickAdd = useCallback(() => {
+    quickAddRef.current?.focus();
+    setFlashQuickAdd((n) => n + 1);
+  }, []);
 
   async function refetch() {
     setLoading(true);
@@ -121,24 +129,32 @@ export default function TasksPage() {
 
     const contactIds = list.map((t) => t.contact_id).filter(Boolean) as string[];
     const propertyIds = list.map((t) => t.property_id).filter(Boolean) as string[];
-    const [{ data: contacts }, { data: properties }] = await Promise.all([
+    const dealIds = list.map((t) => t.deal_id).filter(Boolean) as string[];
+    const [{ data: contacts }, { data: properties }, { data: deals }] = await Promise.all([
       contactIds.length ? supabase.from("contacts").select("id, first_name, last_name").in("id", contactIds) : Promise.resolve({ data: [] as { id: string; first_name: string; last_name: string }[] }),
       propertyIds.length ? supabase.from("properties").select("id, title").in("id", propertyIds) : Promise.resolve({ data: [] as { id: string; title: string }[] }),
+      dealIds.length ? supabase.from("deals").select("id, title").in("id", dealIds) : Promise.resolve({ data: [] as { id: string; title: string }[] }),
     ]);
     const cMap = new Map((contacts ?? []).map((c) => [c.id, `${c.first_name} ${c.last_name}`.trim()]));
     const pMap = new Map((properties ?? []).map((p) => [p.id, p.title]));
+    const dMap = new Map((deals ?? []).map((d) => [d.id, d.title ?? `Deal ${d.id.slice(0, 6)}`]));
 
-    const enriched: TaskRow[] = list.map((t) => ({
-      ...t,
-      _checklist_total: chkMap.get(t.id)?.total ?? 0,
-      _checklist_done: chkMap.get(t.id)?.done ?? 0,
-      _attachments: attMap.get(t.id) ?? 0,
-      _subtasks: subMap.get(t.id) ?? 0,
-      _linked_label: t.contact_id ? cMap.get(t.contact_id)
-        : t.property_id ? pMap.get(t.property_id)
-        : t.deal_id ? "Deal"
-        : undefined,
-    }));
+    const enriched: TaskRow[] = list.map((t) => {
+      let linkedLabel: string | undefined;
+      let linkedKind: "contact" | "property" | "deal" | undefined;
+      if (t.contact_id) { linkedLabel = cMap.get(t.contact_id); linkedKind = "contact"; }
+      else if (t.property_id) { linkedLabel = pMap.get(t.property_id); linkedKind = "property"; }
+      else if (t.deal_id) { linkedLabel = dMap.get(t.deal_id) ?? "Deal"; linkedKind = "deal"; }
+      return {
+        ...t,
+        _checklist_total: chkMap.get(t.id)?.total ?? 0,
+        _checklist_done: chkMap.get(t.id)?.done ?? 0,
+        _attachments: attMap.get(t.id) ?? 0,
+        _subtasks: subMap.get(t.id) ?? 0,
+        _linked_label: linkedLabel,
+        _linked_kind: linkedKind,
+      };
+    });
 
     setTasks(enriched);
     setLoading(false);
@@ -241,13 +257,13 @@ export default function TasksPage() {
         if (e.key === "Escape") (e.target as HTMLElement).blur();
         return;
       }
-      if (e.key === "c") { e.preventDefault(); quickAddRef.current?.focus(); }
+      if (e.key === "c") { e.preventDefault(); focusQuickAdd(); }
       else if (e.key === "/") { e.preventDefault(); searchRef.current?.focus(); }
       else if (e.key === "Escape") { setPeekTaskId(null); setCreateMode(false); }
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  }, [focusQuickAdd]);
 
   const peekTask = useMemo(() => tasks.find((t) => t.id === peekTaskId) ?? null, [tasks, peekTaskId]);
 
@@ -267,7 +283,7 @@ export default function TasksPage() {
           </p>
         </div>
         <div className="page-header-right">
-          <button onClick={() => quickAddRef.current?.focus()} className="btn-primary"
+          <button onClick={focusQuickAdd} className="btn-primary"
             title="Neue Aufgabe (c)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -351,6 +367,7 @@ export default function TasksPage() {
             tasks={filtered}
             groupBy={groupBy}
             quickAddRef={quickAddRef}
+            flashQuickAdd={flashQuickAdd}
             isTeam={isTeam}
             memberProfiles={orgCtx.memberProfiles}
             members={orgCtx.members}
@@ -410,6 +427,7 @@ interface ListViewProps {
   tasks: TaskRow[];
   groupBy: GroupBy;
   quickAddRef: React.RefObject<HTMLInputElement>;
+  flashQuickAdd: number;
   isTeam: boolean;
   memberProfiles: Record<string, { name: string; email: string }>;
   members: { user_id: string; role: string }[];
@@ -437,13 +455,15 @@ function ListView(p: ListViewProps) {
           onToggle={() => {}}
           showQuickAdd
           quickAddRef={p.quickAddRef}
+          flashQuickAdd={p.flashQuickAdd}
+          sectionPrefill={{}}
           isTeam={p.isTeam}
           memberProfiles={p.memberProfiles}
           members={p.members}
           onPeek={p.onPeek}
           onToggleDone={p.onToggleDone}
           onPatch={p.onPatch}
-          onQuickCreate={(title) => p.onQuickCreate(title)}
+          onQuickCreate={p.onQuickCreate}
           onDropTo={null}
         />
       ) : (
@@ -458,13 +478,15 @@ function ListView(p: ListViewProps) {
             onToggle={() => toggle(g.key)}
             showQuickAdd={i === 0}
             quickAddRef={i === 0 ? p.quickAddRef : undefined}
+            flashQuickAdd={i === 0 ? p.flashQuickAdd : 0}
+            sectionPrefill={g.prefill}
             isTeam={p.isTeam}
             memberProfiles={p.memberProfiles}
             members={p.members}
             onPeek={p.onPeek}
             onToggleDone={p.onToggleDone}
             onPatch={p.onPatch}
-            onQuickCreate={(title) => p.onQuickCreate(title, g.prefill)}
+            onQuickCreate={p.onQuickCreate}
             onDropTo={(t) => p.onMoveTo(t, g.key)}
           />
         ))
@@ -491,6 +513,7 @@ function buildGroups(
   groupBy: GroupBy,
   members: { user_id: string; role: string }[],
   memberProfiles: Record<string, { name: string; email: string }>,
+  keepEmpty = false,
 ): Group[] {
   const groups: Group[] = [];
   if (groupBy === "due") {
@@ -536,6 +559,7 @@ function buildGroups(
       });
     });
   }
+  if (keepEmpty) return groups;
   return groups.filter((g) => g.items.length > 0 || g.key === "today" || g.key === "overdue");
 }
 
@@ -551,13 +575,15 @@ interface SectionProps {
   onToggle: () => void;
   showQuickAdd: boolean;
   quickAddRef?: React.RefObject<HTMLInputElement>;
+  flashQuickAdd?: number;
+  sectionPrefill: Partial<Task>;
   isTeam: boolean;
   memberProfiles: Record<string, { name: string; email: string }>;
   members: { user_id: string; role: string }[];
   onPeek: (id: string) => void;
   onToggleDone: (t: Task) => void;
   onPatch: (id: string, patch: Partial<Task>) => void;
-  onQuickCreate: (title: string) => Promise<boolean>;
+  onQuickCreate: (title: string, prefill?: Partial<Task>) => Promise<boolean>;
   onDropTo: ((t: Task) => void) | null;
 }
 
@@ -609,7 +635,9 @@ function SectionBlock(p: SectionProps) {
               {p.showQuickAdd && (
                 <QuickAddRow
                   inputRef={p.quickAddRef}
+                  flashSignal={p.flashQuickAdd ?? 0}
                   onCreate={p.onQuickCreate}
+                  sectionPrefill={p.sectionPrefill}
                   isTeam={p.isTeam}
                 />
               )}
@@ -645,56 +673,223 @@ function SectionBlock(p: SectionProps) {
 // Quick-Add Row (always visible, Enter keeps open)
 // ============================================================
 function QuickAddRow({
-  inputRef, onCreate, isTeam,
+  inputRef, onCreate, sectionPrefill, isTeam, flashSignal,
 }: {
   inputRef?: React.RefObject<HTMLInputElement>;
-  onCreate: (title: string) => Promise<boolean>;
+  onCreate: (title: string, prefill?: Partial<Task>) => Promise<boolean>;
+  sectionPrefill: Partial<Task>;
   isTeam: boolean;
+  flashSignal: number;
 }) {
   const [val, setVal] = useState("");
   const [busy, setBusy] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [priority, setPriority] = useState<TaskPriority | undefined>();
+  const [status, setStatus] = useState<TaskStatus | undefined>();
+  const [dueDate, setDueDate] = useState<string | null | undefined>();
+  const [flashKey, setFlashKey] = useState(0);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (flashSignal > 0) setFlashKey((k) => k + 1);
+  }, [flashSignal]);
+
+  const active = focused || val.trim().length > 0;
 
   async function submit() {
     if (!val.trim() || busy) return;
     setBusy(true);
-    const ok = await onCreate(val);
-    if (ok) setVal("");
+    const prefill: Partial<Task> = { ...sectionPrefill };
+    if (priority !== undefined) prefill.priority = priority;
+    if (status !== undefined) prefill.status = status;
+    if (dueDate !== undefined) prefill.due_date = dueDate;
+    const ok = await onCreate(val, prefill);
+    if (ok) { setVal(""); setPriority(undefined); setStatus(undefined); setDueDate(undefined); }
     setBusy(false);
-    // keep focus
     inputRef?.current?.focus();
   }
 
+  const pc = priority ? TASK_PRIORITY_COLORS[priority] : null;
+  const sc = status ? TASK_STATUS_COLORS[status] : null;
+
   return (
-    <tr style={{ background: "var(--surface-subtle)", borderBottom: "1px solid var(--border-subtle)" }}>
-      <td style={{ padding: "10px 8px 10px 22px", width: 42 }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-      </td>
-      <td style={{ padding: "10px 22px" }} colSpan={isTeam ? 5 : 4}>
-        <input
-          ref={inputRef}
-          value={val}
-          onChange={(e) => setVal(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") { e.preventDefault(); submit(); }
-            if (e.key === "Escape") { setVal(""); (e.target as HTMLInputElement).blur(); }
-          }}
-          placeholder="+ Aufgabe hinzufügen — Enter speichert, Esc schließt"
-          disabled={busy}
+    <tr>
+      <td colSpan={isTeam ? 7 : 6} style={{ padding: "8px 14px" }}>
+        <div
+          key={flashKey}
+          ref={wrapRef}
+          className={flashKey > 0 ? "quickadd-flash" : ""}
           style={{
-            width: "100%",
-            border: "none",
-            background: "transparent",
-            outline: "none",
-            fontSize: 13,
-            color: "var(--t1)",
-            fontFamily: "inherit",
-            padding: 0,
+            borderRadius: 10,
+            border: active ? "1.5px solid var(--accent)" : "1px solid var(--border)",
+            background: "var(--card)",
+            boxShadow: active
+              ? "0 0 0 3px var(--accent-soft), 0 1px 2px rgba(28,24,20,0.03)"
+              : "0 1px 2px rgba(28,24,20,0.03)",
+            transition: "border-color 120ms ease, box-shadow 120ms ease",
+            padding: "10px 14px",
+            display: "flex", flexDirection: "column", gap: active ? 10 : 0,
           }}
-        />
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke={active ? "var(--accent)" : "var(--t3)"} strokeWidth="2.5" strokeLinecap="round"
+              style={{ flexShrink: 0, transition: "stroke 120ms ease" }}>
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            <input
+              ref={inputRef}
+              value={val}
+              onChange={(e) => setVal(e.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); submit(); }
+                if (e.key === "Escape") {
+                  setVal(""); setPriority(undefined); setStatus(undefined); setDueDate(undefined);
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              placeholder="+ Aufgabe hinzufügen — Enter speichert"
+              disabled={busy}
+              style={{
+                flex: 1, minWidth: 0,
+                border: "none", background: "transparent", outline: "none",
+                fontSize: 14, color: "var(--t1)", fontFamily: "inherit", padding: 0,
+              }}
+            />
+            <kbd style={{ fontSize: 10, color: "var(--t3)", opacity: active ? 1 : 0, transition: "opacity 120ms" }}>↵</kbd>
+          </div>
+          {active && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", paddingLeft: 24 }}>
+              <QuickAddDate value={dueDate ?? null} onChange={setDueDate} />
+              <QuickAddChip
+                label={priority ? TASK_PRIORITY_LABELS[priority] : "Priorität"}
+                fg={pc?.fg ?? "var(--t2)"} bg={pc?.bg ?? "var(--surface-subtle)"}
+                active={priority !== undefined}
+                onClear={priority !== undefined ? () => setPriority(undefined) : undefined}
+                options={(Object.entries(TASK_PRIORITY_LABELS) as [TaskPriority, string][]).map(([v, l]) => ({
+                  value: v, label: l, fg: TASK_PRIORITY_COLORS[v].fg, bg: TASK_PRIORITY_COLORS[v].bg,
+                }))}
+                onPick={(v) => setPriority(v as TaskPriority)}
+                icon={
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
+                    <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
+                    <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+                    <line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/>
+                    <line x1="17" y1="16" x2="23" y2="16"/>
+                  </svg>
+                }
+              />
+              <QuickAddChip
+                label={status ? TASK_STATUS_LABELS[status] : "Status"}
+                fg={sc?.fg ?? "var(--t2)"} bg={sc?.bg ?? "var(--surface-subtle)"}
+                active={status !== undefined}
+                onClear={status !== undefined ? () => setStatus(undefined) : undefined}
+                options={(Object.entries(TASK_STATUS_LABELS) as [TaskStatus, string][]).map(([v, l]) => ({
+                  value: v, label: l, fg: TASK_STATUS_COLORS[v].fg, bg: TASK_STATUS_COLORS[v].bg,
+                }))}
+                onPick={(v) => setStatus(v as TaskStatus)}
+                icon={
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="9"/>
+                  </svg>
+                }
+              />
+              <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--t3)" }}>Esc zum Abbrechen</span>
+            </div>
+          )}
+        </div>
       </td>
     </tr>
+  );
+}
+
+function QuickAddDate({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
+  const [open, setOpen] = useState(false);
+  const active = !!value;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" style={{
+          display: "inline-flex", alignItems: "center", gap: 5,
+          padding: "3px 9px", borderRadius: 14,
+          border: active ? "1px solid var(--accent)" : "1px dashed var(--border-strong)",
+          background: active ? "var(--accent-soft)" : "transparent",
+          color: active ? "var(--accent)" : "var(--t2)",
+          fontSize: 11, fontWeight: 500, fontFamily: "inherit",
+          cursor: "pointer",
+        }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          {value ? fmtDE(value) : "Fällig"}
+          {active && (
+            <span onClick={(e) => { e.stopPropagation(); onChange(null); }}
+              style={{ marginLeft: 2, cursor: "pointer", fontSize: 13, lineHeight: 1, opacity: 0.7 }}>×</span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" sideOffset={4}
+        style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: 8,
+          boxShadow: "0 6px 24px rgba(28,24,20,0.1)" }}>
+        <DatePicker value={value} onChange={(v) => { onChange(v); setOpen(false); }} placeholder="Datum" />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function QuickAddChip({
+  label, fg, bg, active, options, onPick, onClear, icon,
+}: {
+  label: string; fg: string; bg: string; active: boolean;
+  options: { value: string; label: string; fg: string; bg: string }[];
+  onPick: (v: string) => void;
+  onClear?: () => void;
+  icon: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" style={{
+          display: "inline-flex", alignItems: "center", gap: 5,
+          padding: "3px 9px", borderRadius: 14,
+          border: active ? "1px solid transparent" : "1px dashed var(--border-strong)",
+          background: active ? bg : "transparent",
+          color: active ? fg : "var(--t2)",
+          fontSize: 11, fontWeight: 500, fontFamily: "inherit",
+          cursor: "pointer",
+        }}>
+          {icon}
+          {label}
+          {active && onClear && (
+            <span onClick={(e) => { e.stopPropagation(); onClear(); }}
+              style={{ marginLeft: 2, cursor: "pointer", fontSize: 13, lineHeight: 1, opacity: 0.7 }}>×</span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" sideOffset={4}
+        style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: 4, minWidth: 160,
+          boxShadow: "0 6px 24px rgba(28,24,20,0.1)" }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {options.map((o) => (
+            <button key={o.value} onClick={() => { onPick(o.value); setOpen(false); }}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px",
+                border: "none", background: "transparent", borderRadius: 6, cursor: "pointer",
+                textAlign: "left", fontFamily: "inherit" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-subtle)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            >
+              <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 20,
+                color: o.fg, background: o.bg }}>{o.label}</span>
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -784,9 +979,45 @@ function TaskListRow({ task: t, last, isTeam, memberProfiles, members, onPeek, o
         </td>
       )}
       <td style={{ padding: "12px 22px", fontSize: 13, color: "var(--t2)" }}>
-        {t._linked_label ?? <span style={{ color: "var(--t3)" }}>—</span>}
+        {t._linked_label
+          ? <LinkedChip kind={t._linked_kind} label={t._linked_label} />
+          : <span style={{ color: "var(--t3)" }}>—</span>}
       </td>
     </tr>
+  );
+}
+
+function LinkedChip({ kind, label, compact = false }: {
+  kind: "contact" | "property" | "deal" | undefined;
+  label: string;
+  compact?: boolean;
+}) {
+  const icon = kind === "contact" ? (
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+  ) : kind === "property" ? (
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  ) : (
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+    </svg>
+  );
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 5,
+      padding: compact ? "1px 6px" : "2px 8px",
+      borderRadius: 4,
+      background: "var(--surface-subtle)",
+      color: "var(--t2)",
+      fontSize: compact ? 10 : 12, fontWeight: 500,
+      maxWidth: compact ? 140 : 200,
+    }}>
+      {icon}
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+    </span>
   );
 }
 
@@ -913,7 +1144,7 @@ interface BoardProps {
 }
 
 function BoardView(p: BoardProps) {
-  const groups = useMemo(() => buildGroups(p.tasks, p.groupBy, p.members, p.memberProfiles), [p.tasks, p.groupBy, p.members, p.memberProfiles]);
+  const groups = useMemo(() => buildGroups(p.tasks, p.groupBy, p.members, p.memberProfiles, true), [p.tasks, p.groupBy, p.members, p.memberProfiles]);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
   const readonly = p.groupBy === "due";
@@ -1025,6 +1256,7 @@ function BoardCard({
         )}
         {t._attachments > 0 && <span style={{ fontSize: 10, color: "var(--t3)" }}>◎ {t._attachments}</span>}
         {t._subtasks > 0 && <span style={{ fontSize: 10, color: "var(--t3)" }}>↳ {t._subtasks}</span>}
+        {t._linked_label && <LinkedChip kind={t._linked_kind} label={t._linked_label} compact />}
         {assigneeLabel && (
           <span style={{
             marginLeft: "auto", fontSize: 9, fontWeight: 600,

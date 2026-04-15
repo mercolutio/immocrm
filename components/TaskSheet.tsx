@@ -213,8 +213,8 @@ export default function TaskSheet({
           onInteractOutside={(e) => { if (isPeek) e.preventDefault(); }}
           className={
             isPeek
-              ? "fixed inset-y-0 right-0 z-40 h-full w-full sm:max-w-[480px] bg-[var(--card)] shadow-[-12px_0_32px_rgba(28,24,20,0.08)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right data-[state=closed]:duration-150 data-[state=open]:duration-200"
-              : "fixed inset-y-0 right-0 z-50 h-full w-full sm:max-w-[560px] bg-[var(--card)] shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right data-[state=closed]:duration-200 data-[state=open]:duration-300"
+              ? "task-peek fixed inset-y-0 right-0 z-40 h-full w-full sm:max-w-[480px] bg-[var(--card)] shadow-[-12px_0_32px_rgba(28,24,20,0.08)]"
+              : "task-sheet fixed inset-y-0 right-0 z-50 h-full w-full sm:max-w-[560px] bg-[var(--card)] shadow-lg"
           }
           style={{ display: "flex", flexDirection: "column", borderLeft: "1px solid var(--border)" }}
         >
@@ -224,12 +224,16 @@ export default function TaskSheet({
 
           {/* HEADER */}
           <div style={{ padding: "20px 24px 0", borderBottom: "1px solid var(--border-subtle)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 500, color: "var(--t1)", margin: 0 }}>
-                {isEdit ? "Aufgabe bearbeiten" : "Neue Aufgabe"}
-              </h2>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 12 }}>
+              {isEdit ? (
+                <EditableTitle value={title} onChange={setTitle} />
+              ) : (
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 500, color: "var(--t1)", margin: 0 }}>
+                  Neue Aufgabe
+                </h2>
+              )}
               <button onClick={onClose} className="btn-icon" aria-label="Schließen"
-                style={{ width: 32, height: 32 }}>
+                style={{ width: 32, height: 32, flexShrink: 0 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
@@ -281,6 +285,7 @@ export default function TaskSheet({
                 isTeam={isTeam}
                 memberOptions={memberOptions}
                 lockedLink={!!initialLink}
+                hideTitle={isEdit}
               />
             )}
             {isEdit && task && tab === "checklist" && <ChecklistTab taskId={task.id} />}
@@ -339,15 +344,18 @@ interface DetailsTabProps {
   isTeam: boolean;
   memberOptions: { value: string; label: string }[];
   lockedLink: boolean;
+  hideTitle?: boolean;
 }
 
 function DetailsTab(p: DetailsTabProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <Field label="Titel *">
-        <input className="input-field" value={p.title} onChange={(e) => p.setTitle(e.target.value)}
-          placeholder="z.B. Rückruf Herr Meier" autoFocus />
-      </Field>
+      {!p.hideTitle && (
+        <Field label="Titel *">
+          <input className="input-field" value={p.title} onChange={(e) => p.setTitle(e.target.value)}
+            placeholder="z.B. Rückruf Herr Meier" autoFocus />
+        </Field>
+      )}
 
       <Field label="Beschreibung">
         <textarea
@@ -444,6 +452,68 @@ function DetailsTab(p: DetailsTabProps) {
         )}
       </Field>
     </div>
+  );
+}
+
+function EditableTitle({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [hover, setHover] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const ref = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { if (!editing) setDraft(value); }, [value, editing]);
+  useEffect(() => { if (editing) { ref.current?.focus(); ref.current?.select(); } }, [editing]);
+
+  function commit() {
+    const v = draft.trim();
+    if (v && v !== value) onChange(v);
+    else setDraft(value);
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <input ref={ref} value={draft} onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); commit(); }
+          if (e.key === "Escape") { setDraft(value); setEditing(false); }
+        }}
+        style={{
+          flex: 1, margin: 0, padding: "2px 6px",
+          fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 500, color: "var(--t1)",
+          background: "var(--card)", border: "1px solid var(--accent)",
+          borderRadius: 6, outline: "none",
+          boxShadow: "0 0 0 3px var(--accent-soft)",
+        }} />
+    );
+  }
+
+  return (
+    <h2
+      onClick={() => setEditing(true)}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      title="Zum Bearbeiten klicken"
+      style={{
+        flex: 1,
+        fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 500, color: "var(--t1)",
+        margin: 0, padding: "2px 6px",
+        borderRadius: 6, cursor: "text",
+        background: hover ? "var(--surface-subtle)" : "transparent",
+        display: "flex", alignItems: "center", gap: 6,
+        transition: "background 120ms ease",
+        minWidth: 0,
+      }}
+    >
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {value || "Ohne Titel"}
+      </span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+        style={{ color: "var(--t3)", opacity: hover ? 1 : 0, transition: "opacity 120ms ease", flexShrink: 0 }}>
+        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+      </svg>
+    </h2>
   );
 }
 
