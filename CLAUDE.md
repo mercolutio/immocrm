@@ -93,47 +93,128 @@ Projekt-Kette in `playwright.config.ts`: `smoke` (no-auth) → `setup` (Login, s
 
 ## Design-System
 
-### Typografie — Wann welche Schrift
+**Leitbild: „Stripe/Linear-Frische für Makler".**
+Flat SaaS mit warmer Terrakotta-Note. Tiefe entsteht primär durch **Border + Tint**, nicht durch schwere Shadows. Vollständige Token-Definition + Kommentar-Header in `app/globals.css` (`:root`) — das ist die Quelle der Wahrheit, nicht Inline-Styles.
 
-**Playfair Display (Serif)** für alles mit Gewicht und editorialem Charakter:
-- KPI-Zahlen: 46px, font-weight 500, letter-spacing -1.5px
-- Dashboard-Begrüßung (`.hdr-title`): 22px, font-weight 400
-- Alle Card-/Section-Headlines (`.card-title`): 16px, font-weight 400
-- Pipeline-Zahlen über den Bars (`.pipe-n`): 24px, font-weight 500
-- KI-Berater-Name im Panel
+### Design-Tokens (CSS-Variablen in `app/globals.css`)
+Immer über `var(--…)` konsumieren, **niemals Hex-Werte inline** (außer in der `:root`-Definition selbst):
 
-**DM Sans (Sans-Serif)** für alles Funktionale:
-- Body-Text, Labels, Meta, Buttons, Inputs, Zeitstempel
-- Uppercase-Labels: 10px, font-weight 600, letter-spacing 0.09em
-- Navigation, Badges, Chips
+```
+Surfaces       --bg (#F5F3EF)  --card (#FFF)  --surface-subtle (#FAF8F5)  --bg2 (#F0EBE4)
+Text           --t1 (#18120E primary)  --t2 (#3D2E26 body)  --label (#4A3F35)
+               --t3 (#8C7B70 meta)  --placeholder (#A09080)
+Borders        --border-strong (#E0D8D0 inputs/btn)  --border (#E8E2DA cards)
+               --border-subtle (#F0EBE4 row divider)
+Accent         --accent (#C2692A)  --accent-hover (#A8581F)
+               --accent-soft (#F0EBE4)  --accent-light (#E88B50 sidebar active)
+Sidebar        --sb-bg (#18120E)  --sb-active-bg (rgba accent 0.18)  --sb-active-txt (#E88B50)
+Badges         --badge-{green|blue|orange|brown|gray|accent}[-bg]   (Tailwind-Palette)
+Legacy-Semantik --red / --grn / --blu / --pur / --amb (+ *-bg)    — Activity-Icons, Alerts
+Motion         --ease-out cubic-bezier(.4,0,.2,1)  --dur-in 110ms  --dur-out 220ms
+Elevation      --shadow-1 (subtle)  --shadow-2 (cards ruhe)  --shadow-3 (lift hover)
+Hover-Tints    --hover-tint-light  --hover-tint-row  --hover-accent-tint
+Focus          --focus-ring  (accent 0.18 ring — nur Form-Felder mit `.contact-detail`-Kontext)
+```
+Legacy-Aliases (`--input-bg`, `--input-border`, `--thead-bg`, `--row-divider`, `--border-md`) existieren noch für ~1000 Altreferenzen — **in neuem Code die neuen Tokens nutzen**.
 
-**Typskala (Modular, 8px-Basis):**
-`10 → 11.5 → 12 → 12.5 → 13 → 13.5 → 14 → 16 → 22 → 24 → 46`
+### Typografie
+Zwei Fonts, die in `app/layout.tsx` via `next/font/google` geladen und als `--font-dm-sans` / `--font-playfair` exposed werden. Helfer-Variablen: `--font-body`, `--font-display`.
 
-### Kern-Farben
-- Primärfarbe (Accent): `#C2692A` (Terrakotta)
-- Hintergrund: `#F5F3EF`
-- Sidebar-Hintergrund: `#18120E` (dunkel)
-- Zusätzliche Tokens (blu/grn/amb/pur, Badge-Farben) werden als CSS-Variablen in `globals.css` definiert und in `lib/types.ts`/`lib/ui-tokens.ts` über `var(--…)` konsumiert.
+**Playfair Display** — nur für Titel/Werte, kleiner dosiert als früher:
+- Page-Title (`.page-title`, `.hdr-title`): 26 / 500, letter-spacing -0.5px
+- KPI-Value (`.kpi-val`, `.stat-value`): 22 / 500, letter-spacing -0.3px
+- Card-/Detail-Title (`.detail-title`): 16 / 500
+- KI-Berater-Name (`.ki-name`): 15 / 400
+- Pipeline-Zahlen (`.pipe-n`): 15 / 400
 
-### Abstands-Prinzipien
-- Body-Wrap-Padding: 26px oben/unten, 30px links/rechts
-- Card-Padding: 22px 24px
-- Grid-Gaps: 16–18px zwischen allen Karten
-- Listen-Zeilen (Heute, Feed): mindestens 13px vertical padding
-- Sidebar-Nav-Items: padding 9px 12px, gap 2px zwischen Items
-- `#F5F3EF` ist aktives Designelement — atmen lassen, nicht füllen
+**DM Sans** — alles andere:
+- Card-Title (`.card-title`): 13 / 600 (nicht mehr Playfair!)
+- Body-Primary: 13 / 500 `--t1`
+- Body: 13 / 400 `--t2`
+- Form-Label: 13 / 500 `--label`
+- Meta / Zeitstempel: 12 / 400 `--t3`
+- Table-Head / Section-Head: **11 / 600 UPPERCASE, letter-spacing 0.06em**
+- KPI-Label: 11 / 500 UPPERCASE, letter-spacing 0.04em
 
-### Schatten-System
-- Ruhe-Schatten (alle Karten): `0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)`
-- Hover-Schatten: `0 6px 20px rgba(28,24,20,0.09), 0 2px 6px rgba(28,24,20,0.06)` + `translateY(-2px)`
-- Kein reiner Border als primäre Karten-Abgrenzung — Schatten übernimmt die Tiefe
-- Border-Opacity: `rgba(0,0,0,0.05)` — nahezu unsichtbar
+> Wichtige Korrektur ggü. früheren Specs: KPIs sind **22px** (nicht 46), Card-Titles sind **DM Sans 13/600** (nicht Playfair 16). Die Typskala ist deutlich flacher geworden.
 
-### Farbregeln für `#C2692A` (Terrakotta)
-Einsetzen für: CTA-Buttons, aktiver Sidebar-Zustand (inset 3px border), "Heute"-Karte (linker Akzent), KI-Chance-Badges, Sparkline-Highlights, Link-Hover.
-Nicht für: Füllfarben großer Flächen, Dekorationselemente ohne Funktion.
-Faustregel: Terrakotta ist der einzige Farbpunkt — er muss verdient sein.
+### Spacing / Radius / Größen-Konstanten
+- Page-Padding: `28px 36px 0` (top/sides), Content-Padding `16px 36px 36px`
+- Card-Padding: `22px 24px` · Card-Radius: **20px** (Dashboard `.card`) oder **12px** (Tabellen-Wraps, Panels)
+- Button-Radius: 8px · Badge-Radius: 20px (Pill)
+- Input-Höhe: **37px** · Button-Höhe: 36px (primary/secondary) / 34px (ghost)
+- Icon-Button: 37×37 (mit Border) bzw. 28×28 (`.h-icon-btn`, ghost circle)
+- Table-Row ≈ 60px (16px padding + 32px Avatar)
+- Grid-Gaps: 13–18px je nach Dichte
+- Sidebar: 220px breit, collapsed 52px · Items padding 8px 10px, radius 7px
+
+### Interaktions-System (zentraler Punkt — bitte einhalten)
+**Asymmetrisches Timing**: `--dur-in: 110ms` (hover-on), `--dur-out: 220ms` (hover-off). Alle Transitions definieren die längere Out-Dauer und setzen im `:hover` die kürzere Dauer. Easing: `--ease-out` immer.
+
+**Kanonische Hover-Klassen** (nicht jedes Mal neu stylen):
+- `.h-lift` — Karten: `translateY(-2px)` + `--shadow-3` + stärkere Border
+- `.h-soft` — ghost hover: nur Background-Tint (`--hover-tint-light`), kein Lift
+- `.h-menu-item` — Dropdown-Items: cream-fill (`--bg`)
+- `.h-row` — Table-Rows: `--hover-tint-row` + **inset 3px accent border** links + Padding-Shift
+- `.h-link` — Text-Hover auf `--accent`
+- `.h-icon-btn` — 28×28 kreisförmiger Icon-Button, `.h-icon-btn.danger` bei destruktiv
+- `.h-accordion` — Accordion-Header mit `--hover-accent-tint`
+
+**Kanonische Button/Input-Klassen**: `.btn-primary`, `.btn-secondary`, `.btn-icon`, `.btn-ghost`, `.input-field`. Diese in neuem Code bevorzugen statt Tailwind-Kombinationen oder Inline-Styles.
+
+**Focus**: Standard ist **Border → `--accent`, kein Ring** (flat SaaS). Ausnahme: Detail-Formulare unter `.contact-detail` nutzen zusätzlich `--focus-ring`.
+
+### Shadow-Stufen
+- `--shadow-1` — 1px, nur selten (z. B. Unsaved-Card Save-Button ruhe)
+- `--shadow-2` — Karten im Ruhezustand (Default)
+- `--shadow-3` — Hover-Lift (`translateY(-2px)`)
+
+Tiefe kommt primär aus **Border + Background-Tint**. Schwere Dropshadows vermeiden.
+
+### Badge-System
+Einheitliches Format: **6px Dot + Label, padding 3px 10px, radius 20px, 11px/500, gap 5px**. Farben über Badge-Tokens:
+
+| Badge     | Verwendung                                    |
+|-----------|-----------------------------------------------|
+| green     | Abschluss, Verfügbar, Besichtigung (Stage)    |
+| blue      | Qualifizierung                                |
+| orange    | Verhandlung, Reserviert                       |
+| brown     | Notariat                                      |
+| gray      | Verloren, Archiviert, Sold/Rented             |
+| accent    | Property-Type (Wohnung, Haus) & generische    |
+
+Alte Semantik-Farben (`--red/grn/blu/pur/amb`) bleiben für **Activity-Icons** (Timeline) und **Alert-Banner** (z. B. `.funnel-alert`). Für neue Badges → Badge-Tokens.
+
+### Layout-Patterns
+
+**List-Page** (Kontakte / Objekte / Pipeline-Liste / Tasks — exakt in dieser Reihenfolge):
+```
+.page-header (28 36 0, Title + 1-2 Actions rechts)
+.stat-strip  (20 36 0, 1fr-Spalten mit Trennlinien — NICHT .kpi-strip, das ist Dashboard-only)
+.page-toolbar (Suche max-320 + Filter + .view-toggle)
+.page-content (16 36 36) → .list-table-wrap (radius 12) → .table-footer (surface-subtle)
+```
+
+**Detail-Page** (`contacts/[id]`, `properties/[id]`, `pipeline/[id]`):
+```
+.detail-header (Back-Link + / + .detail-title Playfair 16 + .detail-actions rechts)
+```
+
+**Dashboard** benutzt eigene Klassen (`.kpi-strip`, `.main-grid` 2fr:1fr, `.bottom-grid` 3×, `.heute-card` mit linkem Accent-Border, `.ki-panel` mit #0A1208-Dark-Surface und `breathe`-Animation).
+
+### Sidebar
+- Dark Surface `--sb-bg` mit radialer Accent-Glow am unteren Rand (`::after` gradient)
+- Aktiv-State: `--sb-active-bg` + `--sb-active-txt` + 2px Akzentstreifen links (`::before`)
+- Collapsed-Mode (52px) mit Floating-Tooltip (JS, nicht CSS `title`) — siehe `components/Sidebar.tsx`
+- KI-Entry (`.sb-ki`) mit atmender Dot-Animation (`@keyframes breathe`)
+
+### Farbregel für `#C2692A` (Terrakotta)
+Einsetzen für: Primary-CTA, aktive Sidebar-Items, Links/Hover, "Heute"-Card linker Rand, KI-Chance-Chips, Row-Hover-Inset-Border, Sparkline-Highlights, Badge `orange/accent`.
+Nicht für: Füllflächen, Dekorationselemente ohne Funktion, mehrere Elemente pro Viewport gleichzeitig.
+**Faustregel: Terrakotta ist der einzige Farbpunkt — er muss verdient sein.**
+
+### Animationen
+`fadeUp` (List-Enter mit staggered `.anim-0/1/2` und `.kpi:nth-child(n)`), `taskPeekIn/Out` (Side-Sheet Slide, 260/200ms), `borderFlash` (Quick-Add-Success, 900ms), `breathe` (KI-Dot, 2.4s infinite).
 
 ## Projekt-Regeln
 - **Alle UI-Texte auf Deutsch** (Labels, Buttons, Fehlermeldungen, Placeholder, Kommentare in DE sind üblich).
