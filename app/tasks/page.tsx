@@ -305,7 +305,7 @@ export default function TasksPage() {
         </div>
       </div>
 
-      <div className="body-wrap" style={{ padding: view === "kanban" ? "16px 0 26px 30px" : "16px 36px 40px" }}>
+      <div className="body-wrap" style={{ paddingTop: 18, ...(view === "kanban" ? { paddingRight: 0 } : {}) }}>
         {loading ? (
           <div style={{ padding: 24, color: "var(--t3)" }}>Lade…</div>
         ) : view === "list" ? (
@@ -348,64 +348,99 @@ function TaskListView({
   memberProfiles: Record<string, { name: string; email: string }>;
 }) {
   if (tasks.length === 0) {
-    return <div style={{ padding: 40, textAlign: "center", color: "var(--t3)" }}>Keine Aufgaben gefunden.</div>;
+    return (
+      <div className="list-table-wrap" style={{ padding: 40, textAlign: "center", color: "var(--t3)", fontSize: 13 }}>
+        Keine Aufgaben gefunden.
+      </div>
+    );
   }
+  const headers: string[] = ["", "Titel", "Priorität", "Status", "Fällig"];
+  if (isTeam) headers.push("Zugewiesen");
+  headers.push("Verknüpft");
   return (
     <div className="list-table-wrap">
-      <table>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
-          <tr>
-            <th style={{ width: 36 }}></th>
-            <th>Titel</th>
-            <th>Priorität</th>
-            <th>Status</th>
-            <th>Fällig</th>
-            {isTeam && <th>Zugewiesen</th>}
-            <th>Verknüpft</th>
+          <tr style={{ background: "var(--surface-subtle)", borderBottom: "1px solid var(--border)" }}>
+            {headers.map((h, i) => (
+              <th key={i} style={{
+                padding: i === 0 ? "12px 8px 12px 22px" : "12px 22px",
+                width: i === 0 ? 42 : undefined,
+                textAlign: "left",
+                fontSize: 11, fontWeight: 600, color: "var(--t3)",
+                textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap",
+              }}>{h}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {tasks.map((t) => {
+          {tasks.map((t, i) => {
             const sc = TASK_STATUS_COLORS[t.status];
             const pc = TASK_PRIORITY_COLORS[t.priority];
             const assignee = t.assigned_to ? (memberProfiles[t.assigned_to]?.name || memberProfiles[t.assigned_to]?.email) : null;
+            const done = t.status === "done";
             return (
-              <tr key={t.id} style={{ cursor: "pointer" }} onClick={() => onEdit(t)}>
-                <td onClick={(e) => { e.stopPropagation(); onToggleDone(t); }}>
-                  <input type="checkbox" checked={t.status === "done"} onChange={() => {}} />
+              <tr key={t.id} className="h-row"
+                style={{
+                  cursor: "pointer",
+                  borderBottom: i < tasks.length - 1 ? "1px solid var(--border-subtle)" : "none",
+                  opacity: done ? 0.7 : 1,
+                }}
+                onClick={() => onEdit(t)}
+              >
+                <td style={{ padding: "14px 8px 14px 22px", width: 42 }}
+                    onClick={(e) => { e.stopPropagation(); onToggleDone(t); }}>
+                  <input type="checkbox" checked={done} onChange={() => {}}
+                    style={{ width: 15, height: 15, cursor: "pointer", accentColor: "var(--accent)" }} />
                 </td>
-                <td>
+                <td style={{ padding: "14px 22px" }}>
                   <div className="cell-primary" style={{
-                    textDecoration: t.status === "done" ? "line-through" : "none",
-                    color: t.status === "done" ? "var(--t3)" : "var(--t1)",
-                    display: "flex", alignItems: "center", gap: 6,
+                    textDecoration: done ? "line-through" : "none",
+                    color: done ? "var(--t3)" : "var(--t1)",
+                    display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
                   }}>
-                    {t.title}
-                    {t.recurrence !== "none" && <span title="Wiederholt sich" style={{ fontSize: 11 }}>🔁</span>}
+                    <span>{t.title}</span>
+                    {t.recurrence !== "none" && <span title="Wiederholt sich" style={{ fontSize: 11, color: "var(--t3)" }}>↻</span>}
                     {t._checklist_total > 0 && (
-                      <span style={{ fontSize: 11, color: "var(--t3)" }}>☑︎ {t._checklist_done}/{t._checklist_total}</span>
+                      <span style={{ fontSize: 11, color: "var(--t3)" }}>✓ {t._checklist_done}/{t._checklist_total}</span>
                     )}
                     {t._attachments > 0 && (
-                      <span style={{ fontSize: 11, color: "var(--t3)" }}>📎 {t._attachments}</span>
+                      <span style={{ fontSize: 11, color: "var(--t3)" }}>◎ {t._attachments}</span>
                     )}
                     {t._subtasks > 0 && (
-                      <span style={{ fontSize: 11, color: "var(--t3)" }}>↪︎ {t._subtasks}</span>
+                      <span style={{ fontSize: 11, color: "var(--t3)" }}>↳ {t._subtasks}</span>
                     )}
                   </div>
                 </td>
-                <td>
-                  <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 20, color: pc.fg, background: pc.bg }}>
+                <td style={{ padding: "14px 22px" }}>
+                  <span style={{
+                    display: "inline-block",
+                    fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 20,
+                    color: pc.fg, background: pc.bg,
+                  }}>
                     {TASK_PRIORITY_LABELS[t.priority]}
                   </span>
                 </td>
-                <td>
-                  <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 20, color: sc.fg, background: sc.bg }}>
+                <td style={{ padding: "14px 22px" }}>
+                  <span style={{
+                    display: "inline-block",
+                    fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 20,
+                    color: sc.fg, background: sc.bg,
+                  }}>
                     {TASK_STATUS_LABELS[t.status]}
                   </span>
                 </td>
-                <td style={{ color: dueColor(t.due_date), fontSize: 13 }}>{fmtDE(t.due_date)}</td>
-                {isTeam && <td className="cell-meta">{assignee ?? "—"}</td>}
-                <td className="cell-meta">{t._linked_label ?? "—"}</td>
+                <td style={{ padding: "14px 22px", color: done ? "var(--t3)" : dueColor(t.due_date), fontSize: 13, whiteSpace: "nowrap" }}>
+                  {fmtDE(t.due_date)}
+                </td>
+                {isTeam && (
+                  <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>
+                    {assignee ?? <span style={{ color: "var(--t3)" }}>—</span>}
+                  </td>
+                )}
+                <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>
+                  {t._linked_label ?? <span style={{ color: "var(--t3)" }}>—</span>}
+                </td>
               </tr>
             );
           })}
