@@ -40,6 +40,7 @@ interface Props {
   organizationId: string;
   members: OrganizationMember[];
   memberProfiles: Record<string, { name: string; email: string }>;
+  variant?: "modal" | "peek";
 }
 
 type TabKey = "details" | "checklist" | "comments" | "attachments" | "subtasks";
@@ -47,7 +48,9 @@ type TabKey = "details" | "checklist" | "comments" | "attachments" | "subtasks";
 export default function TaskSheet({
   open, onClose, onSaved, mode, task, initialLink, initialStatus, initialPriority,
   initialAssignedTo, initialParentTaskId, organizationId, members, memberProfiles,
+  variant = "modal",
 }: Props) {
+  const isPeek = variant === "peek";
   const supabase = useMemo(() => createClient(), []);
   const isEdit = mode === "edit" && !!task;
   const [tab, setTab] = useState<TabKey>("details");
@@ -202,11 +205,17 @@ export default function TaskSheet({
   }));
 
   return (
-    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+    <Sheet open={open} onOpenChange={(v) => !v && onClose()} modal={!isPeek}>
       <SheetPortal>
-        <SheetOverlay />
+        {!isPeek && <SheetOverlay />}
         <SheetPrimitive.Content
-          className="fixed inset-y-0 right-0 z-50 h-full w-full sm:max-w-[560px] bg-[var(--card)] shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right data-[state=closed]:duration-200 data-[state=open]:duration-300"
+          onPointerDownOutside={(e) => { if (isPeek) e.preventDefault(); }}
+          onInteractOutside={(e) => { if (isPeek) e.preventDefault(); }}
+          className={
+            isPeek
+              ? "fixed inset-y-0 right-0 z-40 h-full w-full sm:max-w-[480px] bg-[var(--card)] shadow-[-12px_0_32px_rgba(28,24,20,0.08)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right data-[state=closed]:duration-150 data-[state=open]:duration-200"
+              : "fixed inset-y-0 right-0 z-50 h-full w-full sm:max-w-[560px] bg-[var(--card)] shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right data-[state=closed]:duration-200 data-[state=open]:duration-300"
+          }
           style={{ display: "flex", flexDirection: "column", borderLeft: "1px solid var(--border)" }}
         >
           <SheetPrimitive.Title className="sr-only">

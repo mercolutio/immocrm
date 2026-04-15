@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import AppSelect from "@/components/AppSelect";
 import TaskSheet from "@/components/TaskSheet";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { createClient } from "@/lib/supabase/client";
 import { useOrganization } from "@/lib/hooks/useOrganization";
 import { shouldSpawnNextInstance } from "@/lib/recurrence";
@@ -15,13 +16,12 @@ import {
   TASK_PRIORITY_LABELS,
   TASK_STATUS_COLORS,
   TASK_PRIORITY_COLORS,
-  labelsToOptions,
 } from "@/lib/types";
 
-type View = "list" | "due" | "kanban";
-type KanbanGroupBy = "status" | "priority" | "due" | "assignee";
+type View = "list" | "board";
+type GroupBy = "none" | "due" | "status" | "priority" | "assignee";
 
-interface TaskWithCounts extends Task {
+interface TaskRow extends Task {
   _checklist_total: number;
   _checklist_done: number;
   _attachments: number;
@@ -29,23 +29,18 @@ interface TaskWithCounts extends Task {
   _linked_label?: string;
 }
 
-function endOfToday(): Date {
-  const d = new Date(); d.setHours(23, 59, 59, 999); return d;
-}
-
-function startOfToday(): Date {
-  const d = new Date(); d.setHours(0, 0, 0, 0); return d;
-}
-
-function endOfWeek(): Date {
-  const d = new Date(); d.setDate(d.getDate() + (7 - d.getDay() || 7)); d.setHours(23,59,59,999); return d;
-}
+// ============================================================
+// Helpers
+// ============================================================
+function endOfToday(): Date { const d = new Date(); d.setHours(23,59,59,999); return d; }
+function startOfToday(): Date { const d = new Date(); d.setHours(0,0,0,0); return d; }
+function endOfWeek(): Date { const d = new Date(); d.setDate(d.getDate() + (7 - d.getDay() || 7)); d.setHours(23,59,59,999); return d; }
 
 function fmtDE(iso: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
 function dueBucket(iso: string | null): "overdue" | "today" | "week" | "later" | "none" {
@@ -57,27 +52,43 @@ function dueBucket(iso: string | null): "overdue" | "today" | "week" | "later" |
   return "later";
 }
 
-function dueColor(iso: string | null): string {
+function dueColor(iso: string | null, done: boolean): string {
+  if (done) return "var(--t3)";
   const b = dueBucket(iso);
   if (b === "overdue") return "var(--red)";
   if (b === "today") return "var(--badge-orange)";
   return "var(--t2)";
 }
 
+const DUE_LABELS: Record<string, string> = {
+  overdue: "Überfällig", today: "Heute", week: "Diese Woche", later: "Später", none: "Ohne Datum",
+};
+const DUE_COLORS: Record<string, string> = {
+  overdue: "var(--red)", today: "var(--badge-orange)", week: "var(--badge-blue)",
+  later: "var(--t2)", none: "var(--t3)",
+};
+
+// ============================================================
+// Main Page
+// ============================================================
 export default function TasksPage() {
   const supabase = useMemo(() => createClient(), []);
   const orgCtx = useOrganization();
-  const [tasks, setTasks] = useState<TaskWithCounts[]>([]);
+  const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [dueFilter, setDueFilter] = useState<string>("all");
+  const [dueFilter] = useState<string>("all");
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
+  const [showDone, setShowDone] = useState(false);
   const [view, setView] = useState<View>("list");
-  const [groupBy, setGroupBy] = useState<KanbanGroupBy>("status");
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editTask, setEditTask] = useState<Task | null>(null);
+  const [groupBy, setGroupBy] = useState<GroupBy>("due");
+  const [peekTaskId, setPeekTaskId] = useState<string | null>(null);
+  const [createMode, setCreateMode] = useState(false);
+
+  const searchRef = useRef<HTMLInputElement>(null);
+  const quickAddRef = useRef<HTMLInputElement>(null);
 
   async function refetch() {
     setLoading(true);
@@ -91,17 +102,10 @@ export default function TasksPage() {
     const list = (base ?? []) as Task[];
     const ids = list.map((t) => t.id);
 
-    // Bulk count checklist/attachments/subtasks
     const [{ data: chk }, { data: att }, { data: subs }] = await Promise.all([
-      ids.length
-        ? supabase.from("task_checklist_items").select("task_id, is_done").in("task_id", ids)
-        : Promise.resolve({ data: [] as { task_id: string; is_done: boolean }[] }),
-      ids.length
-        ? supabase.from("task_attachments").select("task_id").in("task_id", ids)
-        : Promise.resolve({ data: [] as { task_id: string }[] }),
-      ids.length
-        ? supabase.from("tasks").select("id, parent_task_id").in("parent_task_id", ids)
-        : Promise.resolve({ data: [] as { id: string; parent_task_id: string }[] }),
+      ids.length ? supabase.from("task_checklist_items").select("task_id, is_done").in("task_id", ids) : Promise.resolve({ data: [] as { task_id: string; is_done: boolean }[] }),
+      ids.length ? supabase.from("task_attachments").select("task_id").in("task_id", ids) : Promise.resolve({ data: [] as { task_id: string }[] }),
+      ids.length ? supabase.from("tasks").select("id, parent_task_id").in("parent_task_id", ids) : Promise.resolve({ data: [] as { id: string; parent_task_id: string }[] }),
     ]);
 
     const chkMap = new Map<string, { total: number; done: number }>();
@@ -115,21 +119,16 @@ export default function TasksPage() {
     const subMap = new Map<string, number>();
     (subs ?? []).forEach((r) => subMap.set(r.parent_task_id, (subMap.get(r.parent_task_id) ?? 0) + 1));
 
-    // Linked labels
     const contactIds = list.map((t) => t.contact_id).filter(Boolean) as string[];
     const propertyIds = list.map((t) => t.property_id).filter(Boolean) as string[];
     const [{ data: contacts }, { data: properties }] = await Promise.all([
-      contactIds.length
-        ? supabase.from("contacts").select("id, first_name, last_name").in("id", contactIds)
-        : Promise.resolve({ data: [] as { id: string; first_name: string; last_name: string }[] }),
-      propertyIds.length
-        ? supabase.from("properties").select("id, title").in("id", propertyIds)
-        : Promise.resolve({ data: [] as { id: string; title: string }[] }),
+      contactIds.length ? supabase.from("contacts").select("id, first_name, last_name").in("id", contactIds) : Promise.resolve({ data: [] as { id: string; first_name: string; last_name: string }[] }),
+      propertyIds.length ? supabase.from("properties").select("id, title").in("id", propertyIds) : Promise.resolve({ data: [] as { id: string; title: string }[] }),
     ]);
     const cMap = new Map((contacts ?? []).map((c) => [c.id, `${c.first_name} ${c.last_name}`.trim()]));
     const pMap = new Map((properties ?? []).map((p) => [p.id, p.title]));
 
-    const enriched: TaskWithCounts[] = list.map((t) => ({
+    const enriched: TaskRow[] = list.map((t) => ({
       ...t,
       _checklist_total: chkMap.get(t.id)?.total ?? 0,
       _checklist_done: chkMap.get(t.id)?.done ?? 0,
@@ -150,6 +149,7 @@ export default function TasksPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return tasks.filter((t) => {
+      if (!showDone && t.status === "done") return false;
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
       if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;
       if (dueFilter !== "all" && dueBucket(t.due_date) !== dueFilter) return false;
@@ -158,20 +158,27 @@ export default function TasksPage() {
         if (assigneeFilter !== "unassigned" && t.assigned_to !== assigneeFilter) return false;
       }
       if (!q) return true;
-      return t.title.toLowerCase().includes(q)
-        || (t.description?.toLowerCase().includes(q) ?? false);
+      return t.title.toLowerCase().includes(q) || (t.description?.toLowerCase().includes(q) ?? false);
     });
-  }, [tasks, search, statusFilter, priorityFilter, dueFilter, assigneeFilter]);
+  }, [tasks, search, statusFilter, priorityFilter, dueFilter, assigneeFilter, showDone]);
 
   const overdueCount = useMemo(
     () => tasks.filter((t) => t.status !== "done" && dueBucket(t.due_date) === "overdue").length,
     [tasks],
   );
+  const openCount = useMemo(() => tasks.filter((t) => t.status !== "done").length, [tasks]);
 
-  async function toggleDone(t: Task) {
+  const isTeam = orgCtx.members.length > 1;
+
+  // ---- Mutations ----
+  const patchTask = useCallback(async (id: string, patch: Partial<Task>) => {
+    setTasks((prev) => prev.map((x) => x.id === id ? { ...x, ...patch } as TaskRow : x));
+    await supabase.from("tasks").update(patch).eq("id", id);
+  }, [supabase]);
+
+  const toggleDone = useCallback(async (t: Task) => {
     const next = t.status === "done" ? "planned" : "done";
-    setTasks((prev) => prev.map((x) => x.id === t.id ? { ...x, status: next } : x));
-    await supabase.from("tasks").update({ status: next }).eq("id", t.id);
+    await patchTask(t.id, { status: next });
     if (next === "done") {
       const spawn = shouldSpawnNextInstance(t.due_date, t.recurrence, t.recurrence_end);
       if (spawn && orgCtx.organization) {
@@ -188,26 +195,64 @@ export default function TasksPage() {
         refetch();
       }
     }
+  }, [patchTask, supabase, orgCtx.organization]);
+
+  async function quickCreate(title: string, prefill?: Partial<Task>): Promise<boolean> {
+    if (!title.trim() || !orgCtx.organization) return false;
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth.user?.id;
+    if (!uid) return false;
+    const { data, error } = await supabase.from("tasks").insert({
+      organization_id: orgCtx.organization.id,
+      user_id: uid,
+      title: title.trim(),
+      priority: "medium",
+      status: "planned",
+      recurrence: "none",
+      ...prefill,
+    }).select().single();
+    if (error || !data) return false;
+    refetch();
+    return true;
   }
 
-  async function moveTo(t: Task, group: string) {
+  async function moveTaskTo(t: Task, col: string) {
     let patch: Partial<Task> = {};
-    if (groupBy === "status") patch = { status: group as TaskStatus };
-    else if (groupBy === "priority") patch = { priority: group as TaskPriority };
-    else if (groupBy === "assignee") patch = { assigned_to: group === "unassigned" ? null : group };
-    else return;
-    setTasks((prev) => prev.map((x) => x.id === t.id ? { ...x, ...patch } as TaskWithCounts : x));
-    await supabase.from("tasks").update(patch).eq("id", t.id);
+    if (groupBy === "status") patch = { status: col as TaskStatus };
+    else if (groupBy === "priority") patch = { priority: col as TaskPriority };
+    else if (groupBy === "assignee") patch = { assigned_to: col === "unassigned" ? null : col };
+    else if (groupBy === "due") {
+      const today = new Date();
+      if (col === "today") patch = { due_date: today.toISOString().slice(0, 10) };
+      else if (col === "overdue") { const d = new Date(); d.setDate(d.getDate() - 1); patch = { due_date: d.toISOString().slice(0, 10) }; }
+      else if (col === "week") { const d = new Date(); d.setDate(d.getDate() + 3); patch = { due_date: d.toISOString().slice(0, 10) }; }
+      else if (col === "later") { const d = new Date(); d.setDate(d.getDate() + 14); patch = { due_date: d.toISOString().slice(0, 10) }; }
+      else if (col === "none") patch = { due_date: null };
+    }
+    if (Object.keys(patch).length) await patchTask(t.id, patch);
   }
 
-  const isTeam = orgCtx.members.length > 1;
+  // ---- Keyboard ----
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement)?.tagName;
+      const inEditable = tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable;
+      if (inEditable) {
+        if (e.key === "Escape") (e.target as HTMLElement).blur();
+        return;
+      }
+      if (e.key === "c") { e.preventDefault(); quickAddRef.current?.focus(); }
+      else if (e.key === "/") { e.preventDefault(); searchRef.current?.focus(); }
+      else if (e.key === "Escape") { setPeekTaskId(null); setCreateMode(false); }
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  const peekTask = useMemo(() => tasks.find((t) => t.id === peekTaskId) ?? null, [tasks, peekTaskId]);
 
   if (orgCtx.loading || !orgCtx.organization) {
-    return (
-      <DashboardLayout>
-        <div style={{ padding: 36, color: "var(--t3)" }}>Lade…</div>
-      </DashboardLayout>
-    );
+    return <DashboardLayout><div style={{ padding: 36, color: "var(--t3)" }}>Lade…</div></DashboardLayout>;
   }
 
   return (
@@ -216,16 +261,19 @@ export default function TasksPage() {
         <div className="page-header-left">
           <h1 className="page-title">Aufgaben</h1>
           <p className="page-subtitle">
-            {tasks.length} {tasks.length === 1 ? "Aufgabe" : "Aufgaben"}
+            {openCount} offen
             {overdueCount > 0 && ` · ${overdueCount} überfällig`}
+            {tasks.length - openCount > 0 && ` · ${tasks.length - openCount} erledigt`}
           </p>
         </div>
         <div className="page-header-right">
-          <button onClick={() => { setEditTask(null); setSheetOpen(true); }} className="btn-primary">
+          <button onClick={() => quickAddRef.current?.focus()} className="btn-primary"
+            title="Neue Aufgabe (c)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
             Neue Aufgabe
+            <kbd style={{ marginLeft: 6, fontSize: 10, opacity: 0.7, fontFamily: "inherit" }}>c</kbd>
           </button>
         </div>
       </header>
@@ -235,29 +283,20 @@ export default function TasksPage() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          <input className="search-input" placeholder="Suche Aufgaben…"
+          <input ref={searchRef} className="search-input" placeholder="Suche Aufgaben… (/)"
             value={search} onChange={(e) => setSearch(e.target.value)} />
           {search && <button className="search-clear" onClick={() => setSearch("")}>×</button>}
         </div>
 
         <AppSelect value={statusFilter} onChange={setStatusFilter}
           style={{ width: "auto", minWidth: 120 }}
-          options={[{ value: "all", label: "Alle Status" }, ...labelsToOptions(TASK_STATUS_LABELS)]} />
+          options={[{ value: "all", label: "Alle Status" },
+            ...(Object.entries(TASK_STATUS_LABELS) as [string, string][]).map(([v, l]) => ({ value: v, label: l }))]} />
 
         <AppSelect value={priorityFilter} onChange={setPriorityFilter}
           style={{ width: "auto", minWidth: 120 }}
-          options={[{ value: "all", label: "Alle Prioritäten" }, ...labelsToOptions(TASK_PRIORITY_LABELS)]} />
-
-        <AppSelect value={dueFilter} onChange={setDueFilter}
-          style={{ width: "auto", minWidth: 140 }}
-          options={[
-            { value: "all", label: "Alle Fälligkeiten" },
-            { value: "overdue", label: "Überfällig" },
-            { value: "today", label: "Heute" },
-            { value: "week", label: "Diese Woche" },
-            { value: "later", label: "Später" },
-            { value: "none", label: "Ohne Datum" },
-          ]} />
+          options={[{ value: "all", label: "Alle Prioritäten" },
+            ...(Object.entries(TASK_PRIORITY_LABELS) as [string, string][]).map(([v, l]) => ({ value: v, label: l }))]} />
 
         {isTeam && (
           <AppSelect value={assigneeFilter} onChange={setAssigneeFilter}
@@ -272,17 +311,22 @@ export default function TasksPage() {
             ]} />
         )}
 
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--t2)", cursor: "pointer", marginLeft: 4, whiteSpace: "nowrap" }}>
+          <input type="checkbox" checked={showDone} onChange={(e) => setShowDone(e.target.checked)}
+            style={{ accentColor: "var(--accent)" }} />
+          Erledigte zeigen
+        </label>
+
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
-          {view === "kanban" && (
-            <AppSelect value={groupBy} onChange={(v) => setGroupBy(v as KanbanGroupBy)}
-              style={{ width: "auto", minWidth: 160 }}
-              options={[
-                { value: "status", label: "Nach Status" },
-                { value: "priority", label: "Nach Priorität" },
-                { value: "due", label: "Nach Fälligkeit" },
-                ...(isTeam ? [{ value: "assignee", label: "Nach Zuweisung" }] : []),
-              ]} />
-          )}
+          <AppSelect value={groupBy} onChange={(v) => setGroupBy(v as GroupBy)}
+            style={{ width: "auto", minWidth: 150 }}
+            options={[
+              { value: "none", label: "Keine Gruppierung" },
+              { value: "due", label: "Nach Fälligkeit" },
+              { value: "status", label: "Nach Status" },
+              { value: "priority", label: "Nach Priorität" },
+              ...(isTeam ? [{ value: "assignee", label: "Nach Zuweisung" }] : []),
+            ]} />
           <div className="view-toggle">
             <button onClick={() => setView("list")} className={view === "list" ? "active" : ""} title="Liste">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -290,13 +334,7 @@ export default function TasksPage() {
                 <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
               </svg>
             </button>
-            <button onClick={() => setView("due")} className={view === "due" ? "active" : ""} title="Nach Fälligkeit">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="4" width="18" height="18" rx="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-            </button>
-            <button onClick={() => setView("kanban")} className={view === "kanban" ? "active" : ""} title="Kanban">
+            <button onClick={() => setView("board")} className={view === "board" ? "active" : ""} title="Board">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/>
               </svg>
@@ -305,27 +343,57 @@ export default function TasksPage() {
         </div>
       </div>
 
-      <div className="body-wrap" style={{ paddingTop: 18, ...(view === "kanban" ? { paddingRight: 0 } : {}) }}>
+      <div className="body-wrap" style={{ paddingTop: 18, ...(view === "board" ? { paddingRight: 0 } : {}) }}>
         {loading ? (
           <div style={{ padding: 24, color: "var(--t3)" }}>Lade…</div>
         ) : view === "list" ? (
-          <TaskListView tasks={filtered} onEdit={(t) => { setEditTask(t); setSheetOpen(true); }}
-            onToggleDone={toggleDone} isTeam={isTeam} memberProfiles={orgCtx.memberProfiles} />
-        ) : view === "due" ? (
-          <TaskByDueView tasks={filtered} onEdit={(t) => { setEditTask(t); setSheetOpen(true); }}
-            onToggleDone={toggleDone} isTeam={isTeam} memberProfiles={orgCtx.memberProfiles} />
+          <ListView
+            tasks={filtered}
+            groupBy={groupBy}
+            quickAddRef={quickAddRef}
+            isTeam={isTeam}
+            memberProfiles={orgCtx.memberProfiles}
+            members={orgCtx.members}
+            onPeek={setPeekTaskId}
+            onToggleDone={toggleDone}
+            onPatch={patchTask}
+            onQuickCreate={quickCreate}
+            onMoveTo={moveTaskTo}
+          />
         ) : (
-          <TaskKanbanView tasks={filtered} groupBy={groupBy} onEdit={(t) => { setEditTask(t); setSheetOpen(true); }}
-            onMoveTo={moveTo} members={orgCtx.members} memberProfiles={orgCtx.memberProfiles} />
+          <BoardView
+            tasks={filtered}
+            groupBy={groupBy === "none" ? "status" : groupBy}
+            isTeam={isTeam}
+            memberProfiles={orgCtx.memberProfiles}
+            members={orgCtx.members}
+            onPeek={setPeekTaskId}
+            onPatch={patchTask}
+            onQuickCreate={quickCreate}
+          />
         )}
       </div>
 
-      {sheetOpen && (
+      {/* Peek-Panel: Edit */}
+      {peekTask && (
         <TaskSheet
-          open={sheetOpen}
-          onClose={() => { setSheetOpen(false); setEditTask(null); refetch(); }}
-          mode={editTask ? "edit" : "create"}
-          task={editTask}
+          key={`edit-${peekTask.id}`}
+          open={true}
+          onClose={() => { setPeekTaskId(null); refetch(); }}
+          mode="edit"
+          task={peekTask}
+          organizationId={orgCtx.organization.id}
+          members={orgCtx.members}
+          memberProfiles={orgCtx.memberProfiles}
+          variant="peek"
+        />
+      )}
+      {/* Create (full modal) */}
+      {createMode && (
+        <TaskSheet
+          open={true}
+          onClose={() => { setCreateMode(false); refetch(); }}
+          mode="create"
           organizationId={orgCtx.organization.id}
           members={orgCtx.members}
           memberProfiles={orgCtx.memberProfiles}
@@ -336,310 +404,692 @@ export default function TasksPage() {
 }
 
 // ============================================================
-// List View
+// List View (with group-by + collapsible sections)
 // ============================================================
-function TaskListView({
-  tasks, onEdit, onToggleDone, isTeam, memberProfiles,
-}: {
-  tasks: TaskWithCounts[];
-  onEdit: (t: Task) => void;
-  onToggleDone: (t: Task) => void;
+interface ListViewProps {
+  tasks: TaskRow[];
+  groupBy: GroupBy;
+  quickAddRef: React.RefObject<HTMLInputElement>;
   isTeam: boolean;
   memberProfiles: Record<string, { name: string; email: string }>;
-}) {
-  if (tasks.length === 0) {
-    return (
-      <div className="list-table-wrap" style={{ padding: 40, textAlign: "center", color: "var(--t3)", fontSize: 13 }}>
-        Keine Aufgaben gefunden.
-      </div>
-    );
-  }
-  const headers: string[] = ["", "Titel", "Priorität", "Status", "Fällig"];
-  if (isTeam) headers.push("Zugewiesen");
-  headers.push("Verknüpft");
-  return (
-    <div className="list-table-wrap">
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ background: "var(--surface-subtle)", borderBottom: "1px solid var(--border)" }}>
-            {headers.map((h, i) => (
-              <th key={i} style={{
-                padding: i === 0 ? "12px 8px 12px 22px" : "12px 22px",
-                width: i === 0 ? 42 : undefined,
-                textAlign: "left",
-                fontSize: 11, fontWeight: 600, color: "var(--t3)",
-                textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap",
-              }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {tasks.map((t, i) => {
-            const sc = TASK_STATUS_COLORS[t.status];
-            const pc = TASK_PRIORITY_COLORS[t.priority];
-            const assignee = t.assigned_to ? (memberProfiles[t.assigned_to]?.name || memberProfiles[t.assigned_to]?.email) : null;
-            const done = t.status === "done";
-            return (
-              <tr key={t.id} className="h-row"
-                style={{
-                  cursor: "pointer",
-                  borderBottom: i < tasks.length - 1 ? "1px solid var(--border-subtle)" : "none",
-                  opacity: done ? 0.7 : 1,
-                }}
-                onClick={() => onEdit(t)}
-              >
-                <td style={{ padding: "14px 8px 14px 22px", width: 42 }}
-                    onClick={(e) => { e.stopPropagation(); onToggleDone(t); }}>
-                  <input type="checkbox" checked={done} onChange={() => {}}
-                    style={{ width: 15, height: 15, cursor: "pointer", accentColor: "var(--accent)" }} />
-                </td>
-                <td style={{ padding: "14px 22px" }}>
-                  <div className="cell-primary" style={{
-                    textDecoration: done ? "line-through" : "none",
-                    color: done ? "var(--t3)" : "var(--t1)",
-                    display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
-                  }}>
-                    <span>{t.title}</span>
-                    {t.recurrence !== "none" && <span title="Wiederholt sich" style={{ fontSize: 11, color: "var(--t3)" }}>↻</span>}
-                    {t._checklist_total > 0 && (
-                      <span style={{ fontSize: 11, color: "var(--t3)" }}>✓ {t._checklist_done}/{t._checklist_total}</span>
-                    )}
-                    {t._attachments > 0 && (
-                      <span style={{ fontSize: 11, color: "var(--t3)" }}>◎ {t._attachments}</span>
-                    )}
-                    {t._subtasks > 0 && (
-                      <span style={{ fontSize: 11, color: "var(--t3)" }}>↳ {t._subtasks}</span>
-                    )}
-                  </div>
-                </td>
-                <td style={{ padding: "14px 22px" }}>
-                  <span style={{
-                    display: "inline-block",
-                    fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 20,
-                    color: pc.fg, background: pc.bg,
-                  }}>
-                    {TASK_PRIORITY_LABELS[t.priority]}
-                  </span>
-                </td>
-                <td style={{ padding: "14px 22px" }}>
-                  <span style={{
-                    display: "inline-block",
-                    fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 20,
-                    color: sc.fg, background: sc.bg,
-                  }}>
-                    {TASK_STATUS_LABELS[t.status]}
-                  </span>
-                </td>
-                <td style={{ padding: "14px 22px", color: done ? "var(--t3)" : dueColor(t.due_date), fontSize: 13, whiteSpace: "nowrap" }}>
-                  {fmtDE(t.due_date)}
-                </td>
-                {isTeam && (
-                  <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>
-                    {assignee ?? <span style={{ color: "var(--t3)" }}>—</span>}
-                  </td>
-                )}
-                <td style={{ padding: "14px 22px", fontSize: 13, color: "var(--t2)" }}>
-                  {t._linked_label ?? <span style={{ color: "var(--t3)" }}>—</span>}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
+  members: { user_id: string; role: string }[];
+  onPeek: (id: string) => void;
+  onToggleDone: (t: Task) => void;
+  onPatch: (id: string, patch: Partial<Task>) => void;
+  onQuickCreate: (title: string, prefill?: Partial<Task>) => Promise<boolean>;
+  onMoveTo: (t: Task, col: string) => void;
 }
 
-// ============================================================
-// By Due View
-// ============================================================
-function TaskByDueView(props: {
-  tasks: TaskWithCounts[];
-  onEdit: (t: Task) => void;
-  onToggleDone: (t: Task) => void;
-  isTeam: boolean;
-  memberProfiles: Record<string, { name: string; email: string }>;
-}) {
-  const groups: { key: string; label: string; color: string; items: TaskWithCounts[] }[] = [
-    { key: "overdue", label: "Überfällig", color: "var(--red)", items: [] },
-    { key: "today", label: "Heute", color: "var(--badge-orange)", items: [] },
-    { key: "week", label: "Diese Woche", color: "var(--badge-blue)", items: [] },
-    { key: "later", label: "Später", color: "var(--t2)", items: [] },
-    { key: "none", label: "Ohne Datum", color: "var(--t3)", items: [] },
-  ];
-  props.tasks.forEach((t) => {
-    const b = dueBucket(t.due_date);
-    groups.find((g) => g.key === b)?.items.push(t);
-  });
+function ListView(p: ListViewProps) {
+  const groups = useMemo(() => buildGroups(p.tasks, p.groupBy, p.members, p.memberProfiles), [p.tasks, p.groupBy, p.members, p.memberProfiles]);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const toggle = (k: string) => setCollapsed((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-      {groups.map((g) => g.items.length > 0 && (
-        <div key={g.key}>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
-            fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em",
-            color: g.color,
-          }}>
-            {g.label}
-            <span style={{ color: "var(--t3)", fontWeight: 500 }}>({g.items.length})</span>
-          </div>
-          <TaskListView
-            tasks={g.items}
-            onEdit={props.onEdit}
-            onToggleDone={props.onToggleDone}
-            isTeam={props.isTeam}
-            memberProfiles={props.memberProfiles}
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+      {p.groupBy === "none" ? (
+        <SectionBlock
+          headerKey="all"
+          label={null}
+          color="var(--t3)"
+          items={p.tasks}
+          collapsed={false}
+          onToggle={() => {}}
+          showQuickAdd
+          quickAddRef={p.quickAddRef}
+          isTeam={p.isTeam}
+          memberProfiles={p.memberProfiles}
+          members={p.members}
+          onPeek={p.onPeek}
+          onToggleDone={p.onToggleDone}
+          onPatch={p.onPatch}
+          onQuickCreate={(title) => p.onQuickCreate(title)}
+          onDropTo={null}
+        />
+      ) : (
+        groups.map((g, i) => (
+          <SectionBlock
+            key={g.key}
+            headerKey={g.key}
+            label={g.label}
+            color={g.color}
+            items={g.items}
+            collapsed={collapsed.has(g.key)}
+            onToggle={() => toggle(g.key)}
+            showQuickAdd={i === 0}
+            quickAddRef={i === 0 ? p.quickAddRef : undefined}
+            isTeam={p.isTeam}
+            memberProfiles={p.memberProfiles}
+            members={p.members}
+            onPeek={p.onPeek}
+            onToggleDone={p.onToggleDone}
+            onPatch={p.onPatch}
+            onQuickCreate={(title) => p.onQuickCreate(title, g.prefill)}
+            onDropTo={(t) => p.onMoveTo(t, g.key)}
           />
+        ))
+      )}
+      {p.tasks.length === 0 && p.groupBy === "none" && (
+        <div style={{ padding: 24, textAlign: "center", color: "var(--t3)", fontSize: 13 }}>
+          Keine Aufgaben.
         </div>
-      ))}
+      )}
     </div>
   );
 }
 
+interface Group {
+  key: string;
+  label: string;
+  color: string;
+  items: TaskRow[];
+  prefill: Partial<Task>;
+}
+
+function buildGroups(
+  tasks: TaskRow[],
+  groupBy: GroupBy,
+  members: { user_id: string; role: string }[],
+  memberProfiles: Record<string, { name: string; email: string }>,
+): Group[] {
+  const groups: Group[] = [];
+  if (groupBy === "due") {
+    (["overdue", "today", "week", "later", "none"] as const).forEach((k) => {
+      const prefill: Partial<Task> = {};
+      if (k === "today") { const d = new Date(); prefill.due_date = d.toISOString().slice(0, 10); }
+      if (k === "week")  { const d = new Date(); d.setDate(d.getDate() + 3); prefill.due_date = d.toISOString().slice(0, 10); }
+      if (k === "later") { const d = new Date(); d.setDate(d.getDate() + 14); prefill.due_date = d.toISOString().slice(0, 10); }
+      groups.push({
+        key: k, label: DUE_LABELS[k], color: DUE_COLORS[k],
+        items: tasks.filter((t) => dueBucket(t.due_date) === k),
+        prefill,
+      });
+    });
+  } else if (groupBy === "status") {
+    (Object.entries(TASK_STATUS_LABELS) as [TaskStatus, string][]).forEach(([k, l]) => {
+      groups.push({
+        key: k, label: l, color: TASK_STATUS_COLORS[k].fg,
+        items: tasks.filter((t) => t.status === k),
+        prefill: { status: k },
+      });
+    });
+  } else if (groupBy === "priority") {
+    (Object.entries(TASK_PRIORITY_LABELS) as [TaskPriority, string][]).forEach(([k, l]) => {
+      groups.push({
+        key: k, label: l, color: TASK_PRIORITY_COLORS[k].fg,
+        items: tasks.filter((t) => t.priority === k),
+        prefill: { priority: k },
+      });
+    });
+  } else if (groupBy === "assignee") {
+    groups.push({
+      key: "unassigned", label: "Nicht zugewiesen", color: "var(--t3)",
+      items: tasks.filter((t) => !t.assigned_to),
+      prefill: { assigned_to: null },
+    });
+    members.forEach((m) => {
+      const label = memberProfiles[m.user_id]?.name || memberProfiles[m.user_id]?.email || m.user_id.slice(0, 8);
+      groups.push({
+        key: m.user_id, label, color: "var(--accent)",
+        items: tasks.filter((t) => t.assigned_to === m.user_id),
+        prefill: { assigned_to: m.user_id },
+      });
+    });
+  }
+  return groups.filter((g) => g.items.length > 0 || g.key === "today" || g.key === "overdue");
+}
+
 // ============================================================
-// Kanban View
+// Section (collapsible group)
 // ============================================================
-function TaskKanbanView({
-  tasks, groupBy, onEdit, onMoveTo, members, memberProfiles,
-}: {
-  tasks: TaskWithCounts[];
-  groupBy: KanbanGroupBy;
-  onEdit: (t: Task) => void;
-  onMoveTo: (t: Task, group: string) => void;
-  members: import("@/lib/types").OrganizationMember[];
+interface SectionProps {
+  headerKey: string;
+  label: string | null;
+  color: string;
+  items: TaskRow[];
+  collapsed: boolean;
+  onToggle: () => void;
+  showQuickAdd: boolean;
+  quickAddRef?: React.RefObject<HTMLInputElement>;
+  isTeam: boolean;
   memberProfiles: Record<string, { name: string; email: string }>;
+  members: { user_id: string; role: string }[];
+  onPeek: (id: string) => void;
+  onToggleDone: (t: Task) => void;
+  onPatch: (id: string, patch: Partial<Task>) => void;
+  onQuickCreate: (title: string) => Promise<boolean>;
+  onDropTo: ((t: Task) => void) | null;
+}
+
+function SectionBlock(p: SectionProps) {
+  const [dragOver, setDragOver] = useState(false);
+
+  return (
+    <section
+      onDragOver={(e) => { if (p.onDropTo) { e.preventDefault(); setDragOver(true); } }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        if (!p.onDropTo) return;
+        setDragOver(false);
+        const id = e.dataTransfer.getData("text/task-id");
+        if (id) p.onDropTo({ id } as Task);
+      }}
+      style={{
+        borderRadius: 10,
+        background: dragOver ? "rgba(194,105,42,0.04)" : "transparent",
+        transition: "background 0.12s",
+        padding: dragOver ? 2 : 0,
+      }}
+    >
+      {p.label !== null && (
+        <button
+          onClick={p.onToggle}
+          style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: "none", border: "none", cursor: "pointer",
+            padding: "6px 2px", marginBottom: 6,
+            color: p.color, fontSize: 11, fontWeight: 600,
+            textTransform: "uppercase", letterSpacing: "0.08em",
+            fontFamily: "inherit",
+          }}
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"
+            style={{ transform: p.collapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s" }}>
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+          <span>{p.label}</span>
+          <span style={{ color: "var(--t3)", fontWeight: 500 }}>({p.items.length})</span>
+        </button>
+      )}
+
+      {!p.collapsed && (
+        <div className="list-table-wrap">
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <tbody>
+              {p.showQuickAdd && (
+                <QuickAddRow
+                  inputRef={p.quickAddRef}
+                  onCreate={p.onQuickCreate}
+                  isTeam={p.isTeam}
+                />
+              )}
+              {p.items.map((t, i) => (
+                <TaskListRow
+                  key={t.id}
+                  task={t}
+                  last={i === p.items.length - 1}
+                  isTeam={p.isTeam}
+                  memberProfiles={p.memberProfiles}
+                  members={p.members}
+                  onPeek={p.onPeek}
+                  onToggleDone={p.onToggleDone}
+                  onPatch={p.onPatch}
+                />
+              ))}
+              {p.items.length === 0 && !p.showQuickAdd && (
+                <tr>
+                  <td colSpan={6} style={{ padding: "18px 22px", color: "var(--t3)", fontSize: 12, textAlign: "center" }}>
+                    Keine Aufgaben in dieser Gruppe.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ============================================================
+// Quick-Add Row (always visible, Enter keeps open)
+// ============================================================
+function QuickAddRow({
+  inputRef, onCreate, isTeam,
+}: {
+  inputRef?: React.RefObject<HTMLInputElement>;
+  onCreate: (title: string) => Promise<boolean>;
+  isTeam: boolean;
 }) {
+  const [val, setVal] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    if (!val.trim() || busy) return;
+    setBusy(true);
+    const ok = await onCreate(val);
+    if (ok) setVal("");
+    setBusy(false);
+    // keep focus
+    inputRef?.current?.focus();
+  }
+
+  return (
+    <tr style={{ background: "var(--surface-subtle)", borderBottom: "1px solid var(--border-subtle)" }}>
+      <td style={{ padding: "10px 8px 10px 22px", width: 42 }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </td>
+      <td style={{ padding: "10px 22px" }} colSpan={isTeam ? 5 : 4}>
+        <input
+          ref={inputRef}
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.preventDefault(); submit(); }
+            if (e.key === "Escape") { setVal(""); (e.target as HTMLInputElement).blur(); }
+          }}
+          placeholder="+ Aufgabe hinzufügen — Enter speichert, Esc schließt"
+          disabled={busy}
+          style={{
+            width: "100%",
+            border: "none",
+            background: "transparent",
+            outline: "none",
+            fontSize: 13,
+            color: "var(--t1)",
+            fontFamily: "inherit",
+            padding: 0,
+          }}
+        />
+      </td>
+    </tr>
+  );
+}
+
+// ============================================================
+// Task Row (list)
+// ============================================================
+interface RowProps {
+  task: TaskRow;
+  last: boolean;
+  isTeam: boolean;
+  memberProfiles: Record<string, { name: string; email: string }>;
+  members: { user_id: string; role: string }[];
+  onPeek: (id: string) => void;
+  onToggleDone: (t: Task) => void;
+  onPatch: (id: string, patch: Partial<Task>) => void;
+}
+
+function TaskListRow({ task: t, last, isTeam, memberProfiles, members, onPeek, onToggleDone, onPatch }: RowProps) {
+  const done = t.status === "done";
+  const sc = TASK_STATUS_COLORS[t.status];
+  const pc = TASK_PRIORITY_COLORS[t.priority];
+  const assignee = t.assigned_to ? (memberProfiles[t.assigned_to]?.name || memberProfiles[t.assigned_to]?.email) : null;
+
+  return (
+    <tr className="h-row"
+      draggable
+      onDragStart={(e) => e.dataTransfer.setData("text/task-id", t.id)}
+      style={{
+        cursor: "pointer",
+        borderBottom: last ? "none" : "1px solid var(--border-subtle)",
+        opacity: done ? 0.6 : 1,
+      }}
+      onClick={() => onPeek(t.id)}
+    >
+      <td style={{ padding: "12px 8px 12px 22px", width: 42 }}
+          onClick={(e) => { e.stopPropagation(); onToggleDone(t); }}>
+        <input type="checkbox" checked={done} onChange={() => {}}
+          style={{ width: 15, height: 15, cursor: "pointer", accentColor: "var(--accent)" }} />
+      </td>
+      <td style={{ padding: "12px 22px" }}>
+        <div className="cell-primary" style={{
+          textDecoration: done ? "line-through" : "none",
+          color: done ? "var(--t3)" : "var(--t1)",
+          display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+        }}>
+          <span>{t.title}</span>
+          {t.recurrence !== "none" && <span title="Wiederholt sich" style={{ fontSize: 11, color: "var(--t3)" }}>↻</span>}
+          {t._checklist_total > 0 && (
+            <span style={{ fontSize: 11, color: "var(--t3)" }}>✓ {t._checklist_done}/{t._checklist_total}</span>
+          )}
+          {t._attachments > 0 && <span style={{ fontSize: 11, color: "var(--t3)" }}>◎ {t._attachments}</span>}
+          {t._subtasks > 0 && <span style={{ fontSize: 11, color: "var(--t3)" }}>↳ {t._subtasks}</span>}
+        </div>
+      </td>
+      <td style={{ padding: "12px 22px" }} onClick={(e) => e.stopPropagation()}>
+        <InlineBadge
+          label={TASK_PRIORITY_LABELS[t.priority]}
+          fg={pc.fg} bg={pc.bg}
+          options={(Object.entries(TASK_PRIORITY_LABELS) as [TaskPriority, string][]).map(([v, l]) => ({
+            value: v, label: l, fg: TASK_PRIORITY_COLORS[v].fg, bg: TASK_PRIORITY_COLORS[v].bg,
+          }))}
+          onPick={(v) => onPatch(t.id, { priority: v as TaskPriority })}
+        />
+      </td>
+      <td style={{ padding: "12px 22px" }} onClick={(e) => e.stopPropagation()}>
+        <InlineBadge
+          label={TASK_STATUS_LABELS[t.status]}
+          fg={sc.fg} bg={sc.bg}
+          options={(Object.entries(TASK_STATUS_LABELS) as [TaskStatus, string][]).map(([v, l]) => ({
+            value: v, label: l, fg: TASK_STATUS_COLORS[v].fg, bg: TASK_STATUS_COLORS[v].bg,
+          }))}
+          onPick={(v) => onPatch(t.id, { status: v as TaskStatus })}
+        />
+      </td>
+      <td style={{ padding: "12px 22px", color: dueColor(t.due_date, done), fontSize: 13, whiteSpace: "nowrap" }}>
+        {fmtDE(t.due_date)}
+      </td>
+      {isTeam && (
+        <td style={{ padding: "12px 22px", fontSize: 13, color: "var(--t2)" }} onClick={(e) => e.stopPropagation()}>
+          <InlineAssignee
+            current={t.assigned_to}
+            label={assignee ?? "—"}
+            members={members}
+            memberProfiles={memberProfiles}
+            onPick={(v) => onPatch(t.id, { assigned_to: v })}
+          />
+        </td>
+      )}
+      <td style={{ padding: "12px 22px", fontSize: 13, color: "var(--t2)" }}>
+        {t._linked_label ?? <span style={{ color: "var(--t3)" }}>—</span>}
+      </td>
+    </tr>
+  );
+}
+
+// ============================================================
+// Inline Badge (Popover-Select on badge)
+// ============================================================
+function InlineBadge({
+  label, fg, bg, options, onPick,
+}: {
+  label: string;
+  fg: string; bg: string;
+  options: { value: string; label: string; fg: string; bg: string }[];
+  onPick: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" style={{
+          display: "inline-block", border: "none",
+          fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 20,
+          color: fg, background: bg,
+          cursor: "pointer", fontFamily: "inherit",
+        }}>{label}</button>
+      </PopoverTrigger>
+      <PopoverContent align="start" sideOffset={4}
+        style={{
+          background: "var(--card)", border: "1px solid var(--border)",
+          borderRadius: 10, padding: 4, minWidth: 160,
+          boxShadow: "0 6px 24px rgba(28,24,20,0.1)",
+        }}
+        className="">
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {options.map((o) => (
+            <button key={o.value} onClick={() => { onPick(o.value); setOpen(false); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "6px 8px", border: "none", background: "transparent",
+                borderRadius: 6, cursor: "pointer", textAlign: "left",
+                fontFamily: "inherit",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-subtle)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            >
+              <span style={{
+                fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 20,
+                color: o.fg, background: o.bg,
+              }}>{o.label}</span>
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function InlineAssignee({
+  current, label, members, memberProfiles, onPick,
+}: {
+  current: string | null;
+  label: string;
+  members: { user_id: string; role: string }[];
+  memberProfiles: Record<string, { name: string; email: string }>;
+  onPick: (v: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" style={{
+          border: "none", background: "transparent",
+          fontSize: 13, color: current ? "var(--t2)" : "var(--t3)",
+          cursor: "pointer", padding: "2px 6px", borderRadius: 6,
+          fontFamily: "inherit",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-subtle)")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+        >{label}</button>
+      </PopoverTrigger>
+      <PopoverContent align="start" sideOffset={4}
+        style={{
+          background: "var(--card)", border: "1px solid var(--border)",
+          borderRadius: 10, padding: 4, minWidth: 200,
+          boxShadow: "0 6px 24px rgba(28,24,20,0.1)",
+        }}
+        className="">
+        <button onClick={() => { onPick(null); setOpen(false); }}
+          style={{ padding: "6px 10px", border: "none", background: "transparent",
+            textAlign: "left", fontSize: 13, color: "var(--t3)", borderRadius: 6,
+            cursor: "pointer", width: "100%", fontFamily: "inherit" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-subtle)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+        >Nicht zugewiesen</button>
+        {members.map((m) => {
+          const n = memberProfiles[m.user_id]?.name || memberProfiles[m.user_id]?.email || m.user_id.slice(0, 8);
+          return (
+            <button key={m.user_id} onClick={() => { onPick(m.user_id); setOpen(false); }}
+              style={{ padding: "6px 10px", border: "none", background: "transparent",
+                textAlign: "left", fontSize: 13, color: "var(--t1)", borderRadius: 6,
+                cursor: "pointer", width: "100%", fontFamily: "inherit",
+                fontWeight: current === m.user_id ? 600 : 400 }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-subtle)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            >{n}</button>
+          );
+        })}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ============================================================
+// Board View (Trello-like, inline add per column)
+// ============================================================
+interface BoardProps {
+  tasks: TaskRow[];
+  groupBy: Exclude<GroupBy, "none">;
+  isTeam: boolean;
+  memberProfiles: Record<string, { name: string; email: string }>;
+  members: { user_id: string; role: string }[];
+  onPeek: (id: string) => void;
+  onPatch: (id: string, patch: Partial<Task>) => void;
+  onQuickCreate: (title: string, prefill?: Partial<Task>) => Promise<boolean>;
+}
+
+function BoardView(p: BoardProps) {
+  const groups = useMemo(() => buildGroups(p.tasks, p.groupBy, p.members, p.memberProfiles), [p.tasks, p.groupBy, p.members, p.memberProfiles]);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
+  const readonly = p.groupBy === "due";
 
-  type Col = { key: string; label: string; color: string };
-  const cols: Col[] = (() => {
-    if (groupBy === "status") {
-      return (Object.entries(TASK_STATUS_LABELS) as [TaskStatus, string][]).map(([k, l]) => ({
-        key: k, label: l, color: TASK_STATUS_COLORS[k].fg,
-      }));
-    }
-    if (groupBy === "priority") {
-      return (Object.entries(TASK_PRIORITY_LABELS) as [TaskPriority, string][]).map(([k, l]) => ({
-        key: k, label: l, color: TASK_PRIORITY_COLORS[k].fg,
-      }));
-    }
-    if (groupBy === "due") {
-      return [
-        { key: "overdue", label: "Überfällig", color: "var(--red)" },
-        { key: "today", label: "Heute", color: "var(--badge-orange)" },
-        { key: "week", label: "Diese Woche", color: "var(--badge-blue)" },
-        { key: "later", label: "Später", color: "var(--t2)" },
-        { key: "none", label: "Ohne Datum", color: "var(--t3)" },
-      ];
-    }
-    return [
-      { key: "unassigned", label: "Nicht zugewiesen", color: "var(--t3)" },
-      ...members.map((m) => ({
-        key: m.user_id,
-        label: memberProfiles[m.user_id]?.name || memberProfiles[m.user_id]?.email || m.user_id.slice(0, 8),
-        color: "var(--accent)",
-      })),
-    ];
-  })();
-
-  function bucket(t: Task): string {
-    if (groupBy === "status") return t.status;
-    if (groupBy === "priority") return t.priority;
-    if (groupBy === "due") return dueBucket(t.due_date);
-    return t.assigned_to ?? "unassigned";
+  function handleDrop(colKey: string) {
+    if (!dragId || readonly) return;
+    const t = p.tasks.find((x) => x.id === dragId);
+    if (!t) return;
+    let patch: Partial<Task> = {};
+    if (p.groupBy === "status") patch = { status: colKey as TaskStatus };
+    else if (p.groupBy === "priority") patch = { priority: colKey as TaskPriority };
+    else if (p.groupBy === "assignee") patch = { assigned_to: colKey === "unassigned" ? null : colKey };
+    p.onPatch(t.id, patch);
+    setDragId(null); setDragOver(null);
   }
-
-  const readonly = groupBy === "due";
 
   return (
     <div style={{
-      display: "flex", gap: 14, overflowX: "auto",
-      paddingTop: 10, paddingBottom: 8, paddingRight: 30,
-      height: "calc(100vh - 180px)",
+      display: "flex", gap: 12, overflowX: "auto",
+      paddingBottom: 8, paddingRight: 30, paddingLeft: 0,
+      height: "calc(100vh - 200px)",
     }}>
-      {cols.map((col) => {
-        const items = tasks.filter((t) => bucket(t) === col.key);
-        const isDragOver = dragOver === col.key;
+      {groups.map((g) => {
+        const isOver = dragOver === g.key;
         return (
-          <div key={col.key}
-            onDragOver={(e) => { if (!readonly) { e.preventDefault(); setDragOver(col.key); } }}
+          <div key={g.key}
+            onDragOver={(e) => { if (!readonly) { e.preventDefault(); setDragOver(g.key); } }}
             onDragLeave={() => setDragOver(null)}
-            onDrop={() => {
-              if (readonly || !dragId) return;
-              const t = tasks.find((x) => x.id === dragId);
-              if (t) onMoveTo(t, col.key);
-              setDragId(null); setDragOver(null);
-            }}
+            onDrop={() => handleDrop(g.key)}
             style={{
-              width: 280, minWidth: 280, flexShrink: 0,
-              background: isDragOver ? "rgba(194,105,42,0.04)" : "var(--bg)",
-              border: isDragOver ? "1px dashed var(--accent)" : "1px solid rgba(0,0,0,0.06)",
-              borderRadius: 16, display: "flex", flexDirection: "column",
+              width: 272, minWidth: 272, flexShrink: 0,
+              display: "flex", flexDirection: "column",
+              background: "var(--surface-subtle)",
+              borderRadius: 10,
+              border: isOver ? "1px dashed var(--accent)" : "1px solid var(--border-subtle)",
+              maxHeight: "100%",
+            }}
+          >
+            <div style={{
+              padding: "10px 12px", display: "flex", alignItems: "center", gap: 8,
+              borderBottom: "1px solid var(--border-subtle)",
             }}>
-            <div style={{ height: 4, borderRadius: "16px 16px 0 0", background: col.color }} />
-            <div style={{ padding: "14px 16px 10px", display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--t1)", flex: 1 }}>{col.label}</span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: col.color, background: `${col.color}18`, padding: "1px 7px", borderRadius: 8 }}>
-                {items.length}
-              </span>
+              <span style={{
+                width: 6, height: 6, borderRadius: "50%", background: g.color,
+              }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--t1)", flex: 1 }}>{g.label}</span>
+              <span style={{ fontSize: 11, color: "var(--t3)", fontWeight: 500 }}>{g.items.length}</span>
             </div>
-            {readonly && (
-              <div style={{ padding: "0 16px 10px", fontSize: 11, color: "var(--t3)" }}>
-                In dieser Ansicht keine Verschiebung möglich.
-              </div>
-            )}
-            <div style={{ flex: 1, overflowY: "auto", padding: "0 10px 10px", display: "flex", flexDirection: "column", gap: 8 }}>
-              {items.map((t) => {
-                const pc = TASK_PRIORITY_COLORS[t.priority];
-                const progress = t._checklist_total > 0 ? (t._checklist_done / t._checklist_total) : 0;
-                return (
-                  <div key={t.id}
-                    draggable={!readonly}
-                    onDragStart={() => setDragId(t.id)}
-                    onDragEnd={() => { setDragId(null); setDragOver(null); }}
-                    onClick={() => onEdit(t)}
-                    className="h-lift"
-                    style={{
-                      background: "var(--card)", borderRadius: 12,
-                      border: "1px solid rgba(0,0,0,0.06)", padding: "10px 12px",
-                      cursor: readonly ? "pointer" : "grab",
-                      display: "flex", flexDirection: "column", gap: 6,
-                      boxShadow: "0 1px 4px rgba(28,24,20,0.04)",
-                      opacity: dragId === t.id ? 0.5 : 1,
-                    }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: "var(--t1)", display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ flex: 1 }}>{t.title}</span>
-                      {t.recurrence !== "none" && <span style={{ fontSize: 11 }}>🔁</span>}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 20, color: pc.fg, background: pc.bg }}>
-                        {TASK_PRIORITY_LABELS[t.priority]}
-                      </span>
-                      <span style={{ fontSize: 11, color: dueColor(t.due_date) }}>{fmtDE(t.due_date)}</span>
-                    </div>
-                    {t._checklist_total > 0 && (
-                      <div style={{ height: 3, background: "var(--surface-subtle)", borderRadius: 2, overflow: "hidden" }}>
-                        <div style={{ width: `${progress * 100}%`, height: "100%", background: "var(--accent)" }} />
-                      </div>
-                    )}
-                    {(t._attachments > 0 || t._subtasks > 0 || t.assigned_to) && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: "var(--t3)" }}>
-                        {t._attachments > 0 && <span>📎 {t._attachments}</span>}
-                        {t._subtasks > 0 && <span>↪︎ {t._subtasks}</span>}
-                        {t.assigned_to && <span style={{ marginLeft: "auto" }}>
-                          {memberProfiles[t.assigned_to]?.name?.split(" ").map((s) => s[0]).slice(0, 2).join("") || "—"}
-                        </span>}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+            <div style={{ flex: 1, overflowY: "auto", padding: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+              {g.items.map((t) => (
+                <BoardCard key={t.id} t={t}
+                  isDragging={dragId === t.id}
+                  onDragStart={() => setDragId(t.id)}
+                  onDragEnd={() => { setDragId(null); setDragOver(null); }}
+                  onPeek={() => p.onPeek(t.id)}
+                  assigneeLabel={t.assigned_to ? (p.memberProfiles[t.assigned_to]?.name?.split(" ").map((s) => s[0]).slice(0, 2).join("") || "?") : null}
+                />
+              ))}
             </div>
+            <BoardQuickAdd onCreate={(title) => p.onQuickCreate(title, g.prefill)} />
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function BoardCard({
+  t, isDragging, onDragStart, onDragEnd, onPeek, assigneeLabel,
+}: {
+  t: TaskRow; isDragging: boolean;
+  onDragStart: () => void; onDragEnd: () => void;
+  onPeek: () => void;
+  assigneeLabel: string | null;
+}) {
+  const pc = TASK_PRIORITY_COLORS[t.priority];
+  const progress = t._checklist_total > 0 ? (t._checklist_done / t._checklist_total) : 0;
+  const done = t.status === "done";
+  return (
+    <div draggable
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onClick={onPeek}
+      className="h-lift"
+      style={{
+        background: "var(--card)", borderRadius: 8,
+        border: "1px solid rgba(0,0,0,0.05)", padding: "9px 11px",
+        cursor: "grab", display: "flex", flexDirection: "column", gap: 6,
+        boxShadow: "0 1px 2px rgba(28,24,20,0.03)",
+        opacity: isDragging ? 0.4 : (done ? 0.6 : 1),
+      }}>
+      <div style={{ fontSize: 13, fontWeight: 500, color: done ? "var(--t3)" : "var(--t1)",
+        textDecoration: done ? "line-through" : "none", lineHeight: 1.3 }}>
+        {t.title}
+        {t.recurrence !== "none" && <span style={{ marginLeft: 6, fontSize: 11, color: "var(--t3)" }}>↻</span>}
+      </div>
+      {t._checklist_total > 0 && (
+        <div style={{ height: 3, background: "var(--surface-subtle)", borderRadius: 2, overflow: "hidden" }}>
+          <div style={{ width: `${progress * 100}%`, height: "100%", background: "var(--accent)" }} />
+        </div>
+      )}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span style={{
+          fontSize: 10, fontWeight: 500, padding: "1px 7px", borderRadius: 20,
+          color: pc.fg, background: pc.bg,
+        }}>{TASK_PRIORITY_LABELS[t.priority]}</span>
+        {t.due_date && (
+          <span style={{ fontSize: 11, color: dueColor(t.due_date, done) }}>{fmtDE(t.due_date)}</span>
+        )}
+        {t._attachments > 0 && <span style={{ fontSize: 10, color: "var(--t3)" }}>◎ {t._attachments}</span>}
+        {t._subtasks > 0 && <span style={{ fontSize: 10, color: "var(--t3)" }}>↳ {t._subtasks}</span>}
+        {assigneeLabel && (
+          <span style={{
+            marginLeft: "auto", fontSize: 9, fontWeight: 600,
+            width: 20, height: 20, borderRadius: "50%",
+            background: "var(--accent-soft)", color: "var(--accent)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>{assigneeLabel}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BoardQuickAdd({ onCreate }: { onCreate: (title: string) => Promise<boolean> }) {
+  const [open, setOpen] = useState(false);
+  const [val, setVal] = useState("");
+  const [busy, setBusy] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { if (open) ref.current?.focus(); }, [open]);
+
+  async function submit() {
+    if (!val.trim() || busy) return;
+    setBusy(true);
+    const ok = await onCreate(val);
+    if (ok) { setVal(""); ref.current?.focus(); }
+    setBusy(false);
+  }
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)}
+        style={{
+          margin: 8, padding: "8px 10px",
+          border: "none", background: "transparent",
+          textAlign: "left", fontSize: 12, color: "var(--t3)",
+          cursor: "pointer", borderRadius: 6, fontFamily: "inherit",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.03)")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+      >+ Aufgabe hinzufügen</button>
+    );
+  }
+
+  return (
+    <div style={{ padding: 8 }}>
+      <input
+        ref={ref}
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); submit(); }
+          if (e.key === "Escape") { setOpen(false); setVal(""); }
+        }}
+        onBlur={() => { if (!val.trim()) setOpen(false); }}
+        placeholder="Titel eingeben… Enter"
+        disabled={busy}
+        style={{
+          width: "100%", padding: "8px 10px", borderRadius: 6,
+          border: "1px solid var(--accent)",
+          background: "var(--card)",
+          fontSize: 13, color: "var(--t1)", fontFamily: "inherit",
+          outline: "none",
+        }}
+      />
     </div>
   );
 }
