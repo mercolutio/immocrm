@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useOverdueTaskCount } from "@/lib/hooks/useOverdueTaskCount";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const overdueCount = useOverdueTaskCount();
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("sidebar-collapsed") === "true";
@@ -204,8 +206,8 @@ export default function Sidebar() {
           </Link>
 
           <Link
-            href="#"
-            className="sb-item"
+            href="/tasks"
+            className={`sb-item${active("/tasks") ? " active" : ""}`}
             style={{ justifyContent: collapsed ? "center" : undefined, gap: collapsed ? 0 : undefined, padding: collapsed ? "8px 0" : undefined }}
             onMouseEnter={(e) => onMouseEnter(e, "Aufgaben")}
             onMouseLeave={onMouseLeave}
@@ -215,7 +217,7 @@ export default function Sidebar() {
               <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
             </svg>
             {!collapsed && "Aufgaben"}
-            {!collapsed && <span className="sb-badge red">2</span>}
+            {!collapsed && overdueCount > 0 && <span className="sb-badge red">{overdueCount}</span>}
           </Link>
 
           {!collapsed && <div className="sb-divider"/>}

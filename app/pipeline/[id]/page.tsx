@@ -254,7 +254,10 @@ export default function DealDetailPage() {
       const { data } = await supabase.from("activities").insert({ deal_id: id, ...crossLink, user_id: user.id, type: "viewing", summary: fTitle.trim() || "Besichtigung", happened_at: fDatetime, notes: fApptNote.trim() || null }).select().single();
       if (data) setActivities((a) => [data, ...a]);
     } else if (openForm === "task") {
-      const { data } = await supabase.from("tasks").insert({ deal_id: id, ...crossLink, user_id: user.id, title: fTitle.trim(), due_date: fDatetime ? fDatetime.slice(0, 10) : null, priority: fPriority }).select().single();
+      const { getMyOrgId } = await import("@/lib/supabase/org");
+      const orgId = await getMyOrgId(supabase, user.id);
+      if (!orgId) { setSubmitting(false); return; }
+      const { data } = await supabase.from("tasks").insert({ deal_id: id, ...crossLink, user_id: user.id, organization_id: orgId, title: fTitle.trim(), due_date: fDatetime ? fDatetime.slice(0, 10) : null, priority: fPriority }).select().single();
       if (data) setTasks((t) => [data, ...t]);
     }
     setOpenForm(null);

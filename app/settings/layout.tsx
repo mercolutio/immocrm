@@ -6,6 +6,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 
 const NAV = [
   { href: "/settings/pipeline", label: "Pipeline" },
+  { href: "/settings/organization", label: "Organisation" },
 ] as const;
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {

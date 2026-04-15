@@ -1,20 +1,68 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
 import DashboardLayout from "@/components/DashboardLayout";
+import { createClient } from "@/lib/supabase/client";
+import { shouldSpawnNextInstance } from "@/lib/recurrence";
+import type { Task, TaskPriority } from "@/lib/types";
+
+function priorityWeight(p: TaskPriority): number {
+  return p === "high" ? 3 : p === "medium" ? 2 : 1;
+}
 
 export default function Dashboard() {
+  const supabase = useMemo(() => createClient(), []);
   const [qaOpen, setQaOpen] = useState(false);
-  const [task1Done, setTask1Done] = useState(false);
-  const [task2Done, setTask2Done] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   useEffect(() => {
     const isDone = localStorage.getItem("immocrm_onboarding_done") === "true";
     const hasWelcome = new URLSearchParams(window.location.search).get("welcome") === "1";
     if (!isDone || hasWelcome) setShowOnboarding(true);
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) return;
+      const end = new Date(); end.setHours(23, 59, 59, 999);
+      const { data } = await supabase
+        .from("tasks")
+        .select("*")
+        .neq("status", "done")
+        .not("due_date", "is", null)
+        .lte("due_date", end.toISOString())
+        .or(`assigned_to.eq.${uid},and(assigned_to.is.null,user_id.eq.${uid})`)
+        .limit(20);
+      const sorted = ((data ?? []) as Task[]).sort((a, b) => {
+        const dw = priorityWeight(b.priority) - priorityWeight(a.priority);
+        if (dw !== 0) return dw;
+        const da = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+        const db = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+        return da - db;
+      }).slice(0, 5);
+      setTasks(sorted);
+    })();
+  }, [supabase]);
+
+  async function completeTask(t: Task) {
+    await supabase.from("tasks").update({ status: "done" }).eq("id", t.id);
+    setTasks((prev) => prev.filter((x) => x.id !== t.id));
+    const next = shouldSpawnNextInstance(t.due_date, t.recurrence, t.recurrence_end);
+    if (next) {
+      await supabase.from("tasks").insert({
+        organization_id: t.organization_id, user_id: t.user_id,
+        contact_id: t.contact_id, property_id: t.property_id, deal_id: t.deal_id,
+        assigned_to: t.assigned_to, title: t.title, description: t.description,
+        status: "planned", priority: t.priority, due_date: next,
+        recurrence: t.recurrence, recurrence_end: t.recurrence_end,
+      });
+    }
+  }
 
   return (
     <DashboardLayout>
@@ -170,98 +218,45 @@ export default function Dashboard() {
               <div className="card-hdr">
                 <div className="heute-hdr">
                   <span className="card-title">Heute auf einen Blick</span>
-                  <div className="urgency-badge">2</div>
+                  {tasks.length > 0 && <div className="urgency-badge">{tasks.length}</div>}
                 </div>
-                <a className="card-cta" href="#">
+                <Link className="card-cta" href="/tasks">
                   Alle Aufgaben
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                   </svg>
-                </a>
+                </Link>
               </div>
               <div className="heute-list">
-                <div className="heute-item">
-                  <div className="h-priority" style={{background:"var(--red)"}}/>
-                  <div className="h-ico" style={{background:"var(--red-bg)"}}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#C93B2E" strokeWidth="2" strokeLinecap="round">
-                      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                    </svg>
+                {tasks.length === 0 && (
+                  <div style={{ padding: 20, fontSize: 13, color: "var(--t3)" }}>
+                    Keine fälligen Aufgaben. Alles klar heute.
                   </div>
-                  <div className="h-body">
-                    <div className="h-title">Finanzierungsnachweis Fam. Müller läuft ab</div>
-                    <div className="h-sub">EFH Potsdam · Kontakt jetzt anrufen</div>
-                  </div>
-                  <div className="h-right">
-                    <div className="h-time" style={{color:"var(--red)"}}>Heute</div>
-                    <button className="h-btn">Kontakt öffnen →</button>
-                  </div>
-                </div>
-                <div className="heute-item">
-                  <div className="h-priority" style={{background:"var(--blu)"}}/>
-                  <div className="h-ico" style={{background:"var(--blu-bg)"}}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#2457B3" strokeWidth="2" strokeLinecap="round">
-                      <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
-                    </svg>
-                  </div>
-                  <div className="h-body">
-                    <div className="h-title">Dr. Wagner: Follow-up überfällig (48h)</div>
-                    <div className="h-sub">Villa am See besichtigt · kein Feedback</div>
-                  </div>
-                  <div className="h-right">
-                    <div className="h-time" style={{color:"var(--t3)"}}>48h</div>
-                    <button className="h-btn">Mail entwerfen →</button>
-                  </div>
-                </div>
-                <div className="heute-item">
-                  <div className="h-priority" style={{background:"var(--pur)"}}/>
-                  <div className="h-ico" style={{background:"var(--pur-bg)"}}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#6D28D9" strokeWidth="2" strokeLinecap="round">
-                      <rect x="3" y="4" width="18" height="18" rx="2"/>
-                      <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                    </svg>
-                  </div>
-                  <div className="h-body">
-                    <div className="h-title">Besichtigung: Loft Hamburg</div>
-                    <div className="h-sub">Thomas Brandt · Jungfernstieg 12</div>
-                  </div>
-                  <div className="h-right">
-                    <div className="h-time" style={{color:"var(--t2)"}}>15:00</div>
-                    <button className="h-btn">Im Kalender →</button>
-                  </div>
-                </div>
-                <div className={`heute-item${task1Done ? " done-item" : ""}`}>
-                  <div className="h-priority" style={{background:"var(--accent)"}}/>
-                  <div className={`h-check${task1Done ? " done" : ""}`} onClick={() => setTask1Done(!task1Done)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  </div>
-                  <div className="h-body">
-                    <div className="h-title">Vertrag vorbereiten: Objekt #4521</div>
-                    <div className="h-sub">Notartermin morgen früh</div>
-                  </div>
-                  <div className="h-right">
-                    <div className="h-time" style={{color:"var(--t2)"}}>bis 14:00</div>
-                    <button className="h-btn">Öffnen →</button>
-                  </div>
-                </div>
-                <div className={`heute-item${task2Done ? " done-item" : ""}`}>
-                  <div className="h-priority" style={{background:"var(--accent)"}}/>
-                  <div className={`h-check${task2Done ? " done" : ""}`} onClick={() => setTask2Done(!task2Done)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  </div>
-                  <div className="h-body">
-                    <div className="h-title">Exposé-Review: Loft Hamburg</div>
-                    <div className="h-sub">Vor der Besichtigung um 15:00</div>
-                  </div>
-                  <div className="h-right">
-                    <div className="h-time" style={{color:"var(--t2)"}}>bis 14:30</div>
-                    <button className="h-btn">Öffnen →</button>
-                  </div>
-                </div>
+                )}
+                {tasks.map((t) => {
+                  const accent = t.priority === "high" ? "var(--red)"
+                    : t.priority === "medium" ? "var(--blu)" : "var(--accent)";
+                  return (
+                    <div key={t.id} className="heute-item">
+                      <div className="h-priority" style={{ background: accent }} />
+                      <div className="h-check" onClick={() => completeTask(t)}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      </div>
+                      <div className="h-body">
+                        <div className="h-title">{t.title}</div>
+                        {t.description && <div className="h-sub">{t.description}</div>}
+                      </div>
+                      <div className="h-right">
+                        <div className="h-time" style={{ color: accent }}>
+                          {t.due_date ? new Date(t.due_date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) : "—"}
+                        </div>
+                        <Link href="/tasks" className="h-btn">Öffnen →</Link>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

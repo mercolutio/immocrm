@@ -5,6 +5,9 @@ export type PropertyType = 'apartment' | 'house' | 'land' | 'commercial'
 export type PropertyStatus = 'available' | 'reserved' | 'sold' | 'rented'
 export type SearchType = 'buy' | 'rent'
 export type TaskPriority = 'low' | 'medium' | 'high'
+export type TaskStatus = 'planned' | 'in_progress' | 'on_hold' | 'done'
+export type TaskRecurrence = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
+export type OrganizationRole = 'owner' | 'admin' | 'member'
 
 export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
   apartment: 'Wohnung',
@@ -92,6 +95,44 @@ export const TASK_PRIORITY_LABELS: Record<TaskPriority, string> = {
   high: 'Hoch',
 }
 
+export const TASK_PRIORITY_COLORS: Record<TaskPriority, { fg: string; bg: string }> = {
+  low:    { fg: 'var(--badge-gray)',   bg: 'var(--badge-gray-bg)'   },
+  medium: { fg: 'var(--badge-blue)',   bg: 'var(--badge-blue-bg)'   },
+  high:   { fg: 'var(--badge-orange)', bg: 'var(--badge-orange-bg)' },
+}
+
+export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
+  planned: 'Geplant',
+  in_progress: 'In Arbeit',
+  on_hold: 'Wartet',
+  done: 'Erledigt',
+}
+
+export const TASK_STATUS_COLORS: Record<TaskStatus, { fg: string; bg: string }> = {
+  planned:     { fg: 'var(--badge-gray)',   bg: 'var(--badge-gray-bg)'   },
+  in_progress: { fg: 'var(--badge-blue)',   bg: 'var(--badge-blue-bg)'   },
+  on_hold:     { fg: 'var(--badge-orange)', bg: 'var(--badge-orange-bg)' },
+  done:        { fg: 'var(--badge-green)',  bg: 'var(--badge-green-bg)'  },
+}
+
+export const TASK_RECURRENCE_LABELS: Record<TaskRecurrence, string> = {
+  none: 'Keine',
+  daily: 'Täglich',
+  weekly: 'Wöchentlich',
+  monthly: 'Monatlich',
+  yearly: 'Jährlich',
+}
+
+export const ORGANIZATION_ROLE_LABELS: Record<OrganizationRole, string> = {
+  owner: 'Inhaber',
+  admin: 'Admin',
+  member: 'Mitglied',
+}
+
+export function isTaskDone(t: { status: TaskStatus }): boolean {
+  return t.status === 'done'
+}
+
 export const CALL_RESULT_LABELS: Record<string, string> = {
   reached: 'Erreicht',
   not_reached: 'Nicht erreicht',
@@ -174,14 +215,66 @@ export interface Task {
   created_at: string
   updated_at: string
   user_id: string
+  organization_id: string
   contact_id: string | null
   property_id: string | null
   deal_id: string | null
+  assigned_to: string | null
+  parent_task_id: string | null
   title: string
   description: string | null
   due_date: string | null
-  is_done: boolean
+  status: TaskStatus
   priority: TaskPriority
+  recurrence: TaskRecurrence
+  recurrence_end: string | null
+}
+
+export interface Organization {
+  id: string
+  created_at: string
+  name: string
+  slug: string
+  plan: string
+  trial_ends_at: string | null
+  stripe_customer_id: string | null
+}
+
+export interface OrganizationMember {
+  id: string
+  created_at: string
+  organization_id: string
+  user_id: string
+  role: OrganizationRole
+}
+
+export interface TaskChecklistItem {
+  id: string
+  created_at: string
+  task_id: string
+  label: string
+  is_done: boolean
+  position: number
+}
+
+export interface TaskComment {
+  id: string
+  created_at: string
+  updated_at: string
+  task_id: string
+  user_id: string
+  content: string
+}
+
+export interface TaskAttachment {
+  id: string
+  created_at: string
+  task_id: string
+  user_id: string | null
+  storage_path: string
+  file_name: string
+  mime_type: string | null
+  size_bytes: number | null
 }
 
 export interface Property {

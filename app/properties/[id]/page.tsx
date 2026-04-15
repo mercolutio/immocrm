@@ -446,9 +446,12 @@ export default function PropertyDetailPage() {
         .select().single();
       if (data) setActivities((a) => [data, ...a]);
     } else if (openForm === "task") {
+      const { getMyOrgId } = await import("@/lib/supabase/org");
+      const orgId = await getMyOrgId(supabase, user.id);
+      if (!orgId) { setSubmitting(false); return; }
       const { data } = await supabase
         .from("tasks")
-        .insert({ property_id: id, user_id: user.id, title: fTitle.trim(), due_date: fDatetime ? fDatetime + ":00" : null, priority: fPriority })
+        .insert({ property_id: id, user_id: user.id, organization_id: orgId, title: fTitle.trim(), due_date: fDatetime ? fDatetime + ":00" : null, priority: fPriority })
         .select().single();
       if (data) setTasks((t) => [data, ...t]);
     }
