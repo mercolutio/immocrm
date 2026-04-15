@@ -687,11 +687,14 @@ function QuickAddRow({
   const [priority, setPriority] = useState<TaskPriority | undefined>();
   const [status, setStatus] = useState<TaskStatus | undefined>();
   const [dueDate, setDueDate] = useState<string | null | undefined>();
-  const [flashKey, setFlashKey] = useState(0);
+  const [flashing, setFlashing] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (flashSignal > 0) setFlashKey((k) => k + 1);
+    if (flashSignal <= 0) return;
+    setFlashing(false);
+    const id = requestAnimationFrame(() => setFlashing(true));
+    return () => cancelAnimationFrame(id);
   }, [flashSignal]);
 
   const active = focused || val.trim().length > 0;
@@ -716,9 +719,9 @@ function QuickAddRow({
     <tr>
       <td colSpan={isTeam ? 7 : 6} style={{ padding: "8px 14px" }}>
         <div
-          key={flashKey}
           ref={wrapRef}
-          className={flashKey > 0 ? "quickadd-flash" : ""}
+          onAnimationEnd={() => setFlashing(false)}
+          className={flashing ? "quickadd-flash" : ""}
           style={{
             borderRadius: 10,
             border: active ? "1.5px solid var(--accent)" : "1px solid var(--border)",
