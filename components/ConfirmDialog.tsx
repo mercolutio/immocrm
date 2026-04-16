@@ -35,6 +35,7 @@ export default function ConfirmDialog({
         alignItems: "center",
         justifyContent: "center",
         padding: 20,
+        animation: "dialogBackdropIn 200ms ease both",
       }}
     >
       <div
@@ -46,6 +47,7 @@ export default function ConfirmDialog({
           maxWidth: 420,
           width: "100%",
           boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+          animation: "dialogPopIn 250ms cubic-bezier(0.16, 1, 0.3, 1) both",
         }}
       >
         <h2 style={{ fontFamily: "var(--font-playfair)", fontSize: 20, fontWeight: 400, color: "var(--t1)", margin: 0, marginBottom: 10 }}>
@@ -67,6 +69,7 @@ export default function ConfirmDialog({
               color: "var(--t2)",
               cursor: "pointer",
               fontFamily: "inherit",
+              transition: "background 150ms ease, transform 100ms ease",
             }}
           >
             {cancelLabel}
@@ -84,6 +87,7 @@ export default function ConfirmDialog({
               fontWeight: 500,
               cursor: "pointer",
               fontFamily: "inherit",
+              transition: "background 150ms ease, transform 100ms ease",
             }}
           >
             {confirmLabel}

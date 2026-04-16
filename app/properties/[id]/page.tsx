@@ -958,7 +958,8 @@ export default function PropertyDetailPage() {
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </div>
-              {energyOpen && (
+              <div style={{ display: "grid", gridTemplateRows: energyOpen ? "1fr" : "0fr", transition: "grid-template-rows 220ms cubic-bezier(0.4, 0, 0.2, 1)" }}>
+                <div style={{ overflow: "hidden" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   <div>
                     <label style={lbl}>Energieausweis-Typ</label>
@@ -1004,7 +1005,8 @@ export default function PropertyDetailPage() {
                     <input style={inp} type="text" value={form.primary_energy_source ?? ""} onChange={(e) => updateForm({ primary_energy_source: e.target.value })} />
                   </div>
                 </div>
-              )}
+                </div>
+              </div>
 
               {/* ── Sektion: Weitere Details (ausklappbar) ── */}
               <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
@@ -1021,7 +1023,8 @@ export default function PropertyDetailPage() {
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </div>
-              {detailsOpen && (
+              <div style={{ display: "grid", gridTemplateRows: detailsOpen ? "1fr" : "0fr", transition: "grid-template-rows 220ms cubic-bezier(0.4, 0, 0.2, 1)" }}>
+                <div style={{ overflow: "hidden" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {(form.type === "apartment" || form.type === "house") && (
                     <div style={{ display: "flex", gap: 8 }}>
@@ -1084,7 +1087,8 @@ export default function PropertyDetailPage() {
                     </div>
                   )}
                 </div>
-              )}
+                </div>
+              </div>
 
               {/* ── Sektion: Fotos ── */}
               <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
@@ -1303,7 +1307,7 @@ export default function PropertyDetailPage() {
             )}
 
             {/* Timeline */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <div key={activeTab} className="tab-fade" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
               {timeline.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "40px 0", fontSize: 13, color: "var(--t2)" }}>
                   Noch keine Aktivitäten vorhanden
@@ -1543,6 +1547,7 @@ export default function PropertyDetailPage() {
             position: "fixed", inset: 0, zIndex: 2000,
             background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)",
             display: "flex", alignItems: "center", justifyContent: "center",
+            animation: "dialogBackdropIn 200ms ease both",
           }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowGallery(false); }}
           onDragOver={(e) => { e.preventDefault(); if (dragIdx === null && e.dataTransfer.types.includes("Files")) setDragOverGallery(true); }}

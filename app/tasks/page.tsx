@@ -1190,26 +1190,23 @@ function BoardView(p: BoardProps) {
             onDragLeave={() => setDragOver(null)}
             onDrop={() => handleDrop(g.key)}
             style={{
-              width: 272, minWidth: 272, flexShrink: 0,
+              width: 280, minWidth: 280, flexShrink: 0,
               display: "flex", flexDirection: "column",
-              borderRadius: 10,
-              border: isOver ? "1.5px dashed var(--accent)" : "1px solid var(--border-subtle)",
-              background: isOver ? "rgba(194,105,42,0.04)" : "var(--surface-subtle)",
-              transition: "border-color 140ms ease, background 140ms ease",
+              borderRadius: 16,
+              border: isOver ? "1px dashed var(--accent)" : "1px solid rgba(0,0,0,0.06)",
+              background: isOver ? "rgba(194,105,42,0.04)" : "var(--bg)",
+              transition: "background 0.15s, border-color 0.15s",
               maxHeight: "100%",
             }}
           >
+            <div style={{ height: 4, borderRadius: "16px 16px 0 0", background: g.color }} />
             <div style={{
-              padding: "10px 12px", display: "flex", alignItems: "center", gap: 8,
-              borderBottom: "1px solid var(--border-subtle)",
+              padding: "14px 16px 10px", display: "flex", alignItems: "center", gap: 8,
             }}>
-              <span style={{
-                width: 6, height: 6, borderRadius: "50%", background: g.color,
-              }} />
-              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--t1)", flex: 1 }}>{g.label}</span>
-              <span style={{ fontSize: 11, color: "var(--t3)", fontWeight: 500 }}>{g.items.length}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--t1)", flex: 1 }}>{g.label}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: g.color, background: `${g.color}18`, padding: "1px 7px", borderRadius: 8 }}>{g.items.length}</span>
             </div>
-            <div style={{ flex: 1, overflowY: "auto", padding: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ flex: 1, overflowY: "auto", padding: "0 10px", display: "flex", flexDirection: "column", gap: 8, scrollbarWidth: "thin" }}>
               {g.items.map((t) => (
                 <BoardCard key={t.id} t={t}
                   isDragging={dragId === t.id}
@@ -1246,16 +1243,12 @@ function BoardCard({
       onClick={onPeek}
       className="h-lift"
       style={{
-        background: "var(--card)", borderRadius: 8,
-        border: "1px solid rgba(0,0,0,0.05)", padding: "9px 11px",
+        background: "var(--card)", borderRadius: 12,
+        border: "1px solid rgba(0,0,0,0.06)", padding: "12px 14px",
         cursor: isDragging ? "grabbing" : "grab",
-        display: "flex", flexDirection: "column", gap: 6,
-        boxShadow: isDragging
-          ? "0 8px 24px rgba(28,24,20,0.12), 0 2px 6px rgba(28,24,20,0.06)"
-          : "0 1px 2px rgba(28,24,20,0.03)",
-        opacity: isDragging ? 0.85 : (done ? 0.6 : 1),
-        transform: isDragging ? "scale(1.03) rotate(1deg)" : "none",
-        transition: "transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease",
+        display: "flex", flexDirection: "column", gap: 8,
+        boxShadow: "0 1px 4px rgba(28,24,20,0.04)",
+        opacity: isDragging ? 0.5 : (done ? 0.6 : 1),
       }}>
       <div style={{ fontSize: 13, fontWeight: 500, color: done ? "var(--t3)" : "var(--t1)",
         textDecoration: done ? "line-through" : "none", lineHeight: 1.3 }}>

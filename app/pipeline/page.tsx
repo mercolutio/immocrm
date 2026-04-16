@@ -402,8 +402,9 @@ export default function PipelinePage() {
           <div style={{ background: "rgba(201,59,46,0.08)", border: "1px solid rgba(201,59,46,0.2)", borderRadius: 10, padding: "16px 20px", fontSize: 13, color: "var(--red)" }}>
             Fehler beim Laden: {error}
           </div>
-        ) : view === "kanban" ? (
-          /* ── KANBAN ── */
+        ) : (
+          <div key={view} className="view-fade">
+          {view === "kanban" ? (
           <div style={{
             display: "flex", gap: 14, overflowX: "auto", paddingTop: 26, paddingBottom: 8, paddingRight: 30,
             height: "calc(100vh - 130px)", scrollbarWidth: "thin",
@@ -527,7 +528,7 @@ export default function PipelinePage() {
               );
             })}
           </div>
-        ) : (
+          ) : (
           /* ── LISTENANSICHT ── */
           filtered.length === 0 ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 80 }}>
@@ -772,7 +773,8 @@ export default function PipelinePage() {
               </div>
             </div>
             </>
-          )
+          ))}
+          </div>
         )}
       </div>
 

@@ -82,25 +82,25 @@ export default function Dashboard() {
                 Neu
               </button>
               <div className={`quick-add-menu${qaOpen ? " open" : ""}`}>
-                <div className="qa-item">
+                <div className="qa-item pop-item">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                     <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
                   </svg>
                   Kontakt anlegen
                 </div>
-                <div className="qa-item">
+                <div className="qa-item pop-item">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                     <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
                   </svg>
                   Objekt anlegen
                 </div>
-                <div className="qa-item">
+                <div className="qa-item pop-item">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
                   </svg>
                   Deal eröffnen
                 </div>
-                <div className="qa-item">
+                <div className="qa-item pop-item">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                     <polyline points="9 11 12 14 22 4"/>
                     <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
@@ -136,7 +136,7 @@ export default function Dashboard() {
 
           {/* KPI STRIP */}
           <div className="kpi-strip anim-0">
-            <div className="kpi">
+            <div className="kpi h-lift">
               <div className="kpi-label">Provision MTD</div>
               <div style={{display:"flex",alignItems:"baseline",gap:4}}>
                 <div className="kpi-val">€284k</div>
@@ -154,7 +154,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <div className="kpi">
+            <div className="kpi h-lift">
               <div className="kpi-label">Aktive Deals</div>
               <div style={{display:"flex",alignItems:"baseline",gap:4}}>
                 <div className="kpi-val">47</div><span className="kpi-unit">Deals</span>
@@ -172,7 +172,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <div className="kpi">
+            <div className="kpi h-lift">
               <div className="kpi-label">Neue Kontakte</div>
               <div style={{display:"flex",alignItems:"baseline",gap:4}}>
                 <div className="kpi-val">124</div><span className="kpi-unit">gesamt</span>
@@ -190,7 +190,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <div className="kpi">
+            <div className="kpi h-lift">
               <div className="kpi-label">Ø Abschlusszeit</div>
               <div style={{display:"flex",alignItems:"baseline",gap:4}}>
                 <div className="kpi-val">38</div><span className="kpi-unit">Tage</span>
@@ -270,7 +270,7 @@ export default function Dashboard() {
                 <div className="ki-tag">Live</div>
               </div>
               <div className="ki-cards">
-                <div className="ki-card">
+                <div className="ki-card pop-item">
                   <div className="ki-chip chip-alert">
                     <svg viewBox="0 0 24 24" fill="currentColor">
                       <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
@@ -286,7 +286,7 @@ export default function Dashboard() {
                     </svg>
                   </div>
                 </div>
-                <div className="ki-card">
+                <div className="ki-card pop-item">
                   <div className="ki-chip chip-chance">
                     <svg viewBox="0 0 24 24" fill="currentColor">
                       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
@@ -302,7 +302,7 @@ export default function Dashboard() {
                     </svg>
                   </div>
                 </div>
-                <div className="ki-card">
+                <div className="ki-card pop-item">
                   <div className="ki-chip chip-follow">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
@@ -401,7 +401,7 @@ export default function Dashboard() {
                 </a>
               </div>
               <div className="feed-list">
-                <div className="feed-item">
+                <div className="feed-item pop-item">
                   <div className="feed-ico" style={{background:"var(--blu-bg)"}}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="#2457B3" strokeWidth="2" strokeLinecap="round">
                       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
@@ -414,7 +414,7 @@ export default function Dashboard() {
                     <div className="feed-ts">vor 12 Min.</div>
                   </div>
                 </div>
-                <div className="feed-item">
+                <div className="feed-item pop-item">
                   <div className="feed-ico" style={{background:"var(--grn-bg)"}}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="#1E8A5C" strokeWidth="2" strokeLinecap="round">
                       <polyline points="20 6 9 17 4 12"/>
@@ -426,7 +426,7 @@ export default function Dashboard() {
                     <div className="feed-ts">Heute, 10:45</div>
                   </div>
                 </div>
-                <div className="feed-item">
+                <div className="feed-item pop-item">
                   <div className="feed-ico" style={{background:"var(--red-bg)"}}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="#C93B2E" strokeWidth="2" strokeLinecap="round">
                       <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
@@ -439,7 +439,7 @@ export default function Dashboard() {
                     <div className="feed-ts">Gestern</div>
                   </div>
                 </div>
-                <div className="feed-item">
+                <div className="feed-item pop-item">
                   <div className="feed-ico" style={{background:"var(--pur-bg)"}}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="#6D28D9" strokeWidth="2" strokeLinecap="round">
                       <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>

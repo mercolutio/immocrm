@@ -64,7 +64,7 @@ export default function RegisterPage() {
         boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
       }}>
         {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
+        <div className="auth-stagger-0" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
           <div style={{
             width: 32, height: 32, borderRadius: 8,
             background: "var(--accent)",
@@ -90,7 +90,7 @@ export default function RegisterPage() {
           14 Tage kostenlos testen · Keine Kreditkarte nötig
         </p>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <form onSubmit={handleSubmit} className="auth-stagger-1" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
             <label style={labelStyle}>Name des Maklerbüros</label>
             <input
@@ -127,7 +127,7 @@ export default function RegisterPage() {
           </div>
 
           {error && (
-            <div style={{
+            <div className="error-shake" style={{
               background: "var(--red-bg)", border: "1px solid rgba(201,59,46,0.2)",
               borderRadius: 8, padding: "10px 12px",
               fontSize: 13, color: "var(--red)",
@@ -141,7 +141,7 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        <p style={{ fontSize: 13, color: "var(--t3)", marginTop: 20, textAlign: "center" }}>
+        <p className="auth-stagger-2" style={{ fontSize: 13, color: "var(--t3)", marginTop: 20, textAlign: "center" }}>
           Bereits registriert?{" "}
           <a href="/auth/login" style={{ color: "var(--accent)", fontWeight: 500, textDecoration: "none" }}>
             Anmelden

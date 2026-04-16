@@ -969,7 +969,7 @@ export default function ContactDetailPage() {
             )}
 
             {/* Timeline */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <div key={activeTab} className="tab-fade" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
               {timeline.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "40px 0", fontSize: 13, color: "var(--t2)" }}>
                   Noch keine Aktivitäten vorhanden

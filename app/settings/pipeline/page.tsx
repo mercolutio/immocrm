@@ -255,7 +255,7 @@ export default function SettingsPipelinePage() {
   }
 
   return (
-    <div style={{ maxWidth: 680, paddingBottom: isDirty ? 80 : 0 }}>
+    <div className="anim-0" style={{ maxWidth: 680, paddingBottom: isDirty ? 80 : 0 }}>
       <style>{`
         .stage-name-hover:hover { background: rgba(0,0,0,0.04); }
         .stage-name-hover:hover .edit-icon { opacity: 1 !important; }

@@ -492,7 +492,7 @@ export default function PropertiesPage() {
             Fehler beim Laden: {error}
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 80 }}>
+          <div className="view-fade" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 80 }}>
             <div style={{ width: 52, height: 52, borderRadius: 18, background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="1.5" strokeLinecap="round">
                 <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
@@ -515,7 +515,7 @@ export default function PropertiesPage() {
             )}
           </div>
         ) : (
-          <>
+          <div className="content-reveal">
           <div className="list-table-wrap">
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -614,7 +614,7 @@ export default function PropertiesPage() {
               </div>
             </div>
           </div>
-          </>
+          </div>
         )}
       </div>
 

@@ -384,7 +384,7 @@ export default function ContactsPage() {
           </div>
         ) : filtered.length === 0 ? (
           /* Leerer Zustand */
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 80 }}>
+          <div className="view-fade" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 80 }}>
             <div style={{ width: 52, height: 52, borderRadius: 18, background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="1.5" strokeLinecap="round">
                 <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
@@ -408,7 +408,7 @@ export default function ContactsPage() {
           </div>
         ) : (
           /* Tabelle */
-          <>
+          <div className="content-reveal">
             <div className="list-table-wrap">
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
@@ -506,7 +506,7 @@ export default function ContactsPage() {
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
 

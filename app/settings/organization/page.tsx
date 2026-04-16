@@ -80,7 +80,7 @@ export default function OrganizationSettingsPage() {
   if (!org) return <div style={{ color: "var(--t3)" }}>Lade…</div>;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 640 }}>
+    <div className="anim-0" style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 640 }}>
       {/* ORG-NAME */}
       <div className="card" style={{ padding: 22 }}>
         <div style={{ fontFamily: "var(--font-playfair)", fontSize: 16, fontWeight: 500, color: "var(--t1)", marginBottom: 16 }}>
@@ -153,8 +153,8 @@ export default function OrganizationSettingsPage() {
         )}
       </div>
 
-      {info && <div style={{ color: "var(--badge-green)", fontSize: 13 }}>{info}</div>}
-      {err && <div style={{ color: "var(--red)", fontSize: 13 }}>{err}</div>}
+      {info && <div className="success-pop" style={{ color: "var(--badge-green)", fontSize: 13 }}>{info}</div>}
+      {err && <div className="error-shake" style={{ color: "var(--red)", fontSize: 13 }}>{err}</div>}
     </div>
   );
 }

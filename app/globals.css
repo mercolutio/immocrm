@@ -783,6 +783,30 @@ input::placeholder, textarea::placeholder { color: var(--placeholder); opacity: 
 }
 .quickadd-flash { animation: borderFlash 900ms ease-out; }
 
+/* ConfirmDialog entrance */
+@keyframes dialogBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dialogPopIn {
+  from { opacity: 0; transform: scale(0.92) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Tab content crossfade */
+@keyframes tabFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.tab-fade { animation: tabFadeIn 200ms ease both; }
+
+/* Success message pop */
+@keyframes successPop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.success-pop { animation: successPop 250ms ease both; }
+
+/* Error shake */
+@keyframes errorShake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-3px)} 40%,80%{transform:translateX(3px)} }
+.error-shake { animation: errorShake 400ms ease; }
+
+/* Auth page stagger */
+.auth-stagger-0 { animation: fadeUp 0.3s ease both; animation-delay: 0.05s; }
+.auth-stagger-1 { animation: fadeUp 0.3s ease both; animation-delay: 0.12s; }
+.auth-stagger-2 { animation: fadeUp 0.3s ease both; animation-delay: 0.2s; }
+
 /* Accessibility: reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
