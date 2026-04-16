@@ -210,6 +210,8 @@ export interface SearchProfile {
   notes: string | null
 }
 
+export type NotificationType = 'reminder' | 'due_today' | 'overdue' | 'dependency_resolved'
+
 export interface Task {
   id: string
   created_at: string
@@ -221,13 +223,17 @@ export interface Task {
   deal_id: string | null
   assigned_to: string | null
   parent_task_id: string | null
+  depends_on_task_id: string | null
+  template_id: string | null
   title: string
   description: string | null
   due_date: string | null
+  reminder_at: string | null
   status: TaskStatus
   priority: TaskPriority
   recurrence: TaskRecurrence
   recurrence_end: string | null
+  position: number
 }
 
 export interface Organization {
@@ -275,6 +281,46 @@ export interface TaskAttachment {
   file_name: string
   mime_type: string | null
   size_bytes: number | null
+}
+
+export interface TaskTemplate {
+  id: string
+  created_at: string
+  updated_at: string
+  organization_id: string
+  user_id: string
+  name: string
+  description: string | null
+}
+
+export interface TaskTemplateItem {
+  id: string
+  created_at: string
+  template_id: string
+  title: string
+  description: string | null
+  priority: TaskPriority
+  due_offset_days: number
+  position: number
+  depends_on_item_id: string | null
+}
+
+export interface Notification {
+  id: string
+  created_at: string
+  user_id: string
+  task_id: string | null
+  type: NotificationType
+  title: string
+  body: string | null
+  read_at: string | null
+}
+
+export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
+  reminder: 'Erinnerung',
+  due_today: 'Heute fällig',
+  overdue: 'Überfällig',
+  dependency_resolved: 'Abhängigkeit aufgelöst',
 }
 
 export interface Property {

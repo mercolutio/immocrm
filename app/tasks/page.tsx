@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import AppSelect from "@/components/AppSelect";
 import TaskSheet from "@/components/TaskSheet";
@@ -19,6 +20,7 @@ import {
   TASK_PRIORITY_COLORS,
 } from "@/lib/types";
 
+type MainView = "heute" | "projekte" | "alle";
 type View = "list" | "board";
 type GroupBy = "none" | "due" | "status" | "priority" | "assignee";
 
@@ -84,6 +86,7 @@ export default function TasksPage() {
   const [dueFilter] = useState<string>("all");
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [showDone, setShowDone] = useState(false);
+  const [mainView, setMainView] = useState<MainView>("heute");
   const [view, setView] = useState<View>("list");
   const [groupBy, setGroupBy] = useState<GroupBy>("due");
   const [peekTaskId, setPeekTaskId] = useState<string | null>(null);
@@ -283,6 +286,12 @@ export default function TasksPage() {
           </p>
         </div>
         <div className="page-header-right">
+          <Link href="/tasks/templates" className="btn-ghost" style={{ fontSize: 13, textDecoration: "none" }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="16" x2="12" y2="16"/>
+            </svg>
+            Vorlagen
+          </Link>
           <button onClick={focusQuickAdd} className="btn-primary"
             title="Neue Aufgabe (c)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -294,7 +303,33 @@ export default function TasksPage() {
         </div>
       </header>
 
-      <div className="page-toolbar">
+      {/* Main View Tabs */}
+      <div style={{ display: "flex", gap: 0, padding: "0 30px", borderBottom: "1px solid var(--border)" }}>
+        {([
+          { key: "heute" as MainView, label: "Heute", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+          { key: "projekte" as MainView, label: "Projekte", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> },
+          { key: "alle" as MainView, label: "Alle Aufgaben", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> },
+        ]).map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setMainView(tab.key)}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "10px 16px", fontSize: 13, fontWeight: mainView === tab.key ? 600 : 400,
+              color: mainView === tab.key ? "var(--accent)" : "var(--t2)",
+              background: "transparent", border: "none", borderBottom: mainView === tab.key ? "2px solid var(--accent)" : "2px solid transparent",
+              cursor: "pointer", fontFamily: "inherit",
+              transition: "color 150ms ease, border-color 150ms ease",
+              marginBottom: -1,
+            }}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {mainView === "alle" && (<><div className="page-toolbar">
         <div className="search-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -394,6 +429,30 @@ export default function TasksPage() {
           </div>
         )}
       </div>
+      </>)}
+
+      {/* Heute View */}
+      {mainView === "heute" && (
+        <HeuteView
+          tasks={tasks}
+          loading={loading}
+          isTeam={isTeam}
+          memberProfiles={orgCtx.memberProfiles}
+          onPeek={setPeekTaskId}
+          onToggleDone={toggleDone}
+          onQuickCreate={quickCreate}
+        />
+      )}
+
+      {/* Projekte View */}
+      {mainView === "projekte" && (
+        <ProjekteView
+          tasks={tasks}
+          loading={loading}
+          onPeek={setPeekTaskId}
+          onToggleDone={toggleDone}
+        />
+      )}
 
       {/* Peek-Panel: Edit */}
       {peekTask && (
@@ -1336,6 +1395,372 @@ function BoardQuickAdd({ onCreate }: { onCreate: (title: string) => Promise<bool
           outline: "none",
         }}
       />
+    </div>
+  );
+}
+
+// ============================================================
+// Heute View — Card-based today focus
+// ============================================================
+interface HeuteViewProps {
+  tasks: TaskRow[];
+  loading: boolean;
+  isTeam: boolean;
+  memberProfiles: Record<string, { name: string; email: string }>;
+  onPeek: (id: string) => void;
+  onToggleDone: (t: Task) => void;
+  onQuickCreate: (title: string, prefill?: Partial<Task>) => Promise<boolean>;
+}
+
+function HeuteView(p: HeuteViewProps) {
+  const overdue = useMemo(() => p.tasks.filter((t) => t.status !== "done" && dueBucket(t.due_date) === "overdue"), [p.tasks]);
+  const today = useMemo(() => p.tasks.filter((t) => t.status !== "done" && dueBucket(t.due_date) === "today"), [p.tasks]);
+  const inProgress = useMemo(() => p.tasks.filter((t) => t.status === "in_progress" && dueBucket(t.due_date) !== "overdue" && dueBucket(t.due_date) !== "today"), [p.tasks]);
+  const recentDone = useMemo(() => {
+    const todayStart = startOfToday().getTime();
+    return p.tasks.filter((t) => t.status === "done" && t.updated_at && new Date(t.updated_at).getTime() >= todayStart).slice(0, 5);
+  }, [p.tasks]);
+
+  if (p.loading) {
+    return <div className="body-wrap anim-0" style={{ paddingTop: 18 }}><div style={{ padding: 24, color: "var(--t3)" }}>Lade…</div></div>;
+  }
+
+  const totalToday = overdue.length + today.length + inProgress.length;
+
+  return (
+    <div className="body-wrap anim-0" style={{ paddingTop: 18 }}>
+      {/* Summary bar */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>
+        <div style={{
+          flex: 1, padding: "16px 20px", borderRadius: 14,
+          background: totalToday === 0 ? "var(--badge-green-bg)" : overdue.length > 0 ? "rgba(220,38,38,0.06)" : "var(--accent-soft)",
+          border: `1px solid ${totalToday === 0 ? "var(--badge-green)" : overdue.length > 0 ? "rgba(220,38,38,0.15)" : "var(--accent)"}20`,
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t3)", marginBottom: 4 }}>
+            Heute zu erledigen
+          </div>
+          <div style={{ fontFamily: "var(--font-playfair)", fontSize: 28, fontWeight: 500, color: "var(--t1)" }}>
+            {totalToday}
+            <span style={{ fontSize: 13, fontWeight: 400, color: "var(--t3)", fontFamily: "var(--font-dm)", marginLeft: 8 }}>
+              {totalToday === 0 ? "Alles erledigt!" : totalToday === 1 ? "Aufgabe" : "Aufgaben"}
+            </span>
+          </div>
+        </div>
+        {recentDone.length > 0 && (
+          <div style={{ padding: "16px 20px", borderRadius: 14, background: "var(--badge-green-bg)", border: "1px solid rgba(34,197,94,0.1)", minWidth: 140 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t3)", marginBottom: 4 }}>
+              Heute erledigt
+            </div>
+            <div style={{ fontFamily: "var(--font-playfair)", fontSize: 28, fontWeight: 500, color: "var(--badge-green)" }}>
+              {recentDone.length}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Overdue section */}
+      {overdue.length > 0 && (
+        <HeuteSection
+          title="Überfällig"
+          color="var(--red)"
+          tasks={overdue}
+          onPeek={p.onPeek}
+          onToggleDone={p.onToggleDone}
+          isTeam={p.isTeam}
+          memberProfiles={p.memberProfiles}
+        />
+      )}
+
+      {/* Today section */}
+      <HeuteSection
+        title="Heute fällig"
+        color="var(--badge-orange)"
+        tasks={today}
+        onPeek={p.onPeek}
+        onToggleDone={p.onToggleDone}
+        isTeam={p.isTeam}
+        memberProfiles={p.memberProfiles}
+        emptyText="Keine Aufgaben für heute"
+      />
+
+      {/* In progress (not due today but actively worked on) */}
+      {inProgress.length > 0 && (
+        <HeuteSection
+          title="In Arbeit"
+          color="var(--badge-blue)"
+          tasks={inProgress}
+          onPeek={p.onPeek}
+          onToggleDone={p.onToggleDone}
+          isTeam={p.isTeam}
+          memberProfiles={p.memberProfiles}
+        />
+      )}
+
+      {/* Recently done */}
+      {recentDone.length > 0 && (
+        <HeuteSection
+          title="Heute erledigt"
+          color="var(--badge-green)"
+          tasks={recentDone}
+          onPeek={p.onPeek}
+          onToggleDone={p.onToggleDone}
+          isTeam={p.isTeam}
+          memberProfiles={p.memberProfiles}
+          isDoneSection
+        />
+      )}
+
+      {/* Quick add for today */}
+      <div style={{ marginTop: 16 }}>
+        <BoardQuickAdd onCreate={(title) => p.onQuickCreate(title, { due_date: new Date().toISOString().slice(0, 10) })} />
+      </div>
+    </div>
+  );
+}
+
+function HeuteSection({ title, color, tasks, onPeek, onToggleDone, isTeam, memberProfiles, emptyText, isDoneSection }: {
+  title: string;
+  color: string;
+  tasks: TaskRow[];
+  onPeek: (id: string) => void;
+  onToggleDone: (t: Task) => void;
+  isTeam: boolean;
+  memberProfiles: Record<string, { name: string; email: string }>;
+  emptyText?: string;
+  isDoneSection?: boolean;
+}) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <div style={{ width: 8, height: 8, borderRadius: 4, background: color, flexShrink: 0 }} />
+        <span style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--t2)" }}>{title}</span>
+        <span style={{ fontSize: 11, color: "var(--t3)" }}>({tasks.length})</span>
+      </div>
+      {tasks.length === 0 && emptyText ? (
+        <div style={{ padding: "14px 16px", fontSize: 13, color: "var(--t3)", background: "var(--surface-subtle)", borderRadius: 10 }}>{emptyText}</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {tasks.map((t) => (
+            <HeuteCard key={t.id} task={t} onPeek={onPeek} onToggleDone={onToggleDone} isTeam={isTeam} memberProfiles={memberProfiles} isDone={isDoneSection} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HeuteCard({ task: t, onPeek, onToggleDone, isTeam, memberProfiles, isDone }: {
+  task: TaskRow;
+  onPeek: (id: string) => void;
+  onToggleDone: (t: Task) => void;
+  isTeam: boolean;
+  memberProfiles: Record<string, { name: string; email: string }>;
+  isDone?: boolean;
+}) {
+  const pc = TASK_PRIORITY_COLORS[t.priority];
+  return (
+    <div
+      onClick={() => onPeek(t.id)}
+      className="h-lift"
+      style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "10px 14px", borderRadius: 12,
+        background: "var(--card)",
+        border: "1px solid rgba(0,0,0,0.06)",
+        boxShadow: "0 1px 4px rgba(28,24,20,0.04)",
+        cursor: "pointer",
+        opacity: isDone ? 0.6 : 1,
+      }}
+    >
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggleDone(t); }}
+        style={{
+          width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+          border: t.status === "done" ? "none" : "1.5px solid var(--border)",
+          background: t.status === "done" ? "var(--badge-green)" : "transparent",
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          color: "white", fontSize: 11,
+        }}
+      >
+        {t.status === "done" && "✓"}
+      </button>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 13, fontWeight: 500, color: "var(--t1)",
+          textDecoration: isDone ? "line-through" : "none",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>
+          {t.title}
+        </div>
+        {(t._linked_label || t.due_date) && (
+          <div style={{ display: "flex", gap: 8, marginTop: 3 }}>
+            {t._linked_label && (
+              <span style={{ fontSize: 11, color: "var(--t3)" }}>{t._linked_label}</span>
+            )}
+            {t.due_date && (
+              <span style={{ fontSize: 11, color: dueColor(t.due_date, t.status === "done") }}>{fmtDE(t.due_date)}</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      <span style={{
+        fontSize: 10, fontWeight: 500, padding: "1px 7px", borderRadius: 6,
+        background: pc.bg, color: pc.fg,
+      }}>
+        {TASK_PRIORITY_LABELS[t.priority]}
+      </span>
+
+      {isTeam && t.assigned_to && (
+        <span style={{ fontSize: 11, color: "var(--t3)", flexShrink: 0 }}>
+          {memberProfiles[t.assigned_to]?.name?.split(" ")[0] || "?"}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Projekte View — Tasks grouped by property/deal
+// ============================================================
+interface ProjekteViewProps {
+  tasks: TaskRow[];
+  loading: boolean;
+  onPeek: (id: string) => void;
+  onToggleDone: (t: Task) => void;
+}
+
+function ProjekteView(p: ProjekteViewProps) {
+  const groups = useMemo(() => {
+    const map = new Map<string, { label: string; kind: "property" | "deal" | "none"; tasks: TaskRow[] }>();
+    p.tasks.filter((t) => t.status !== "done").forEach((t) => {
+      let key = "_none";
+      let label = "Ohne Zuordnung";
+      let kind: "property" | "deal" | "none" = "none";
+      if (t.property_id) {
+        key = `p_${t.property_id}`;
+        label = t._linked_label || `Objekt ${t.property_id.slice(0, 6)}`;
+        kind = "property";
+      } else if (t.deal_id) {
+        key = `d_${t.deal_id}`;
+        label = t._linked_label || `Deal ${t.deal_id.slice(0, 6)}`;
+        kind = "deal";
+      }
+      const g = map.get(key) ?? { label, kind, tasks: [] };
+      g.tasks.push(t);
+      map.set(key, g);
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => {
+        if (a[0] === "_none") return 1;
+        if (b[0] === "_none") return -1;
+        return b[1].tasks.length - a[1].tasks.length;
+      });
+  }, [p.tasks]);
+
+  if (p.loading) {
+    return <div className="body-wrap anim-0" style={{ paddingTop: 18 }}><div style={{ padding: 24, color: "var(--t3)" }}>Lade…</div></div>;
+  }
+
+  if (groups.length === 0) {
+    return (
+      <div className="body-wrap anim-0 view-fade" style={{ paddingTop: 18, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingBottom: 40, gap: 12 }}>
+        <div style={{ width: 52, height: 52, borderRadius: 18, background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+          </svg>
+        </div>
+        <div style={{ fontSize: 15, fontWeight: 500, color: "var(--t1)" }}>Keine Projekt-Aufgaben</div>
+        <div style={{ fontSize: 13, color: "var(--t3)" }}>Aufgaben mit verknüpftem Objekt oder Deal erscheinen hier</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="body-wrap anim-0" style={{ paddingTop: 18 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {groups.map(([key, g]) => {
+          const done = g.tasks.filter((t) => t.status === "done").length;
+          const total = g.tasks.length;
+          const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+          const kindIcon = g.kind === "property"
+            ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+            : g.kind === "deal"
+            ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/></svg>;
+
+          return (
+            <div key={key} className="card" style={{ padding: "16px 20px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: "var(--t2)" }}>{kindIcon}</span>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "var(--t1)" }}>{g.label}</span>
+                  <span style={{ fontSize: 11, color: "var(--t3)" }}>({total} Aufgaben)</span>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 500, color: pct === 100 ? "var(--badge-green)" : "var(--t2)" }}>{pct}%</span>
+              </div>
+
+              {/* Progress bar */}
+              <div style={{ height: 4, borderRadius: 2, background: "var(--surface-subtle)", marginBottom: 12, overflow: "hidden" }}>
+                <div style={{
+                  height: "100%", borderRadius: 2,
+                  background: pct === 100 ? "var(--badge-green)" : "var(--accent)",
+                  width: `${pct}%`,
+                  transition: "width 600ms cubic-bezier(0.4, 0, 0.2, 1)",
+                }} />
+              </div>
+
+              {/* Task list */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {g.tasks.map((t) => (
+                  <div
+                    key={t.id}
+                    onClick={() => p.onPeek(t.id)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "7px 8px", borderRadius: 8, cursor: "pointer",
+                      transition: "background 150ms ease",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-subtle)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <button
+                      onClick={(e) => { e.stopPropagation(); p.onToggleDone(t); }}
+                      style={{
+                        width: 16, height: 16, borderRadius: 4, flexShrink: 0,
+                        border: t.status === "done" ? "none" : "1.5px solid var(--border)",
+                        background: t.status === "done" ? "var(--badge-green)" : "transparent",
+                        cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                        color: "white", fontSize: 10,
+                      }}
+                    >
+                      {t.status === "done" && "✓"}
+                    </button>
+                    <span style={{
+                      flex: 1, fontSize: 13, color: t.status === "done" ? "var(--t3)" : "var(--t1)",
+                      textDecoration: t.status === "done" ? "line-through" : "none",
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}>
+                      {t.title}
+                    </span>
+                    {t.due_date && (
+                      <span style={{ fontSize: 11, color: dueColor(t.due_date, t.status === "done"), flexShrink: 0 }}>{fmtDE(t.due_date)}</span>
+                    )}
+                    <span style={{
+                      fontSize: 10, fontWeight: 500, padding: "1px 6px", borderRadius: 5,
+                      background: TASK_PRIORITY_COLORS[t.priority].bg,
+                      color: TASK_PRIORITY_COLORS[t.priority].fg,
+                    }}>
+                      {TASK_PRIORITY_LABELS[t.priority]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
