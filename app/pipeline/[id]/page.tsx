@@ -364,7 +364,7 @@ export default function DealDetailPage() {
             Pipeline
           </Link>
         </header>
-        <div className="body-wrap">
+        <div className="body-wrap anim-0">
           <div style={{ background: "rgba(201,59,46,0.08)", border: "1px solid rgba(201,59,46,0.2)", borderRadius: 10, padding: "16px 20px", fontSize: 13, color: "var(--red)" }}>
             {error ?? "Deal nicht gefunden"}
           </div>

@@ -39,6 +39,7 @@ export default function Sidebar() {
     <>
       {collapsed && tooltipState && (
         <div
+          className="sidebar-tooltip"
           style={{
             position: "fixed",
             left: 60,

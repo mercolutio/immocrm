@@ -285,7 +285,7 @@ export default function ContactsPage() {
       </div>
 
       {/* BODY */}
-      <div className="body-wrap" style={{ paddingTop: 16 }}>
+      <div className="body-wrap anim-0" style={{ paddingTop: 16 }}>
         {/* BulkActionBar schiebt die Liste runter */}
         <BulkActionBar
           count={selectedCount}

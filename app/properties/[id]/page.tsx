@@ -718,7 +718,7 @@ export default function PropertyDetailPage() {
           {error}
         </div>
       ) : (
-        <div className="property-detail" style={{ display: "flex", gap: 0, flex: 1, overflow: "hidden" }}>
+        <div className="property-detail anim-0" style={{ display: "flex", gap: 0, flex: 1, overflow: "hidden" }}>
 
           {/* ── LINKE SPALTE: Objektdaten ── */}
           <div

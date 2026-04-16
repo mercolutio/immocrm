@@ -391,7 +391,7 @@ export default function PipelinePage() {
       </div>
 
       {/* BODY */}
-      <div className="body-wrap" style={{ padding: view === "kanban" ? "16px 0 26px 30px" : "16px 36px 40px" }}>
+      <div className="body-wrap anim-0" style={{ padding: view === "kanban" ? "16px 0 26px 30px" : "16px 36px 40px" }}>
         {loading ? (
           <div style={{ display: "flex", gap: 16, padding: view === "kanban" ? "26px 0" : undefined }}>
             {[1, 2, 3, 4].map((i) => (

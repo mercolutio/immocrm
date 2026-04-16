@@ -359,10 +359,11 @@ export default function TasksPage() {
         </div>
       </div>
 
-      <div className="body-wrap" style={{ paddingTop: 18, ...(view === "board" ? { paddingRight: 0 } : {}) }}>
+      <div className="body-wrap anim-0" style={{ paddingTop: 18, ...(view === "board" ? { paddingRight: 0 } : {}) }}>
         {loading ? (
           <div style={{ padding: 24, color: "var(--t3)" }}>Lade…</div>
         ) : view === "list" ? (
+          <div key="list" className="view-fade content-reveal">
           <ListView
             tasks={filtered}
             groupBy={groupBy}
@@ -377,7 +378,9 @@ export default function TasksPage() {
             onQuickCreate={quickCreate}
             onMoveTo={moveTaskTo}
           />
+          </div>
         ) : (
+          <div key="board" className="view-fade content-reveal">
           <BoardView
             tasks={filtered}
             groupBy={groupBy === "none" ? "status" : groupBy}
@@ -388,6 +391,7 @@ export default function TasksPage() {
             onPatch={patchTask}
             onQuickCreate={quickCreate}
           />
+          </div>
         )}
       </div>
 
@@ -628,43 +632,49 @@ function SectionBlock(p: SectionProps) {
         </button>
       )}
 
-      {!p.collapsed && (
-        <div className="list-table-wrap">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <tbody>
-              {p.showQuickAdd && (
-                <QuickAddRow
-                  inputRef={p.quickAddRef}
-                  flashSignal={p.flashQuickAdd ?? 0}
-                  onCreate={p.onQuickCreate}
-                  sectionPrefill={p.sectionPrefill}
-                  isTeam={p.isTeam}
-                />
-              )}
-              {p.items.map((t, i) => (
-                <TaskListRow
-                  key={t.id}
-                  task={t}
-                  last={i === p.items.length - 1}
-                  isTeam={p.isTeam}
-                  memberProfiles={p.memberProfiles}
-                  members={p.members}
-                  onPeek={p.onPeek}
-                  onToggleDone={p.onToggleDone}
-                  onPatch={p.onPatch}
-                />
-              ))}
-              {p.items.length === 0 && !p.showQuickAdd && (
-                <tr>
-                  <td colSpan={6} style={{ padding: "18px 22px", color: "var(--t3)", fontSize: 12, textAlign: "center" }}>
-                    Keine Aufgaben in dieser Gruppe.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      <div style={{
+        display: "grid",
+        gridTemplateRows: p.collapsed ? "0fr" : "1fr",
+        transition: "grid-template-rows 220ms cubic-bezier(0.22,0.61,0.36,1)",
+      }}>
+        <div style={{ overflow: "hidden" }}>
+          <div className="list-table-wrap">
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <tbody>
+                {p.showQuickAdd && (
+                  <QuickAddRow
+                    inputRef={p.quickAddRef}
+                    flashSignal={p.flashQuickAdd ?? 0}
+                    onCreate={p.onQuickCreate}
+                    sectionPrefill={p.sectionPrefill}
+                    isTeam={p.isTeam}
+                  />
+                )}
+                {p.items.map((t, i) => (
+                  <TaskListRow
+                    key={t.id}
+                    task={t}
+                    last={i === p.items.length - 1}
+                    isTeam={p.isTeam}
+                    memberProfiles={p.memberProfiles}
+                    members={p.members}
+                    onPeek={p.onPeek}
+                    onToggleDone={p.onToggleDone}
+                    onPatch={p.onPatch}
+                  />
+                ))}
+                {p.items.length === 0 && !p.showQuickAdd && (
+                  <tr>
+                    <td colSpan={6} style={{ padding: "18px 22px", color: "var(--t3)", fontSize: 12, textAlign: "center" }}>
+                      Keine Aufgaben in dieser Gruppe.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      )}
+      </div>
     </section>
   );
 }
@@ -879,7 +889,7 @@ function QuickAddChip({
           boxShadow: "0 6px 24px rgba(28,24,20,0.1)" }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {options.map((o) => (
-            <button key={o.value} onClick={() => { onPick(o.value); setOpen(false); }}
+            <button key={o.value} className="pop-item" onClick={() => { onPick(o.value); setOpen(false); }}
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px",
                 border: "none", background: "transparent", borderRadius: 6, cursor: "pointer",
                 textAlign: "left", fontFamily: "inherit" }}
@@ -924,6 +934,7 @@ function TaskListRow({ task: t, last, isTeam, memberProfiles, members, onPeek, o
         cursor: "pointer",
         borderBottom: last ? "none" : "1px solid var(--border-subtle)",
         opacity: done ? 0.6 : 1,
+        transition: "opacity 300ms ease",
       }}
       onClick={() => onPeek(t.id)}
     >
@@ -937,6 +948,7 @@ function TaskListRow({ task: t, last, isTeam, memberProfiles, members, onPeek, o
           textDecoration: done ? "line-through" : "none",
           color: done ? "var(--t3)" : "var(--t1)",
           display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+          transition: "color 300ms ease",
         }}>
           <span>{t.title}</span>
           {t.recurrence !== "none" && <span title="Wiederholt sich" style={{ fontSize: 11, color: "var(--t3)" }}>↻</span>}
@@ -1055,7 +1067,7 @@ function InlineBadge({
         className="">
         <div style={{ display: "flex", flexDirection: "column" }}>
           {options.map((o) => (
-            <button key={o.value} onClick={() => { onPick(o.value); setOpen(false); }}
+            <button key={o.value} className="pop-item" onClick={() => { onPick(o.value); setOpen(false); }}
               style={{
                 display: "flex", alignItems: "center", gap: 8,
                 padding: "6px 8px", border: "none", background: "transparent",
@@ -1107,7 +1119,7 @@ function InlineAssignee({
           boxShadow: "0 6px 24px rgba(28,24,20,0.1)",
         }}
         className="">
-        <button onClick={() => { onPick(null); setOpen(false); }}
+        <button className="pop-item" onClick={() => { onPick(null); setOpen(false); }}
           style={{ padding: "6px 10px", border: "none", background: "transparent",
             textAlign: "left", fontSize: 13, color: "var(--t3)", borderRadius: 6,
             cursor: "pointer", width: "100%", fontFamily: "inherit" }}
@@ -1117,7 +1129,7 @@ function InlineAssignee({
         {members.map((m) => {
           const n = memberProfiles[m.user_id]?.name || memberProfiles[m.user_id]?.email || m.user_id.slice(0, 8);
           return (
-            <button key={m.user_id} onClick={() => { onPick(m.user_id); setOpen(false); }}
+            <button key={m.user_id} className="pop-item" onClick={() => { onPick(m.user_id); setOpen(false); }}
               style={{ padding: "6px 10px", border: "none", background: "transparent",
                 textAlign: "left", fontSize: 13, color: "var(--t1)", borderRadius: 6,
                 cursor: "pointer", width: "100%", fontFamily: "inherit",
@@ -1180,9 +1192,10 @@ function BoardView(p: BoardProps) {
             style={{
               width: 272, minWidth: 272, flexShrink: 0,
               display: "flex", flexDirection: "column",
-              background: "var(--surface-subtle)",
               borderRadius: 10,
-              border: isOver ? "1px dashed var(--accent)" : "1px solid var(--border-subtle)",
+              border: isOver ? "1.5px dashed var(--accent)" : "1px solid var(--border-subtle)",
+              background: isOver ? "rgba(194,105,42,0.04)" : "var(--surface-subtle)",
+              transition: "border-color 140ms ease, background 140ms ease",
               maxHeight: "100%",
             }}
           >
@@ -1235,9 +1248,14 @@ function BoardCard({
       style={{
         background: "var(--card)", borderRadius: 8,
         border: "1px solid rgba(0,0,0,0.05)", padding: "9px 11px",
-        cursor: "grab", display: "flex", flexDirection: "column", gap: 6,
-        boxShadow: "0 1px 2px rgba(28,24,20,0.03)",
-        opacity: isDragging ? 0.4 : (done ? 0.6 : 1),
+        cursor: isDragging ? "grabbing" : "grab",
+        display: "flex", flexDirection: "column", gap: 6,
+        boxShadow: isDragging
+          ? "0 8px 24px rgba(28,24,20,0.12), 0 2px 6px rgba(28,24,20,0.06)"
+          : "0 1px 2px rgba(28,24,20,0.03)",
+        opacity: isDragging ? 0.85 : (done ? 0.6 : 1),
+        transform: isDragging ? "scale(1.03) rotate(1deg)" : "none",
+        transition: "transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease",
       }}>
       <div style={{ fontSize: 13, fontWeight: 500, color: done ? "var(--t3)" : "var(--t1)",
         textDecoration: done ? "line-through" : "none", lineHeight: 1.3 }}>

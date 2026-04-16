@@ -593,7 +593,7 @@ export default function ContactDetailPage() {
           {error}
         </div>
       ) : (
-        <div className="contact-detail" style={{ display: "flex", gap: 0, flex: 1, overflow: "hidden" }}>
+        <div className="contact-detail anim-0" style={{ display: "flex", gap: 0, flex: 1, overflow: "hidden" }}>
 
           {/* ── LINKE SPALTE: Kontaktdaten ── */}
           <div

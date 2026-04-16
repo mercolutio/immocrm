@@ -381,7 +381,7 @@ export default function PropertiesPage() {
       </div>
 
       {/* BODY */}
-      <div className="body-wrap" style={{ paddingTop: 16 }}>
+      <div className="body-wrap anim-0" style={{ paddingTop: 16 }}>
         <BulkActionBar
           count={selectedCount}
           totalCount={totalCount}

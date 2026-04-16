@@ -213,8 +213,8 @@ export default function TaskSheet({
           onInteractOutside={(e) => { if (isPeek) e.preventDefault(); }}
           className={
             isPeek
-              ? "task-peek fixed inset-y-0 right-0 z-40 h-full w-full sm:max-w-[480px] bg-[var(--card)] shadow-[-12px_0_32px_rgba(28,24,20,0.08)]"
-              : "task-sheet fixed inset-y-0 right-0 z-50 h-full w-full sm:max-w-[560px] bg-[var(--card)] shadow-lg"
+              ? "fixed inset-y-0 right-0 z-40 h-full w-full sm:max-w-[480px] bg-[var(--card)] shadow-[-12px_0_32px_rgba(28,24,20,0.08)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right data-[state=open]:duration-260 data-[state=closed]:duration-200"
+              : "fixed inset-y-0 right-0 z-50 h-full w-full sm:max-w-[560px] bg-[var(--card)] shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right data-[state=open]:duration-300 data-[state=closed]:duration-200"
           }
           style={{ display: "flex", flexDirection: "column", borderLeft: "1px solid var(--border)" }}
         >
