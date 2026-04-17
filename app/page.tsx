@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
 import DashboardLayout from "@/components/DashboardLayout";
+import NotificationBell from "@/components/NotificationBell";
 import { createClient } from "@/lib/supabase/client";
 import { shouldSpawnNextInstance } from "@/lib/recurrence";
 import type { Task, TaskPriority } from "@/lib/types";
@@ -118,13 +119,7 @@ export default function Dashboard() {
               <kbd>⌘K</kbd>
             </div>
 
-            <div className="hdr-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                <path d="M13.73 21a2 2 0 01-3.46 0"/>
-              </svg>
-              <div className="notif-pip"/>
-            </div>
+            <NotificationBell />
 
             <div className="hdr-sep"/>
             <div className="hdr-avatar">MW</div>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
+import NotificationBell from "@/components/NotificationBell";
 import { createClient } from "@/lib/supabase/client";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import type {
@@ -188,6 +189,7 @@ export default function TemplatesPage() {
           <p className="page-subtitle">{templates.length} Vorlage{templates.length !== 1 ? "n" : ""}</p>
         </div>
         <div className="page-header-right">
+          <NotificationBell />
           <button onClick={() => router.push("/tasks")} className="btn-ghost" style={{ marginRight: 8 }}>
             ← Aufgaben
           </button>
