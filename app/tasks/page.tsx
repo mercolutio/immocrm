@@ -288,6 +288,32 @@ export default function TasksPage() {
         </div>
         <div className="page-header-right">
           <NotificationBell />
+          {mainView === "alle" && (
+            <>
+              <AppSelect value={groupBy} onChange={(v) => setGroupBy(v as GroupBy)}
+                style={{ width: "auto", minWidth: 150 }}
+                options={[
+                  { value: "none", label: "Keine Gruppierung" },
+                  { value: "due", label: "Nach Fälligkeit" },
+                  { value: "status", label: "Nach Status" },
+                  { value: "priority", label: "Nach Priorität" },
+                  ...(isTeam ? [{ value: "assignee", label: "Nach Zuweisung" }] : []),
+                ]} />
+              <div className="view-toggle">
+                <button onClick={() => setView("list")} className={view === "list" ? "active" : ""} title="Liste">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                    <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+                  </svg>
+                </button>
+                <button onClick={() => setView("board")} className={view === "board" ? "active" : ""} title="Board">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/>
+                  </svg>
+                </button>
+              </div>
+            </>
+          )}
           <Link href="/tasks/templates" className="btn-ghost" style={{ fontSize: 13, textDecoration: "none" }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="16" x2="12" y2="16"/>
@@ -369,31 +395,6 @@ export default function TasksPage() {
             style={{ accentColor: "var(--accent)" }} />
           Erledigte zeigen
         </label>
-
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
-          <AppSelect value={groupBy} onChange={(v) => setGroupBy(v as GroupBy)}
-            style={{ width: "auto", minWidth: 150 }}
-            options={[
-              { value: "none", label: "Keine Gruppierung" },
-              { value: "due", label: "Nach Fälligkeit" },
-              { value: "status", label: "Nach Status" },
-              { value: "priority", label: "Nach Priorität" },
-              ...(isTeam ? [{ value: "assignee", label: "Nach Zuweisung" }] : []),
-            ]} />
-          <div className="view-toggle">
-            <button onClick={() => setView("list")} className={view === "list" ? "active" : ""} title="Liste">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-                <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-              </svg>
-            </button>
-            <button onClick={() => setView("board")} className={view === "board" ? "active" : ""} title="Board">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/>
-              </svg>
-            </button>
-          </div>
-        </div>
       </div>
 
       <div className="body-wrap anim-0" style={{ paddingTop: 18, ...(view === "board" ? { paddingRight: 0 } : {}) }}>
