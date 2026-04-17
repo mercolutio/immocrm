@@ -361,14 +361,14 @@ export default function PipelinePage() {
           )}
         </div>
 
-        {view === "list" && (
+        <div style={{ visibility: view === "list" ? "visible" : "hidden" }} aria-hidden={view !== "list"}>
           <AppSelect
             value={stageFilter}
             onChange={(v) => setStageFilter(v)}
             options={[{ value: "all", label: "Alle Stages" }, ...stages.map((s) => ({ value: s.id, label: s.name }))]}
             style={{ height: 37, borderRadius: 8, width: "auto", minWidth: 140 }}
           />
-        )}
+        </div>
 
         <div className="view-toggle">
           <button onClick={() => setView("kanban")} className={view === "kanban" ? "active" : ""} title="Kanban" aria-label="Kanban-Ansicht">
