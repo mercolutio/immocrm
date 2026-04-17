@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -98,7 +98,6 @@ export default function ContactDetailPage() {
   const [form, setForm] = useState<Partial<Contact>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [isDirty, setIsDirty] = useState(false);
 
   const [searchProfiles, setSearchProfiles] = useState<SearchProfile[]>([]);
   const [spForms, setSpForms] = useState<Record<string, Partial<SearchProfile>>>({});
@@ -204,12 +203,40 @@ export default function ContactDetailPage() {
   // ── Dirty helpers ─────────────────────────────────────────────────────────
   function updateForm(patch: Partial<Contact>) {
     setForm((f) => ({ ...f, ...patch }));
-    setIsDirty(true);
   }
   function updateSpField(profileId: string, patch: Partial<SearchProfile>) {
     setSpForms((f) => ({ ...f, [profileId]: { ...f[profileId], ...patch } }));
-    setIsDirty(true);
   }
+
+  const isDirty = useMemo(() => {
+    if (!contact) return false;
+    const normalizeContact = (src: Partial<Contact>) => ({
+      first_name: src.first_name?.trim() ?? "",
+      last_name:  src.last_name?.trim() ?? "",
+      email:      src.email?.trim() || null,
+      phone:      src.phone?.trim() || null,
+      type:       src.type,
+      source:     src.source,
+      notes:      src.notes?.trim() || null,
+    });
+    const contactDirty = JSON.stringify(normalizeContact(form)) !== JSON.stringify(normalizeContact(contact));
+    if (contactDirty) return true;
+
+    const normalizeSp = (src: Partial<SearchProfile>) => ({
+      type:          src.type,
+      property_type: src.property_type,
+      min_area:      src.min_area ?? null,
+      max_area:      src.max_area ?? null,
+      min_rooms:     src.min_rooms ?? null,
+      max_rooms:     src.max_rooms ?? null,
+      max_price:     src.max_price ?? null,
+      cities:        src.cities ?? null,
+      notes:         src.notes ?? null,
+    });
+    return searchProfiles.some((p) =>
+      JSON.stringify(normalizeSp(spForms[p.id] ?? {})) !== JSON.stringify(normalizeSp(p))
+    );
+  }, [form, contact, spForms, searchProfiles]);
 
   // ── Delete search profile ─────────────────────────────────────────────────
   async function deleteSearchProfile(profileId: string) {
@@ -228,7 +255,6 @@ export default function ContactDetailPage() {
     const forms: Record<string, Partial<SearchProfile>> = {};
     searchProfiles.forEach((p) => { forms[p.id] = { ...p }; });
     setSpForms(forms);
-    setIsDirty(false);
     setSaveError(null);
   }
 
@@ -325,7 +351,6 @@ export default function ContactDetailPage() {
       setSearchProfiles((prev) => prev.map((p) => ({ ...p, ...spForms[p.id] } as SearchProfile)));
     }
 
-    setIsDirty(false);
     setSaving(false);
   }
 

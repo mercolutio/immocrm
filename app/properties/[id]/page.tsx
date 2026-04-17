@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -104,7 +104,6 @@ export default function PropertyDetailPage() {
   const [form, setForm] = useState<Partial<Property>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [isDirty, setIsDirty] = useState(false);
 
   const [openForm, setOpenForm] = useState<"note" | "call" | "task" | "viewing" | null>(null);
   const activityPop = usePopover();
@@ -228,13 +227,45 @@ export default function PropertyDetailPage() {
   // ── Dirty helpers ─────────────────────────────────────────────────────────
   function updateForm(patch: Partial<Property>) {
     setForm((f) => ({ ...f, ...patch }));
-    setIsDirty(true);
   }
+
+  const isDirty = useMemo(() => {
+    if (!property) return false;
+    const normalize = (src: Partial<Property>) => ({
+      title:                   src.title?.trim() ?? "",
+      type:                    src.type,
+      listing_type:            src.listing_type,
+      status:                  src.status,
+      description:             src.description?.trim() || null,
+      street:                  src.street?.trim() || null,
+      house_number:            src.house_number?.trim() || null,
+      zip:                     src.zip?.trim() || null,
+      city:                    src.city?.trim() || null,
+      price:                   src.listing_type === "buy"  ? (src.price ?? null) : null,
+      rent:                    src.listing_type === "rent" ? (src.rent  ?? null) : null,
+      area_sqm:                src.area_sqm ?? null,
+      rooms:                   hasRooms(src.type ?? "apartment") ? (src.rooms ?? null) : null,
+      owner_contact_id:        src.owner_contact_id || null,
+      energy_certificate_type: src.energy_certificate_type || null,
+      energy_efficiency_class: src.energy_efficiency_class || null,
+      energy_consumption:      src.energy_consumption ?? null,
+      heating_type:            src.heating_type || null,
+      construction_year:       src.construction_year ?? null,
+      primary_energy_source:   src.primary_energy_source?.trim() || null,
+      floor_number:            src.type === "apartment" ? (src.floor_number ?? null) : null,
+      total_floors:            ["apartment", "house"].includes(src.type ?? "") ? (src.total_floors ?? null) : null,
+      parking:                 src.parking || null,
+      basement:                src.basement ?? null,
+      elevator:                src.elevator ?? null,
+      outdoor_space:           src.outdoor_space || null,
+      plot_area:               ["house", "land"].includes(src.type ?? "") ? (src.plot_area ?? null) : null,
+    });
+    return JSON.stringify(normalize(form)) !== JSON.stringify(normalize(property));
+  }, [form, property]);
 
   function handleDiscard() {
     if (!property) return;
     setForm(property);
-    setIsDirty(false);
     setSaveError(null);
   }
 
@@ -339,7 +370,6 @@ export default function PropertyDetailPage() {
       }
     }
 
-    setIsDirty(false);
     setSaving(false);
   }
 

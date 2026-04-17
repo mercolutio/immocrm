@@ -53,7 +53,6 @@ export default function DealDetailPage() {
   const [form, setForm] = useState<Partial<Deal>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [isDirty, setIsDirty] = useState(false);
 
   const [openForm, setOpenForm] = useState<"note" | "call" | "task" | "viewing" | null>(null);
   const activityPop = usePopover();
@@ -74,8 +73,21 @@ export default function DealDetailPage() {
 
   function updateForm(patch: Partial<Deal>) {
     setForm((f) => ({ ...f, ...patch }));
-    setIsDirty(true);
   }
+
+  const isDirty = useMemo(() => {
+    if (!deal) return false;
+    const normalize = (src: Partial<Deal>) => ({
+      contact_id:          src.contact_id          || null,
+      property_id:         src.property_id         || null,
+      stage_id:            src.stage_id            || null,
+      probability:         src.probability         ?? null,
+      commission:          src.commission          ?? null,
+      expected_close_date: src.expected_close_date || null,
+      notes:               src.notes?.trim()       || null,
+    });
+    return JSON.stringify(normalize(form)) !== JSON.stringify(normalize(deal));
+  }, [form, deal]);
 
   useEffect(() => {
     if (!isDirty) return;
@@ -191,14 +203,12 @@ export default function DealDetailPage() {
         setProperty(data as Property);
       } else setProperty(null);
     }
-    setIsDirty(false);
     setSaving(false);
   }
 
   function handleDiscard() {
     if (!deal) return;
     setForm(deal);
-    setIsDirty(false);
     setSaveError(null);
   }
 
