@@ -1,10 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { useDocuments } from "./useDocuments";
 import { formatFileSize, getDocumentIconKey } from "@/lib/document-utils";
 import type { Document, DocumentEntityType } from "@/lib/types";
-import DocumentViewerModal from "./DocumentViewerModal";
 
 function FileIcon({ kind, size = 18 }: { kind: ReturnType<typeof getDocumentIconKey>; size?: number }) {
   const s = { width: size, height: size };
@@ -73,8 +72,7 @@ export default function DocumentsSection({
   relatedFrom?: RelatedDocumentSource[];
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { docs, loading, uploading, dragOver, setDragOver, error, uploadFiles, downloadDoc, deleteDoc, getViewUrl } = useDocuments(entityType, entityId);
-  const [viewerIdx, setViewerIdx] = useState<number | null>(null);
+  const { docs, loading, uploading, dragOver, setDragOver, error, uploadFiles, downloadDoc, deleteDoc } = useDocuments(entityType, entityId);
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -124,7 +122,6 @@ export default function DocumentsSection({
         <input
           ref={inputRef}
           type="file"
-          accept="application/pdf"
           multiple
           style={{ display: "none" }}
           onChange={(e) => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ""; }}
@@ -154,11 +151,11 @@ export default function DocumentsSection({
                 : "Noch keine Dokumente. Dateien hierhin ziehen oder Plus klicken."}
             </div>
           )}
-          {docs.map((doc, i) => (
+          {docs.map((doc) => (
             <DocRow
               key={doc.id}
               doc={doc}
-              onOpen={() => setViewerIdx(i)}
+              onOpen={() => downloadDoc(doc)}
               onDelete={() => deleteDoc(doc)}
             />
           ))}
@@ -170,28 +167,12 @@ export default function DocumentsSection({
           ))}
         </div>
       )}
-
-      {viewerIdx !== null && docs[viewerIdx] && (
-        <DocumentViewerModal
-          docs={docs}
-          index={viewerIdx}
-          setIndex={setViewerIdx}
-          onClose={() => setViewerIdx(null)}
-          onDownload={(d) => downloadDoc(d)}
-          onDelete={async (d) => {
-            await deleteDoc(d);
-            setViewerIdx(null);
-          }}
-          getViewUrl={getViewUrl}
-        />
-      )}
     </div>
   );
 }
 
 function RelatedDocumentsSubsection({ source }: { source: RelatedDocumentSource }) {
-  const { docs, loading, downloadDoc, getViewUrl } = useDocuments(source.entityType, source.entityId);
-  const [viewerIdx, setViewerIdx] = useState<number | null>(null);
+  const { docs, loading, downloadDoc } = useDocuments(source.entityType, source.entityId);
   if (loading || docs.length === 0) return null;
   return (
     <div style={{ borderTop: "1px solid var(--border)" }}>
@@ -221,19 +202,9 @@ function RelatedDocumentsSubsection({ source }: { source: RelatedDocumentSource 
           </a>
         )}
       </div>
-      {docs.map((doc, i) => (
-        <DocRow key={doc.id} doc={doc} onOpen={() => setViewerIdx(i)} />
+      {docs.map((doc) => (
+        <DocRow key={doc.id} doc={doc} onOpen={() => downloadDoc(doc)} />
       ))}
-      {viewerIdx !== null && docs[viewerIdx] && (
-        <DocumentViewerModal
-          docs={docs}
-          index={viewerIdx}
-          setIndex={setViewerIdx}
-          onClose={() => setViewerIdx(null)}
-          onDownload={(d) => downloadDoc(d)}
-          getViewUrl={getViewUrl}
-        />
-      )}
     </div>
   );
 }

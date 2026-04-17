@@ -80,26 +80,19 @@ export function useDocuments(entityType: DocumentEntityType, entityId: string) {
 
   async function downloadDoc(doc: Document) {
     const supabase = createClient();
+    const isPdf = doc.mime_type === "application/pdf";
     const { data, error } = await supabase.storage
       .from(BUCKET)
-      .createSignedUrl(doc.storage_path, SIGNED_URL_TTL, { download: doc.file_name });
+      .createSignedUrl(
+        doc.storage_path,
+        SIGNED_URL_TTL,
+        isPdf ? undefined : { download: doc.file_name }
+      );
     if (error || !data?.signedUrl) {
-      setError(error?.message ?? "Download fehlgeschlagen.");
+      setError(error?.message ?? "Öffnen fehlgeschlagen.");
       return;
     }
     window.open(data.signedUrl, "_blank");
-  }
-
-  async function getViewUrl(doc: Document): Promise<string | null> {
-    const supabase = createClient();
-    const { data, error } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUrl(doc.storage_path, 300);
-    if (error || !data?.signedUrl) {
-      setError(error?.message ?? "Vorschau fehlgeschlagen.");
-      return null;
-    }
-    return data.signedUrl;
   }
 
   async function deleteDoc(doc: Document) {
@@ -110,5 +103,5 @@ export function useDocuments(entityType: DocumentEntityType, entityId: string) {
     setDocs((prev) => prev.filter((d) => d.id !== doc.id));
   }
 
-  return { docs, loading, uploading, dragOver, setDragOver, error, uploadFiles, downloadDoc, deleteDoc, getViewUrl };
+  return { docs, loading, uploading, dragOver, setDragOver, error, uploadFiles, downloadDoc, deleteDoc };
 }

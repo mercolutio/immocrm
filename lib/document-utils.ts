@@ -1,10 +1,20 @@
 export const MAX_DOCUMENT_SIZE = 25 * 1024 * 1024; // 25 MB
 
-export const ALLOWED_DOCUMENT_MIME = ["application/pdf"];
+export const ALLOWED_DOCUMENT_MIME = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "image/jpeg",
+  "image/png",
+  "image/heic",
+  "image/webp",
+];
 
 export function validateDocumentFile(f: File): string | null {
   if (f.size > MAX_DOCUMENT_SIZE) return "Datei ist größer als 25 MB.";
-  if (!ALLOWED_DOCUMENT_MIME.includes(f.type)) return "Nur PDF-Dateien sind erlaubt.";
+  if (!ALLOWED_DOCUMENT_MIME.includes(f.type)) return "Dateityp wird nicht unterstützt.";
   return null;
 }
 
