@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import LinkSection from "@/components/LinkSection";
+import { usePopover } from "@/components/detail/usePopover";
 import { createClient } from "@/lib/supabase/client";
 import type { Property, PropertyType, PropertyStatus, SearchType, Contact, Note, Activity, ActivityType, SearchProfile, Task, TaskPriority, PropertyImage, Deal, PipelineStage } from "@/lib/types";
 import {
@@ -112,9 +113,7 @@ export default function PropertyDetailPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   const [openForm, setOpenForm] = useState<"note" | "call" | "task" | "viewing" | null>(null);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const activityPop = usePopover();
   const [fNote, setFNote] = useState("");
   const [fTitle, setFTitle] = useState("");
   const [fDatetime, setFDatetime] = useState("");
@@ -126,7 +125,7 @@ export default function PropertyDetailPage() {
   const [archiving, setArchiving] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>("all");
   const [sourceFilter, setSourceFilter] = useState<"all" | "direct" | "deal">("all");
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const morePop = usePopover();
 
   // ── Images ────────────────────────────────────────────────────────────────
   const [images, setImages] = useState<PropertyImage[]>([]);
@@ -237,19 +236,6 @@ export default function PropertyDetailPage() {
     }
     load();
   }, [id]);
-
-  // ── Dropdown außen schließen ──────────────────────────────────────────────
-  useEffect(() => {
-    if (!showDropdown) return;
-    const handler = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (dropdownRef.current?.contains(t)) return;
-      if (triggerRef.current?.contains(t)) return;
-      setShowDropdown(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showDropdown]);
 
   // ── Dirty helpers ─────────────────────────────────────────────────────────
   function updateForm(patch: Partial<Property>) {
@@ -390,7 +376,7 @@ export default function PropertyDetailPage() {
     setFNote(""); setFTitle(""); setFDatetime(nowLocalISO());
     setFCallResult("reached"); setFPriority("medium"); setFViewNote("");
     setOpenForm(type);
-    setShowDropdown(false);
+    activityPop.close();
   }
 
   async function handleSubmitForm() {
@@ -627,7 +613,8 @@ export default function PropertyDetailPage() {
         <div className="detail-actions">
           <div style={{ position: "relative" }}>
             <button
-              onClick={() => setShowMoreMenu((v) => !v)}
+              ref={morePop.triggerRef}
+              onClick={morePop.toggle}
               className="btn-icon"
               aria-label="Weitere Optionen"
             >
@@ -635,10 +622,10 @@ export default function PropertyDetailPage() {
                 <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
               </svg>
             </button>
-            {showMoreMenu && (
-              <div className="popover right-anchored">
+            {morePop.open && (
+              <div ref={morePop.popoverRef} className="popover right-anchored">
                 <button
-                  onClick={() => { setShowMoreMenu(false); handleArchive(); }}
+                  onClick={() => { morePop.close(); handleArchive(); }}
                   disabled={archiving || loading}
                   style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: property?.is_archived ? "var(--grn)" : "var(--red)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}
                 >
@@ -1145,17 +1132,17 @@ export default function PropertyDetailPage() {
                   {activeTab === "all" ? (
                     <div style={{ position: "relative" }}>
                       <button
-                        ref={triggerRef}
+                        ref={activityPop.triggerRef}
                         className="btn-primary"
-                        onClick={() => setShowDropdown((v) => !v)}
+                        onClick={activityPop.toggle}
                         style={{ whiteSpace: "nowrap" }}
                       >
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Aktivität
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
                       </button>
-                      {showDropdown && (
-                        <div ref={dropdownRef} className="popover right-anchored">
+                      {activityPop.open && (
+                        <div ref={activityPop.popoverRef} className="popover right-anchored">
                           {(["note", "call", "viewing", "task"] as const).map((t) => (
                             <button key={t} className="h-menu-item" onClick={() => openFormFor(t)}
                               style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: "var(--t1)", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>

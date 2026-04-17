@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import LinkSection from "@/components/LinkSection";
+import { usePopover } from "@/components/detail/usePopover";
 import { createClient } from "@/lib/supabase/client";
 import type { Deal, PipelineStage, Contact, Property, Note, Activity, Task, TaskPriority, ActivityType } from "@/lib/types";
 import { ACTIVITY_TYPE_LABELS, TASK_PRIORITY_LABELS, labelsToOptions } from "@/lib/types";
@@ -55,9 +56,7 @@ export default function DealDetailPage() {
   const [isDirty, setIsDirty] = useState(false);
 
   const [openForm, setOpenForm] = useState<"note" | "call" | "task" | "viewing" | null>(null);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const activityPop = usePopover();
   const [fNote, setFNote] = useState("");
   const [fTitle, setFTitle] = useState("");
   const [fDatetime, setFDatetime] = useState("");
@@ -207,7 +206,7 @@ export default function DealDetailPage() {
     setFNote(""); setFTitle(""); setFDatetime(nowLocalISO());
     setFCallResult("reached"); setFPriority("medium"); setFApptNote("");
     setOpenForm(type);
-    setShowDropdown(false);
+    activityPop.close();
   }
 
   async function handleSubmitForm() {
@@ -245,15 +244,6 @@ export default function DealDetailPage() {
     setOpenForm(null);
     setSubmitting(false);
   }
-
-  // Close dropdown on click outside
-  useEffect(() => {
-    function onDown(e: MouseEvent) {
-      if (!dropdownRef.current?.contains(e.target as Node) && !triggerRef.current?.contains(e.target as Node)) setShowDropdown(false);
-    }
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, []);
 
   // Timeline items
   type TimelineItem =
@@ -482,17 +472,17 @@ export default function DealDetailPage() {
                 {activeTab === "all" ? (
                   <div style={{ position: "relative" }}>
                     <button
-                      ref={triggerRef}
+                      ref={activityPop.triggerRef}
                       className="btn-primary"
-                      onClick={() => setShowDropdown((v) => !v)}
+                      onClick={activityPop.toggle}
                       style={{ whiteSpace: "nowrap" }}
                     >
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                       Aktivität
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
                     </button>
-                    {showDropdown && (
-                      <div ref={dropdownRef} className="popover right-anchored" style={{ minWidth: 150 }}>
+                    {activityPop.open && (
+                      <div ref={activityPop.popoverRef} className="popover right-anchored" style={{ minWidth: 150 }}>
                         {(["note", "call", "task", "viewing"] as const).map((t) => (
                           <button key={t} className="h-menu-item" onClick={() => openFormFor(t)}
                             style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: "var(--t1)", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
