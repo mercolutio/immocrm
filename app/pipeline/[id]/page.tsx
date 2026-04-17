@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
+import LinkSection from "@/components/LinkSection";
 import { createClient } from "@/lib/supabase/client";
 import type { Deal, PipelineStage, Contact, Property, Note, Activity, Task, TaskPriority, ActivityType } from "@/lib/types";
 import { ACTIVITY_TYPE_LABELS, TASK_PRIORITY_LABELS, labelsToOptions } from "@/lib/types";
@@ -11,25 +12,6 @@ import AppSelect from "@/components/AppSelect";
 import DatePicker from "@/components/DatePicker";
 import SearchSelect from "@/components/SearchSelect";
 import { fmtDate, fmtDateTime, nowLocalISO, ACTIVITY_COLORS, inp, lbl } from "@/lib/ui-tokens";
-
-// ─── LinkSection ────────────────────────────────────────────────────────────
-function LinkSection({ icon, title, children }: { icon: React.ReactNode; title: string; children?: React.ReactNode }) {
-  return (
-    <div className="h-lift" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderBottom: "1px solid var(--border)" }}>
-        <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
-          {icon}
-        </div>
-        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--t1)", flex: 1 }}>{title}</span>
-      </div>
-      {children ?? (
-        <div style={{ padding: "20px 14px", textAlign: "center", fontSize: 12, color: "var(--t3)" }}>
-          Nicht verknüpft
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── Activity icon ──────────────────────────────────────────────────────────
 function ActivityIcon({ type, size = 11 }: { type: string; size?: number }) {
@@ -735,6 +717,7 @@ export default function DealDetailPage() {
 
           <LinkSection
             title="Kontakt"
+            emptyText="Nicht verknüpft"
             icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
           >
             {contact && (
@@ -752,6 +735,7 @@ export default function DealDetailPage() {
 
           <LinkSection
             title="Objekt"
+            emptyText="Nicht verknüpft"
             icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
           >
             {property && (
