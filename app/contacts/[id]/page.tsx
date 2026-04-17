@@ -1033,6 +1033,7 @@ export default function ContactDetailPage() {
                     <Link
                       key={deal.id}
                       href={`/pipeline/${deal.id}`}
+                      className="h-row"
                       style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid var(--border)", textDecoration: "none" }}
                     >
                       {deal.stage && <span style={{ width: 6, height: 6, borderRadius: "50%", background: deal.stage.color, flexShrink: 0 }} />}

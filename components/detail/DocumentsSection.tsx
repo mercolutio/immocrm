@@ -73,7 +73,6 @@ export default function DocumentsSection({
 
   return (
     <div
-      className="h-lift"
       onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
       onDragLeave={() => setDragOver(false)}
       onDrop={onDrop}
@@ -153,18 +152,15 @@ function DocRow({ doc, onDownload, onDelete }: { doc: Document; onDownload: () =
   const iconKind = getDocumentIconKey(doc.mime_type);
   return (
     <div
+      className="h-row"
       style={{
         display: "flex",
         alignItems: "center",
         gap: 10,
         padding: "10px 14px",
         borderBottom: "1px solid var(--border)",
-        cursor: "pointer",
-        transition: "background-color var(--dur-out) var(--ease-out)",
       }}
       onClick={onDownload}
-      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg)")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
       <div style={{ width: 30, height: 30, borderRadius: 6, background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
         <FileIcon kind={iconKind} />

@@ -972,7 +972,7 @@ export default function PropertyDetailPage() {
 
             {/* Eckdaten-Card */}
             {property && (
-              <div className="h-lift" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 14, padding: "14px 16px", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
+              <div style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 14, padding: "14px 16px", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
                 <div className="section-head muted" style={{ marginBottom: 10 }}>Eckdaten</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
@@ -1003,7 +1003,7 @@ export default function PropertyDetailPage() {
 
             {/* Eigentümer-Card */}
             {owner && (
-              <div className="h-lift" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
+              <div style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
                 <div className="section-head muted" style={{ padding: "10px 14px", borderBottom: "1px solid var(--border)" }}>
                   Eigentümer
                 </div>
@@ -1098,6 +1098,7 @@ export default function PropertyDetailPage() {
                     <Link
                       key={deal.id}
                       href={`/pipeline/${deal.id}`}
+                      className="h-row"
                       style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid var(--border)", textDecoration: "none" }}
                     >
                       {deal.stage && <span style={{ width: 6, height: 6, borderRadius: "50%", background: deal.stage.color, flexShrink: 0 }} />}
