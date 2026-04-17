@@ -6,6 +6,7 @@ import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import LinkSection from "@/components/LinkSection";
 import DocumentsSection from "@/components/detail/DocumentsSection";
+import ContactInsightsPanel from "@/components/ai/ContactInsightsPanel";
 import { usePopover } from "@/components/detail/usePopover";
 import { createClient } from "@/lib/supabase/client";
 import type { Contact, Note, Activity, ActivityType, ContactType, ContactSource, SearchProfile, Property, PropertyType, SearchType, Task, TaskPriority, Deal, PipelineStage } from "@/lib/types";
@@ -1013,7 +1014,9 @@ export default function ContactDetailPage() {
               gap: 12,
             }}
           >
-            <div className="section-head muted" style={{ marginBottom: 6 }}>
+            <ContactInsightsPanel contactId={id} />
+
+            <div className="section-head muted" style={{ marginBottom: 6, marginTop: 6 }}>
               Verknüpfungen
             </div>
 
