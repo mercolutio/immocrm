@@ -536,6 +536,7 @@ body {
 .kpi:first-child { padding-left: 0; }
 .kpi:hover { box-shadow: none; transform: none; }
 .kpi-label { font-size: 11px; font-weight: 500; color: var(--t3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+.kpi-row { display: flex; align-items: baseline; gap: 4px; }
 .kpi-val { font-family: var(--font-display); font-size: 22px; font-weight: 500; color: var(--t1); line-height: 1.1; letter-spacing: -0.3px; }
 .kpi-unit { font-size: 13px; color: var(--t3); font-weight: 400; margin-left: 4px; }
 .kpi-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
@@ -662,11 +663,22 @@ body {
 .portal-item { display: flex; align-items: center; gap: 9px; cursor: pointer; transition: opacity var(--dur-out) var(--ease-out); }
 .portal-item:hover { opacity: 0.82; transition-duration: var(--dur-in); }
 .portal-ico { width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.portal-ico.scout    { background: rgba(36,87,179,0.10);  color: #2457B3; }
+.portal-ico.welt     { background: rgba(30,138,92,0.10);  color: #1E8A5C; }
+.portal-ico.own      { background: rgba(194,105,42,0.10); color: var(--accent); }
+.portal-ico.kleinanz { background: rgba(109,40,217,0.08); color: var(--pur); }
 .portal-name { font-size: 12px; font-weight: 500; color: var(--t1); flex: 1; }
 .portal-track { width: 74px; height: 5px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
 .portal-fill { height: 100%; border-radius: 3px; }
+.portal-fill.scout    { background: rgba(36,87,179,0.45); }
+.portal-fill.welt     { background: rgba(30,138,92,0.45); }
+.portal-fill.own      { background: rgba(194,105,42,0.45); }
+.portal-fill.kleinanz { background: rgba(109,40,217,0.35); }
 .portal-leads { font-size: 12px; color: var(--t2); font-weight: 500; min-width: 24px; text-align: right; }
 .portal-cost { font-size: 11px; min-width: 38px; text-align: right; font-weight: 500; }
+.portal-cost.good { color: var(--grn); }
+.portal-cost.warn { color: var(--amb); }
+.portal-cost.bad  { color: var(--red); }
 .portal-footer { margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
 
 /* FORM PLACEHOLDERS (global, außer dark-context .ki-inp) */

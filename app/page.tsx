@@ -69,15 +69,16 @@ export default function Dashboard() {
     <DashboardLayout>
       <main className="main">
         {/* HEADER */}
-        <header className="header">
-          <div className="hdr-greeting">
-            <div className="hdr-title">Guten Morgen, Maximilian.</div>
-            <div className="hdr-date">Donnerstag, 3. April 2026 · 2 dringende Punkte heute</div>
+        <header className="page-header">
+          <div className="page-header-left">
+            <h1 className="page-title">Guten Morgen, Maximilian.</h1>
+            <p className="page-subtitle">Donnerstag, 3. April 2026 · 2 dringende Punkte heute</p>
           </div>
-          <div className="hdr-right">
+          <div className="page-header-right">
+            <NotificationBell />
             <div className="qa-wrap">
-              <button id="onb-btn-neu" className="hdr-add-btn" onClick={() => setQaOpen(!qaOpen)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <button id="onb-btn-neu" className="btn-primary" onClick={() => setQaOpen(!qaOpen)}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
                 Neu
@@ -110,30 +111,17 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-
-            <div className="hdr-search">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <span>Suchen…</span>
-              <kbd>⌘K</kbd>
-            </div>
-
-            <NotificationBell />
-
-            <div className="hdr-sep"/>
-            <div className="hdr-avatar">MW</div>
           </div>
         </header>
 
         {/* BODY */}
-        <div className="body-wrap">
+        <div className="body-wrap" style={{ paddingTop: 20 }}>
 
           {/* KPI STRIP */}
           <div className="kpi-strip anim-0">
             <div className="kpi h-lift">
               <div className="kpi-label">Provision MTD</div>
-              <div style={{display:"flex",alignItems:"baseline",gap:4}}>
+              <div className="kpi-row">
                 <div className="kpi-val">€284k</div>
               </div>
               <div className="kpi-footer">
@@ -151,7 +139,7 @@ export default function Dashboard() {
             </div>
             <div className="kpi h-lift">
               <div className="kpi-label">Aktive Deals</div>
-              <div style={{display:"flex",alignItems:"baseline",gap:4}}>
+              <div className="kpi-row">
                 <div className="kpi-val">47</div><span className="kpi-unit">Deals</span>
               </div>
               <div className="kpi-footer">
@@ -169,7 +157,7 @@ export default function Dashboard() {
             </div>
             <div className="kpi h-lift">
               <div className="kpi-label">Neue Kontakte</div>
-              <div style={{display:"flex",alignItems:"baseline",gap:4}}>
+              <div className="kpi-row">
                 <div className="kpi-val">124</div><span className="kpi-unit">gesamt</span>
               </div>
               <div className="kpi-footer">
@@ -187,7 +175,7 @@ export default function Dashboard() {
             </div>
             <div className="kpi h-lift">
               <div className="kpi-label">Ø Abschlusszeit</div>
-              <div style={{display:"flex",alignItems:"baseline",gap:4}}>
+              <div className="kpi-row">
                 <div className="kpi-val">38</div><span className="kpi-unit">Tage</span>
               </div>
               <div className="kpi-footer">
@@ -466,32 +454,32 @@ export default function Dashboard() {
               </div>
               <div className="portal-list">
                 <div className="portal-item">
-                  <div className="portal-ico" style={{background:"rgba(36,87,179,0.1)",color:"#2457B3"}}>IS</div>
+                  <div className="portal-ico scout">IS</div>
                   <div className="portal-name">ImmoScout 24</div>
-                  <div className="portal-track"><div className="portal-fill" style={{width:"82%",background:"rgba(36,87,179,0.45)"}}/></div>
+                  <div className="portal-track"><div className="portal-fill scout" style={{width:"82%"}}/></div>
                   <div className="portal-leads">41</div>
-                  <div className="portal-cost" style={{color:"var(--grn)"}}>€3,20</div>
+                  <div className="portal-cost good">€3,20</div>
                 </div>
                 <div className="portal-item">
-                  <div className="portal-ico" style={{background:"rgba(30,138,92,0.1)",color:"#1E8A5C"}}>IW</div>
+                  <div className="portal-ico welt">IW</div>
                   <div className="portal-name">Immowelt</div>
-                  <div className="portal-track"><div className="portal-fill" style={{width:"46%",background:"rgba(30,138,92,0.45)"}}/></div>
+                  <div className="portal-track"><div className="portal-fill welt" style={{width:"46%"}}/></div>
                   <div className="portal-leads">23</div>
-                  <div className="portal-cost" style={{color:"var(--amb)"}}>€5,80</div>
+                  <div className="portal-cost warn">€5,80</div>
                 </div>
                 <div className="portal-item">
-                  <div className="portal-ico" style={{background:"rgba(194,105,42,0.1)",color:"var(--accent)"}}>EI</div>
+                  <div className="portal-ico own">EI</div>
                   <div className="portal-name">Eigene Website</div>
-                  <div className="portal-track"><div className="portal-fill" style={{width:"30%",background:"rgba(194,105,42,0.45)"}}/></div>
+                  <div className="portal-track"><div className="portal-fill own" style={{width:"30%"}}/></div>
                   <div className="portal-leads">15</div>
-                  <div className="portal-cost" style={{color:"var(--grn)"}}>€1,10</div>
+                  <div className="portal-cost good">€1,10</div>
                 </div>
                 <div className="portal-item">
-                  <div className="portal-ico" style={{background:"rgba(109,40,217,0.08)",color:"var(--pur)"}}>KV</div>
+                  <div className="portal-ico kleinanz">KV</div>
                   <div className="portal-name">Kleinanzeigen</div>
-                  <div className="portal-track"><div className="portal-fill" style={{width:"22%",background:"rgba(109,40,217,0.35)"}}/></div>
+                  <div className="portal-track"><div className="portal-fill kleinanz" style={{width:"22%"}}/></div>
                   <div className="portal-leads">11</div>
-                  <div className="portal-cost" style={{color:"var(--red)"}}>€8,40</div>
+                  <div className="portal-cost bad">€8,40</div>
                 </div>
               </div>
               <div className="portal-footer">
