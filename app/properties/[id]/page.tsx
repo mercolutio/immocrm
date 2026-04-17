@@ -661,7 +661,7 @@ export default function PropertyDetailPage() {
               </svg>
             </button>
             {showMoreMenu && (
-              <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card)", border: "1px solid var(--border-md)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", padding: 5, minWidth: 160, zIndex: 500 }}>
+              <div className="popover right-anchored">
                 <button
                   onClick={() => { setShowMoreMenu(false); handleArchive(); }}
                   disabled={archiving || loading}
@@ -764,7 +764,7 @@ export default function PropertyDetailPage() {
                   style={{
                     width: "100%", height: 140, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
                     cursor: uploading ? "default" : "pointer",
-                    background: "var(--bg2)", borderBottom: "1px solid var(--border)", transition: "background 0.15s",
+                    background: "var(--bg2)", borderBottom: "1px solid var(--border)", transition: "background-color var(--dur-out) var(--ease-out)",
                   }}
                   onMouseEnter={(e) => { if (!uploading) (e.currentTarget as HTMLElement).style.background = "var(--bg3, rgba(0,0,0,0.06))"; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg2)"; }}
@@ -814,7 +814,7 @@ export default function PropertyDetailPage() {
             <div style={{ flex: 1, overflowY: "auto", padding: "18px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
 
               {/* ── Sektion: Objektdaten ── */}
-              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Objektdaten</div>
+              <div className="section-head">Objektdaten</div>
               <div>
                 <label style={lbl}>Titel *</label>
                 <input style={inp} value={form.title ?? ""} onChange={(e) => updateForm({ title: e.target.value })} />
@@ -894,7 +894,7 @@ export default function PropertyDetailPage() {
 
               {/* ── Sektion: Adresse ── */}
               <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
-              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Adresse</div>
+              <div className="section-head">Adresse</div>
               <div style={{ display: "flex", gap: 8 }}>
                 <div style={{ flex: 2 }}>
                   <label style={lbl}>Straße</label>
@@ -918,7 +918,7 @@ export default function PropertyDetailPage() {
 
               {/* ── Sektion: Eckdaten ── */}
               <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
-              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Eckdaten</div>
+              <div className="section-head">Eckdaten</div>
               {form.listing_type === "buy" ? (
                 <div>
                   <label style={lbl}>Kaufpreis (€)</label>
@@ -949,11 +949,11 @@ export default function PropertyDetailPage() {
                 onClick={() => setEnergyOpen((v) => !v)}
                 style={{ display: "flex", alignItems: "center", cursor: "pointer", gap: 6 }}
               >
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)", flex: 1 }}>Energiedaten</div>
+                <div className="section-head" style={{ flex: 1 }}>Energiedaten</div>
                 <svg
                   width="11" height="11" viewBox="0 0 24 24" fill="none"
                   stroke="var(--t3)" strokeWidth="2" strokeLinecap="round"
-                  style={{ flexShrink: 0, transform: energyOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}
+                  style={{ flexShrink: 0, transform: energyOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform var(--dur-out) var(--ease-out)" }}
                 >
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
@@ -1014,11 +1014,11 @@ export default function PropertyDetailPage() {
                 onClick={() => setDetailsOpen((v) => !v)}
                 style={{ display: "flex", alignItems: "center", cursor: "pointer", gap: 6 }}
               >
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)", flex: 1 }}>Weitere Details</div>
+                <div className="section-head" style={{ flex: 1 }}>Weitere Details</div>
                 <svg
                   width="11" height="11" viewBox="0 0 24 24" fill="none"
                   stroke="var(--t3)" strokeWidth="2" strokeLinecap="round"
-                  style={{ flexShrink: 0, transform: detailsOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}
+                  style={{ flexShrink: 0, transform: detailsOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform var(--dur-out) var(--ease-out)" }}
                 >
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
@@ -1092,7 +1092,7 @@ export default function PropertyDetailPage() {
 
               {/* ── Sektion: Fotos ── */}
               <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
-              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Fotos</div>
+              <div className="section-head">Fotos</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {images.slice(0, 6).map((img, i) => (
                   <div
@@ -1156,12 +1156,11 @@ export default function PropertyDetailPage() {
               };
               return (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  <div style={{ flex: 1, display: "flex", gap: 6, background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 12, padding: 5, boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
+                  <div className="tab-strip">
                     {(["all", "note", "call", "viewing", "task"] as ActiveTab[]).map((tab) => {
                       const isActive = activeTab === tab;
                       return (
-                        <button key={tab} className={isActive ? undefined : "h-menu-item"} onClick={() => { setActiveTab(tab); setOpenForm(null); }}
-                          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, borderRadius: 8, border: "none", fontSize: 13, fontWeight: isActive ? 500 : 400, cursor: "pointer", fontFamily: "inherit", background: isActive ? "var(--accent)" : undefined, color: isActive ? "#fff" : "var(--t2)" }}>
+                        <button key={tab} className={"tab-strip-item" + (isActive ? " active" : "")} onClick={() => { setActiveTab(tab); setOpenForm(null); }}>
                           {tabIcons[tab]}{tabLabels[tab]}
                         </button>
                       );
@@ -1181,7 +1180,7 @@ export default function PropertyDetailPage() {
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
                       </button>
                       {showDropdown && (
-                        <div ref={dropdownRef} style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card)", border: "1px solid var(--border-md)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", padding: 5, minWidth: 160, zIndex: 500 }}>
+                        <div ref={dropdownRef} className="popover right-anchored">
                           {(["note", "call", "viewing", "task"] as const).map((t) => (
                             <button key={t} className="h-menu-item" onClick={() => openFormFor(t)}
                               style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: "var(--t1)", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
@@ -1218,13 +1217,7 @@ export default function PropertyDetailPage() {
                     <button
                       key={chip.key}
                       onClick={() => setSourceFilter(chip.key)}
-                      style={{
-                        padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: isActive ? 600 : 400,
-                        border: isActive ? "none" : "1px solid rgba(0,0,0,0.08)",
-                        background: isActive ? "var(--accent)" : "var(--card)",
-                        color: isActive ? "#fff" : "var(--t2)",
-                        cursor: "pointer", fontFamily: "inherit",
-                      }}
+                      className={"filter-chip" + (isActive ? " active" : "")}
                     >
                       {chip.label}
                     </button>
@@ -1388,14 +1381,14 @@ export default function PropertyDetailPage() {
               gap: 12,
             }}
           >
-            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--t3)", marginBottom: 6 }}>
+            <div className="section-head muted" style={{ marginBottom: 6 }}>
               Verknüpfungen
             </div>
 
             {/* Eckdaten-Card */}
             {property && (
               <div className="h-lift" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 14, padding: "14px 16px", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t3)", marginBottom: 10 }}>Eckdaten</div>
+                <div className="section-head muted" style={{ marginBottom: 10 }}>Eckdaten</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
                     <span style={{ color: "var(--t2)" }}>{property.listing_type === "rent" ? "Miete" : "Preis"}</span>
@@ -1426,7 +1419,7 @@ export default function PropertyDetailPage() {
             {/* Eigentümer-Card */}
             {owner && (
               <div className="h-lift" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
-                <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--border)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t3)" }}>
+                <div className="section-head muted" style={{ padding: "10px 14px", borderBottom: "1px solid var(--border)" }}>
                   Eigentümer
                 </div>
                 <Link
@@ -1710,7 +1703,7 @@ export default function PropertyDetailPage() {
                         opacity: dragIdx === i ? 0.35 : 1,
                         transform: dragIdx === i ? "scale(0.9)" : "scale(1)",
                         position: "relative",
-                        transition: "border 0.1s, opacity 0.15s, transform 0.15s",
+                        transition: "border var(--dur-in) var(--ease-out), opacity var(--dur-out) var(--ease-out), transform var(--dur-out) var(--ease-out)",
                         margin: "0 3px",
                       }}
                     >
@@ -1732,7 +1725,7 @@ export default function PropertyDetailPage() {
                   width: 64, height: 48, borderRadius: 8, flexShrink: 0, cursor: "pointer",
                   border: "2px dashed rgba(0,0,0,0.12)",
                   display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t3)",
-                  transition: "all 0.15s",
+                  transition: "all var(--dur-out) var(--ease-out)",
                 }}
               >
                 {uploading ? (
@@ -1765,7 +1758,7 @@ export default function PropertyDetailPage() {
         transform: isDirty ? "translateY(0)" : "translateY(16px)",
         opacity: isDirty ? 1 : 0,
         pointerEvents: isDirty ? "auto" : "none",
-        transition: "opacity 0.2s ease, transform 0.2s ease",
+        transition: "opacity var(--dur-out) var(--ease-out), transform var(--dur-out) var(--ease-out)",
         zIndex: 1000,
         background: "#18120E",
         border: "none",

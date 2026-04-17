@@ -552,7 +552,7 @@ export default function ContactDetailPage() {
               </svg>
             </button>
             {showMoreMenu && (
-              <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card)", border: "1px solid var(--border-md)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", padding: 5, minWidth: 160, zIndex: 500 }}>
+              <div className="popover right-anchored">
                 <button
                   onClick={() => { setShowMoreMenu(false); handleArchive(); }}
                   disabled={archiving || loading}
@@ -611,10 +611,10 @@ export default function ContactDetailPage() {
           >
             {/* Avatar + Name */}
             <div style={{ padding: "28px 24px 22px", borderBottom: "1px solid var(--border)", textAlign: "center" }}>
-              <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, #C2692A, #E8955A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 600, color: "#fff", margin: "0 auto 14px" }}>
+              <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--bg2)", border: "1px solid rgba(194,105,42,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 500, color: "var(--t1)", margin: "0 auto 14px", fontFamily: "var(--font-display)", letterSpacing: "-0.5px" }}>
                 {initials}
               </div>
-              <div style={{ fontFamily: "var(--font-playfair, 'Playfair Display'), serif", fontSize: 20, fontWeight: 400, color: "var(--t1)", lineHeight: 1.2, marginBottom: 8 }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 400, color: "var(--t1)", lineHeight: 1.2, marginBottom: 8 }}>
                 {contact?.first_name} {contact?.last_name}
               </div>
               {contact && (
@@ -682,13 +682,10 @@ export default function ContactDetailPage() {
                 return (
                   <>
                     <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
-                    {/* Sektion Header */}
                     <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 0" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" strokeWidth="1.8" strokeLinecap="round" style={{ flexShrink: 0 }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)", whiteSpace: "nowrap" }}>
-                          Suchprofile {searchProfiles.length > 0 ? `(${searchProfiles.length})` : ""}
-                        </span>
+                      <div className="section-head" style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap" }}>
+                        <svg className="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        Suchprofile {searchProfiles.length > 0 ? `(${searchProfiles.length})` : ""}
                       </div>
                       <button
                         className="btn-ghost"
@@ -817,19 +814,17 @@ export default function ContactDetailPage() {
               };
               return (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  <div style={{ flex: 1, display: "flex", gap: 6, background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 12, padding: 5, boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
+                  <div className="tab-strip">
                     {(["all", "note", "call", "task", "appointment"] as ActiveTab[]).map((tab) => {
                       const isActive = activeTab === tab;
                       return (
-                        <button key={tab} className={isActive ? undefined : "h-menu-item"} onClick={() => { setActiveTab(tab); setOpenForm(null); }}
-                          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, borderRadius: 8, border: "none", fontSize: 13, fontWeight: isActive ? 500 : 400, cursor: "pointer", fontFamily: "inherit", background: isActive ? "var(--accent)" : undefined, color: isActive ? "#fff" : "var(--t2)" }}>
+                        <button key={tab} className={`tab-strip-item${isActive ? " active" : ""}`} onClick={() => { setActiveTab(tab); setOpenForm(null); }}>
                           {tabIcons[tab]}{tabLabels[tab]}
                         </button>
                       );
                     })}
                   </div>
 
-                  {/* Kontext-Button */}
                   {activeTab === "all" ? (
                     <div style={{ position: "relative" }}>
                       <button
@@ -843,7 +838,7 @@ export default function ContactDetailPage() {
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
                       </button>
                       {showDropdown && (
-                        <div ref={dropdownRef} style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card)", border: "1px solid var(--border-md)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", padding: 5, minWidth: 150, zIndex: 500 }}>
+                        <div ref={dropdownRef} className="popover right-anchored" style={{ minWidth: 150 }}>
                           {(["note", "call", "task", "appointment"] as const).map((t) => (
                             <button key={t} className="h-menu-item" onClick={() => openFormFor(t)}
                               style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: "var(--t1)", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
@@ -867,7 +862,6 @@ export default function ContactDetailPage() {
               );
             })()}
 
-            {/* Source-Filter Chips */}
             {hasMixedSources && (
               <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                 {([
@@ -880,13 +874,7 @@ export default function ContactDetailPage() {
                     <button
                       key={chip.key}
                       onClick={() => setSourceFilter(chip.key)}
-                      style={{
-                        padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: isActive ? 600 : 400,
-                        border: isActive ? "none" : "1px solid rgba(0,0,0,0.08)",
-                        background: isActive ? "var(--accent)" : "var(--card)",
-                        color: isActive ? "#fff" : "var(--t2)",
-                        cursor: "pointer", fontFamily: "inherit",
-                      }}
+                      className={`filter-chip${isActive ? " active" : ""}`}
                     >
                       {chip.label}
                     </button>
@@ -1050,7 +1038,7 @@ export default function ContactDetailPage() {
               gap: 12,
             }}
           >
-            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--t3)", marginBottom: 6 }}>
+            <div className="section-head muted" style={{ marginBottom: 6 }}>
               Verknüpfungen
             </div>
 
@@ -1157,7 +1145,7 @@ export default function ContactDetailPage() {
         transform: isDirty ? "translateY(0)" : "translateY(16px)",
         opacity: isDirty ? 1 : 0,
         pointerEvents: isDirty ? "auto" : "none",
-        transition: "opacity 0.2s ease, transform 0.2s ease",
+        transition: "opacity var(--dur-out) var(--ease-out), transform var(--dur-out) var(--ease-out)",
         zIndex: 1000,
         background: "#18120E",
         border: "none",

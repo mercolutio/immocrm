@@ -399,7 +399,7 @@ export default function DealDetailPage() {
         {/* ── LEFT COLUMN ── */}
         <div style={{ ...colStyle, width: 280, flexShrink: 0, borderRight: "1px solid rgba(0,0,0,0.05)", background: "var(--card)", boxShadow: "4px 0 16px rgba(28,24,20,0.03)", padding: "22px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
 
-          <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Deal-Daten</div>
+          <div className="section-head">Deal-Daten</div>
 
           <div>
             <label style={lbl}>Kontakt</label>
@@ -469,7 +469,7 @@ export default function DealDetailPage() {
 
           {/* ── Sektion: Notizen ── */}
           <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0 2px" }} />
-          <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--t2)" }}>Notizen</div>
+          <div className="section-head">Notizen</div>
           <textarea
             style={{ ...inp, height: 100, padding: "8px 11px", resize: "vertical" }}
             value={form.notes ?? ""}
@@ -485,12 +485,11 @@ export default function DealDetailPage() {
           {(() => {
             return (
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                <div style={{ flex: 1, display: "flex", gap: 6, background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 12, padding: 5, boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>
+                <div className="tab-strip">
                   {(["all", "note", "call", "task", "viewing"] as ActiveTab[]).map((tab) => {
                     const isActive = activeTab === tab;
                     return (
-                      <button key={tab} className={isActive ? undefined : "h-menu-item"} onClick={() => { setActiveTab(tab); setOpenForm(null); }}
-                        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, borderRadius: 8, border: "none", fontSize: 13, fontWeight: isActive ? 500 : 400, cursor: "pointer", fontFamily: "inherit", background: isActive ? "var(--accent)" : undefined, color: isActive ? "#fff" : "var(--t2)" }}>
+                      <button key={tab} className={"tab-strip-item" + (isActive ? " active" : "")} onClick={() => { setActiveTab(tab); setOpenForm(null); }}>
                         {tabIcons[tab]}{tabLabels[tab]}
                       </button>
                     );
@@ -511,7 +510,7 @@ export default function DealDetailPage() {
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
                     </button>
                     {showDropdown && (
-                      <div ref={dropdownRef} style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card)", border: "1px solid var(--border-md)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", padding: 5, minWidth: 150, zIndex: 500 }}>
+                      <div ref={dropdownRef} className="popover right-anchored" style={{ minWidth: 150 }}>
                         {(["note", "call", "task", "viewing"] as const).map((t) => (
                           <button key={t} className="h-menu-item" onClick={() => openFormFor(t)}
                             style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 7, fontSize: 13, color: "var(--t1)", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
@@ -549,13 +548,8 @@ export default function DealDetailPage() {
                   <button
                     key={chip.key}
                     onClick={() => setSourceFilter(chip.key)}
-                    style={{
-                      padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: isActive ? 600 : 400,
-                      border: isActive ? "none" : "1px solid rgba(0,0,0,0.08)",
-                      background: isActive ? "var(--accent)" : "var(--card)",
-                      color: isActive ? "#fff" : "var(--t2)",
-                      cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-                    }}
+                    className={"filter-chip" + (isActive ? " active" : "")}
+                    style={{ whiteSpace: "nowrap" }}
                   >
                     {chip.label}
                   </button>
@@ -735,7 +729,7 @@ export default function DealDetailPage() {
         {/* ── RIGHT COLUMN ── */}
         <div style={{ ...colStyle, width: 260, flexShrink: 0, borderLeft: "1px solid var(--border)", background: "var(--bg)", padding: "22px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
 
-          <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--t3)", marginBottom: 6 }}>
+          <div className="section-head muted" style={{ marginBottom: 6 }}>
             Verknüpfungen
           </div>
 
@@ -808,7 +802,7 @@ export default function DealDetailPage() {
         transform: isDirty ? "translateY(0)" : "translateY(16px)",
         opacity: isDirty ? 1 : 0,
         pointerEvents: isDirty ? "auto" : "none",
-        transition: "opacity 0.2s ease, transform 0.2s ease",
+        transition: "opacity var(--dur-out) var(--ease-out), transform var(--dur-out) var(--ease-out)",
         zIndex: 1000,
         background: "#18120E", border: "none", borderRadius: 10,
         boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
