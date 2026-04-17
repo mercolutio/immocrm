@@ -88,18 +88,27 @@ export default function ContactInsightsPanel({ contactId }: { contactId: string 
     setRefreshing(true);
     try {
       const res = await fetch(`/api/contacts/${contactId}/insights`, { method: "POST" });
-      const body = await res.json().catch(() => ({}));
+      const contentType = res.headers.get("content-type") ?? "";
+      const raw = await res.text();
+      let body: Record<string, unknown> = {};
+      if (contentType.includes("application/json") && raw) {
+        try { body = JSON.parse(raw); } catch { /* fall through */ }
+      }
       if (!res.ok) {
-        setState({ kind: "error", message: body?.error ?? "Analyse fehlgeschlagen.", status: res.status });
+        const detail = (body.error as string | undefined)
+          ?? (raw ? `${res.status} · ${raw.slice(0, 200)}` : `HTTP ${res.status}`);
+        console.error("[insights] server error", { status: res.status, body, raw: raw.slice(0, 500) });
+        setState({ kind: "error", message: detail, status: res.status });
         return;
       }
       if (body.insufficientData) {
-        setState({ kind: "insufficient", hint: body.hint ?? "Zu wenig Daten." });
+        setState({ kind: "insufficient", hint: (body.hint as string) ?? "Zu wenig Daten." });
         return;
       }
       if (body.insight) setState({ kind: "ready", insight: body.insight as Insight });
       else setState({ kind: "empty" });
     } catch (e) {
+      console.error("[insights] fetch threw", e);
       setState({ kind: "error", message: (e as Error).message });
     } finally {
       setRefreshing(false);
