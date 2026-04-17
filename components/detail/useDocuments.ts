@@ -90,6 +90,18 @@ export function useDocuments(entityType: DocumentEntityType, entityId: string) {
     window.open(data.signedUrl, "_blank");
   }
 
+  async function getViewUrl(doc: Document): Promise<string | null> {
+    const supabase = createClient();
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(doc.storage_path, 300);
+    if (error || !data?.signedUrl) {
+      setError(error?.message ?? "Vorschau fehlgeschlagen.");
+      return null;
+    }
+    return data.signedUrl;
+  }
+
   async function deleteDoc(doc: Document) {
     if (!confirm(`Dokument "${doc.file_name}" wirklich löschen?`)) return;
     const supabase = createClient();
@@ -98,5 +110,5 @@ export function useDocuments(entityType: DocumentEntityType, entityId: string) {
     setDocs((prev) => prev.filter((d) => d.id !== doc.id));
   }
 
-  return { docs, loading, uploading, dragOver, setDragOver, error, uploadFiles, downloadDoc, deleteDoc };
+  return { docs, loading, uploading, dragOver, setDragOver, error, uploadFiles, downloadDoc, deleteDoc, getViewUrl };
 }

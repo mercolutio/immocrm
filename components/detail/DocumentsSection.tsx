@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useDocuments } from "./useDocuments";
 import { formatFileSize, getDocumentIconKey } from "@/lib/document-utils";
 import type { Document, DocumentEntityType } from "@/lib/types";
+import DocumentViewerModal from "./DocumentViewerModal";
 
 function FileIcon({ kind, size = 18 }: { kind: ReturnType<typeof getDocumentIconKey>; size?: number }) {
   const s = { width: size, height: size };
@@ -72,7 +73,8 @@ export default function DocumentsSection({
   relatedFrom?: RelatedDocumentSource[];
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { docs, loading, uploading, dragOver, setDragOver, error, uploadFiles, downloadDoc, deleteDoc } = useDocuments(entityType, entityId);
+  const { docs, loading, uploading, dragOver, setDragOver, error, uploadFiles, downloadDoc, deleteDoc, getViewUrl } = useDocuments(entityType, entityId);
+  const [viewerIdx, setViewerIdx] = useState<number | null>(null);
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -122,6 +124,7 @@ export default function DocumentsSection({
         <input
           ref={inputRef}
           type="file"
+          accept="application/pdf"
           multiple
           style={{ display: "none" }}
           onChange={(e) => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ""; }}
@@ -151,8 +154,13 @@ export default function DocumentsSection({
                 : "Noch keine Dokumente. Dateien hierhin ziehen oder Plus klicken."}
             </div>
           )}
-          {docs.map((doc) => (
-            <DocRow key={doc.id} doc={doc} onDownload={() => downloadDoc(doc)} onDelete={() => deleteDoc(doc)} />
+          {docs.map((doc, i) => (
+            <DocRow
+              key={doc.id}
+              doc={doc}
+              onOpen={() => setViewerIdx(i)}
+              onDelete={() => deleteDoc(doc)}
+            />
           ))}
           {relatedFrom?.map((source) => (
             <RelatedDocumentsSubsection
@@ -162,12 +170,28 @@ export default function DocumentsSection({
           ))}
         </div>
       )}
+
+      {viewerIdx !== null && docs[viewerIdx] && (
+        <DocumentViewerModal
+          docs={docs}
+          index={viewerIdx}
+          setIndex={setViewerIdx}
+          onClose={() => setViewerIdx(null)}
+          onDownload={(d) => downloadDoc(d)}
+          onDelete={async (d) => {
+            await deleteDoc(d);
+            setViewerIdx(null);
+          }}
+          getViewUrl={getViewUrl}
+        />
+      )}
     </div>
   );
 }
 
 function RelatedDocumentsSubsection({ source }: { source: RelatedDocumentSource }) {
-  const { docs, loading, downloadDoc } = useDocuments(source.entityType, source.entityId);
+  const { docs, loading, downloadDoc, getViewUrl } = useDocuments(source.entityType, source.entityId);
+  const [viewerIdx, setViewerIdx] = useState<number | null>(null);
   if (loading || docs.length === 0) return null;
   return (
     <div style={{ borderTop: "1px solid var(--border)" }}>
@@ -197,14 +221,24 @@ function RelatedDocumentsSubsection({ source }: { source: RelatedDocumentSource 
           </a>
         )}
       </div>
-      {docs.map((doc) => (
-        <DocRow key={doc.id} doc={doc} onDownload={() => downloadDoc(doc)} />
+      {docs.map((doc, i) => (
+        <DocRow key={doc.id} doc={doc} onOpen={() => setViewerIdx(i)} />
       ))}
+      {viewerIdx !== null && docs[viewerIdx] && (
+        <DocumentViewerModal
+          docs={docs}
+          index={viewerIdx}
+          setIndex={setViewerIdx}
+          onClose={() => setViewerIdx(null)}
+          onDownload={(d) => downloadDoc(d)}
+          getViewUrl={getViewUrl}
+        />
+      )}
     </div>
   );
 }
 
-function DocRow({ doc, onDownload, onDelete }: { doc: Document; onDownload: () => void; onDelete?: () => void }) {
+function DocRow({ doc, onOpen, onDelete }: { doc: Document; onOpen: () => void; onDelete?: () => void }) {
   const iconKind = getDocumentIconKey(doc.mime_type);
   return (
     <div
@@ -215,8 +249,9 @@ function DocRow({ doc, onDownload, onDelete }: { doc: Document; onDownload: () =
         gap: 10,
         padding: "10px 14px",
         borderBottom: "1px solid var(--border)",
+        cursor: "pointer",
       }}
-      onClick={onDownload}
+      onClick={onOpen}
     >
       <div style={{ width: 30, height: 30, borderRadius: 6, background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--t2)", flexShrink: 0 }}>
         <FileIcon kind={iconKind} />
