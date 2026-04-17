@@ -256,8 +256,15 @@ export async function POST(
       messages: [{ role: "user", content: buildLeadScoreUserMessage(input) }],
     });
   } catch (e) {
+    const err = e as Error & { status?: number; error?: unknown };
+    console.error("[insights] anthropic error:", {
+      name: err.name,
+      status: err.status,
+      message: err.message,
+      body: err.error,
+    });
     return NextResponse.json(
-      { error: `KI-Dienst nicht erreichbar: ${(e as Error).message}` },
+      { error: `KI-Dienst Fehler: ${err.message}` },
       { status: 502 },
     );
   }
@@ -268,8 +275,9 @@ export async function POST(
       : "";
   const parsed = parseLeadScoreOutput(text);
   if (!parsed) {
+    console.error("[insights] parse failure, raw text:", text.slice(0, 500));
     return NextResponse.json(
-      { error: "KI-Antwort konnte nicht gelesen werden." },
+      { error: "KI-Antwort konnte nicht gelesen werden.", rawPreview: text.slice(0, 200) },
       { status: 502 },
     );
   }
