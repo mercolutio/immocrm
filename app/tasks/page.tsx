@@ -700,7 +700,16 @@ function SectionBlock(p: SectionProps) {
       }}>
         <div style={{ overflow: "hidden" }}>
           <div className="list-table-wrap">
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <colgroup>
+                <col style={{ width: 42 }} />
+                <col />
+                <col style={{ width: 130 }} />
+                <col style={{ width: 140 }} />
+                <col style={{ width: 110 }} />
+                {p.isTeam && <col style={{ width: 170 }} />}
+                <col style={{ width: 220 }} />
+              </colgroup>
               <tbody>
                 {p.showQuickAdd && (
                   <QuickAddRow
