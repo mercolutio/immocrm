@@ -200,6 +200,22 @@ export async function GET(
 }
 
 export async function POST(
+  req: NextRequest,
+  ctx: { params: { id: string } },
+) {
+  try {
+    return await handlePost(req, ctx);
+  } catch (e) {
+    const err = e as Error;
+    console.error("[insights] unhandled:", err.name, err.message, err.stack);
+    return NextResponse.json(
+      { error: `Server-Fehler: ${err.message}` },
+      { status: 500 },
+    );
+  }
+}
+
+async function handlePost(
   _req: NextRequest,
   { params }: { params: { id: string } },
 ) {
@@ -246,7 +262,17 @@ export async function POST(
     return NextResponse.json({ insight: cached, cached: true });
   }
 
-  const anthropic = getAnthropic();
+  let anthropic;
+  try {
+    anthropic = getAnthropic();
+  } catch (e) {
+    console.error("[insights] client init failed:", (e as Error).message);
+    return NextResponse.json(
+      { error: "KI-Dienst nicht konfiguriert (ANTHROPIC_API_KEY fehlt auf dem Server)." },
+      { status: 503 },
+    );
+  }
+
   let msg;
   try {
     msg = await anthropic.messages.create({
