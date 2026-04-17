@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import LinkSection from "@/components/LinkSection";
+import DocumentsSection from "@/components/detail/DocumentsSection";
 import { usePopover } from "@/components/detail/usePopover";
 import { createClient } from "@/lib/supabase/client";
 import type { Contact, Note, Activity, ActivityType, ContactType, ContactSource, SearchProfile, Property, PropertyType, SearchType, Task, TaskPriority, Deal, PipelineStage } from "@/lib/types";
@@ -1089,16 +1090,7 @@ export default function ContactDetailPage() {
               )}
             </LinkSection>
 
-            <LinkSection
-              title="Dokumente"
-              count={0}
-              icon={
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                  <polyline points="14 2 14 8 20 8"/>
-                </svg>
-              }
-            />
+            <DocumentsSection entityType="contact" entityId={id} />
 
           </div>
 

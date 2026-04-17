@@ -9,6 +9,7 @@ import { usePopover } from "@/components/detail/usePopover";
 import { useGallery } from "@/components/detail/useGallery";
 import GalleryModal from "@/components/detail/GalleryModal";
 import PropertyForm from "@/components/detail/PropertyForm";
+import DocumentsSection from "@/components/detail/DocumentsSection";
 import { createClient } from "@/lib/supabase/client";
 import type { Property, Contact, Note, Activity, ActivityType, SearchProfile, Task, TaskPriority, PropertyImage, Deal, PipelineStage } from "@/lib/types";
 import {
@@ -1113,6 +1114,8 @@ export default function PropertyDetailPage() {
                 </div>
               ) : undefined}
             </LinkSection>
+
+            <DocumentsSection entityType="property" entityId={id} />
           </div>
 
         </div>

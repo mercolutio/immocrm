@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import LinkSection from "@/components/LinkSection";
+import DocumentsSection from "@/components/detail/DocumentsSection";
 import { usePopover } from "@/components/detail/usePopover";
 import { createClient } from "@/lib/supabase/client";
 import type { Deal, PipelineStage, Contact, Property, Note, Activity, Task, TaskPriority, ActivityType } from "@/lib/types";
@@ -751,6 +752,8 @@ export default function DealDetailPage() {
               </Link>
             )}
           </LinkSection>
+
+          <DocumentsSection entityType="deal" entityId={id} />
 
           {/* Stage info */}
           <div className="h-lift" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>

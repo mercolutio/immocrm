@@ -370,6 +370,20 @@ export interface PropertyImage {
   thumb_path: string | null
 }
 
+export type DocumentEntityType = 'contact' | 'property' | 'deal'
+
+export interface Document {
+  id: string
+  created_at: string
+  user_id: string
+  entity_type: DocumentEntityType
+  entity_id: string
+  storage_path: string
+  file_name: string
+  mime_type: string | null
+  size_bytes: number | null
+}
+
 export interface PipelineStage {
   id: string
   created_at: string
