@@ -753,7 +753,14 @@ export default function DealDetailPage() {
             )}
           </LinkSection>
 
-          <DocumentsSection entityType="deal" entityId={id} />
+          <DocumentsSection
+            entityType="deal"
+            entityId={id}
+            relatedFrom={[
+              ...(property ? [{ label: "Aus dem Objekt", entityType: "property" as const, entityId: property.id, href: `/properties/${property.id}` }] : []),
+              ...(contact ? [{ label: "Aus dem Kontakt", entityType: "contact" as const, entityId: contact.id, href: `/contacts/${contact.id}` }] : []),
+            ]}
+          />
 
           {/* Stage info */}
           <div style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(28,24,20,0.055), 0 1px 2px rgba(28,24,20,0.04)" }}>

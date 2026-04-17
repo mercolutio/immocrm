@@ -55,12 +55,21 @@ function fmtDate(s: string) {
   return new Date(s).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+export type RelatedDocumentSource = {
+  label: string;
+  entityType: DocumentEntityType;
+  entityId: string;
+  href?: string;
+};
+
 export default function DocumentsSection({
   entityType,
   entityId,
+  relatedFrom,
 }: {
   entityType: DocumentEntityType;
   entityId: string;
+  relatedFrom?: RelatedDocumentSource[];
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { docs, loading, uploading, dragOver, setDragOver, error, uploadFiles, downloadDoc, deleteDoc } = useDocuments(entityType, entityId);
@@ -127,10 +136,6 @@ export default function DocumentsSection({
 
       {loading ? (
         <div style={{ padding: "20px 14px", textAlign: "center", fontSize: 12, color: "var(--t3)" }}>Lade…</div>
-      ) : docs.length === 0 && !uploading ? (
-        <div style={{ padding: "20px 14px", textAlign: "center", fontSize: 12, color: "var(--t3)" }}>
-          Noch keine Dokumente. Dateien hierhin ziehen oder Plus klicken.
-        </div>
       ) : (
         <div>
           {uploading && (
@@ -139,8 +144,21 @@ export default function DocumentsSection({
               Lade hoch…
             </div>
           )}
+          {docs.length === 0 && !uploading && (
+            <div style={{ padding: "20px 14px", textAlign: "center", fontSize: 12, color: "var(--t3)" }}>
+              {relatedFrom && relatedFrom.length > 0
+                ? "Keine Dokumente direkt an diesem Eintrag."
+                : "Noch keine Dokumente. Dateien hierhin ziehen oder Plus klicken."}
+            </div>
+          )}
           {docs.map((doc) => (
             <DocRow key={doc.id} doc={doc} onDownload={() => downloadDoc(doc)} onDelete={() => deleteDoc(doc)} />
+          ))}
+          {relatedFrom?.map((source) => (
+            <RelatedDocumentsSubsection
+              key={`${source.entityType}:${source.entityId}`}
+              source={source}
+            />
           ))}
         </div>
       )}
@@ -148,7 +166,45 @@ export default function DocumentsSection({
   );
 }
 
-function DocRow({ doc, onDownload, onDelete }: { doc: Document; onDownload: () => void; onDelete: () => void }) {
+function RelatedDocumentsSubsection({ source }: { source: RelatedDocumentSource }) {
+  const { docs, loading, downloadDoc } = useDocuments(source.entityType, source.entityId);
+  if (loading || docs.length === 0) return null;
+  return (
+    <div style={{ borderTop: "1px solid var(--border)" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "8px 14px",
+          fontSize: 10,
+          fontWeight: 600,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "var(--t3)",
+          background: "var(--bg2)",
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
+        <span style={{ flex: 1 }}>{source.label}</span>
+        <span>{docs.length}</span>
+        {source.href && (
+          <a
+            href={source.href}
+            style={{ color: "var(--accent)", textDecoration: "none", letterSpacing: 0, textTransform: "none", fontSize: 11 }}
+          >
+            Öffnen →
+          </a>
+        )}
+      </div>
+      {docs.map((doc) => (
+        <DocRow key={doc.id} doc={doc} onDownload={() => downloadDoc(doc)} />
+      ))}
+    </div>
+  );
+}
+
+function DocRow({ doc, onDownload, onDelete }: { doc: Document; onDownload: () => void; onDelete?: () => void }) {
   const iconKind = getDocumentIconKey(doc.mime_type);
   return (
     <div
@@ -175,19 +231,21 @@ function DocRow({ doc, onDownload, onDelete }: { doc: Document; onDownload: () =
           <span>{fmtDate(doc.created_at)}</span>
         </div>
       </div>
-      <button
-        onClick={(e) => { e.stopPropagation(); onDelete(); }}
-        className="h-icon-btn"
-        style={{ width: 26, height: 26, color: "var(--t3)" }}
-        title="Löschen"
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="3 6 5 6 21 6"/>
-          <path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6"/>
-          <path d="M10 11v6"/>
-          <path d="M14 11v6"/>
-        </svg>
-      </button>
+      {onDelete && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="h-icon-btn"
+          style={{ width: 26, height: 26, color: "var(--t3)" }}
+          title="Löschen"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6"/>
+            <path d="M10 11v6"/>
+            <path d="M14 11v6"/>
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
