@@ -114,17 +114,17 @@ export default function Dashboard() {
       const feedItems: ActivityFeedItem[] = ((activitiesRes.data ?? []) as any[]).map((a) => {
         const contact = Array.isArray(a.contacts) ? a.contacts[0] : a.contacts;
         const property = Array.isArray(a.properties) ? a.properties[0] : a.properties;
-        const subParts: string[] = [];
-        if (property?.title) subParts.push(property.title);
+        const entities: string[] = [];
+        if (property?.title) entities.push(property.title);
         if (contact) {
           const full = `${contact.first_name ?? ""} ${contact.last_name ?? ""}`.trim();
-          if (full) subParts.push(full);
+          if (full) entities.push(full);
         }
         return {
           id: a.id,
           type: a.type as ActivityType,
           summary: a.summary,
-          sub: subParts.join(" · "),
+          entities,
           happenedAt: a.happened_at,
         };
       });
@@ -264,8 +264,10 @@ export default function Dashboard() {
               <div className="ki-cards">
                 <div className="ki-card pop-item">
                   <div className="ki-chip chip-alert">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
                     </svg>
                     Handlungsbedarf
                   </div>
@@ -280,8 +282,9 @@ export default function Dashboard() {
                 </div>
                 <div className="ki-card pop-item">
                   <div className="ki-chip chip-chance">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z"/>
+                      <path d="M18 14l0.8 2.2L21 17l-2.2 0.8L18 20l-0.8-2.2L15 17l2.2-0.8L18 14z"/>
                     </svg>
                     Chance erkannt
                   </div>

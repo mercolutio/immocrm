@@ -352,9 +352,13 @@ select.input-field { cursor: pointer; }
   transition-duration: var(--dur-in);
 }
 
+html, body {
+  background: var(--bg);
+}
 body {
   font-family: var(--font-dm-sans, 'DM Sans'), sans-serif;
   -webkit-font-smoothing: antialiased;
+  color: var(--t1);
 }
 
 /* SIDEBAR */
@@ -525,13 +529,14 @@ body {
 .card-cta svg { width: 10px; height: 10px; }
 
 /* MAIN GRID */
-.main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 13px; }
+.main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 13px; align-items: start; }
 
 /* KI PANEL */
 .ki-panel {
   background: #0A1208; border-radius: 14px;
   border: 1px solid rgba(194,105,42,0.15);
   display: flex; flex-direction: column; overflow: hidden; position: relative;
+  align-self: start;
 }
 .ki-panel::before {
   content: ''; position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
@@ -545,16 +550,14 @@ body {
 @keyframes breathe { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(194,105,42,0.5)}50%{opacity:.75;box-shadow:0 0 0 4px rgba(194,105,42,0)} }
 .ki-name { font-family: var(--font-playfair, 'Playfair Display'), serif; font-size: 15px; font-weight: 400; color: #FFF0E6; }
 .ki-tag { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(194,105,42,0.5); padding: 2px 6px; border: 1px solid rgba(194,105,42,0.18); border-radius: 4px; }
-.ki-cards { flex: 1; padding: 10px 10px 6px; display: flex; flex-direction: column; gap: 7px; overflow-y: auto; position: relative; z-index: 1; }
-.ki-cards::-webkit-scrollbar { width: 2px; }
-.ki-cards::-webkit-scrollbar-thumb { background: rgba(194,105,42,0.2); border-radius: 1px; }
+.ki-cards { padding: 12px 12px 0; display: flex; flex-direction: column; gap: 12px; position: relative; z-index: 1; }
 .ki-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 9px; padding: 10px 11px; cursor: pointer;
   transition: background-color var(--dur-out) var(--ease-out),
               border-color var(--dur-out) var(--ease-out),
               transform var(--dur-out) var(--ease-out); }
 .ki-card:hover { background: rgba(194,105,42,0.07); border-color: rgba(194,105,42,0.22); transform: translateY(-1px); transition-duration: var(--dur-in); }
-.ki-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; }
-.ki-chip svg { width: 8px; height: 8px; }
+.ki-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 7px 2px 6px; border-radius: 4px; margin-bottom: 6px; }
+.ki-chip svg { width: 11px; height: 11px; flex-shrink: 0; }
 .chip-alert { background: rgba(201,59,46,0.18); color: #FF8A80; border: 1px solid rgba(201,59,46,0.25); }
 .chip-chance { background: rgba(194,105,42,0.18); color: #E8955A; border: 1px solid rgba(194,105,42,0.28); }
 .chip-follow { background: rgba(96,165,250,0.12); color: #93C5FD; border: 1px solid rgba(96,165,250,0.18); }
@@ -564,7 +567,7 @@ body {
 .ki-action { font-size: 12px; font-weight: 500; color: #E8955A; display: flex; align-items: center; gap: 4px; transition: gap var(--dur-out) var(--ease-out); }
 .ki-card:hover .ki-action { gap: 7px; }
 .ki-action svg { width: 10px; height: 10px; }
-.ki-input-wrap { padding: 9px 10px; border-top: 1px solid rgba(194,105,42,0.12); flex-shrink: 0; position: relative; z-index: 1; }
+.ki-input-wrap { padding: 12px; position: relative; z-index: 1; }
 .ki-input-row { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 7px 9px; transition: border-color var(--dur-out) var(--ease-out); }
 .ki-input-row:focus-within { border-color: rgba(194,105,42,0.35); transition-duration: var(--dur-in); }
 .ki-inp { flex: 1; background: transparent; border: none; outline: none; font-size: 12px; font-family: var(--font-dm-sans, 'DM Sans'), sans-serif; color: rgba(255,255,255,0.65); }

@@ -11,12 +11,13 @@ const COLORS = [
 ];
 
 const DEFAULT_STAGES = [
-  { name: "Qualifizierung", color: "#3B82F6", position: 0 },
-  { name: "Besichtigung",   color: "#8B5CF6", position: 1 },
-  { name: "Verhandlung",    color: "#F59E0B", position: 2 },
-  { name: "Notariat",       color: "#C2692A", position: 3 },
-  { name: "Abschluss",      color: "#10B981", position: 4 },
-  { name: "Verloren",       color: "#6B7280", position: 5 },
+  { name: "Lead",           color: "#78756E", position: 0 },
+  { name: "Qualifizierung", color: "#3B82F6", position: 1 },
+  { name: "Besichtigung",   color: "#8B5CF6", position: 2 },
+  { name: "Verhandlung",    color: "#F59E0B", position: 3 },
+  { name: "Abschluss",      color: "#C2692A", position: 4 },
+  { name: "Gewonnen",       color: "#10B981", position: 5 },
+  { name: "Verloren",       color: "#6B7280", position: 6 },
 ];
 
 // Card-Padding für den Stages-Table-Wrap (über .card Utility mit Padding-Override)

@@ -66,9 +66,9 @@ export default function WeekStatsTile() {
       <div style={{ paddingBottom: 8 }}>
         <div style={{ padding: "6px 16px 10px" }}>
           <div style={{ fontSize: 11.5, color: "#78756E", fontWeight: 500 }}>Zielumsatz</div>
-          <div style={{ ...PLAYFAIR_VALUE, marginTop: 4 }}>
+          <div style={{ ...PLAYFAIR_VALUE, marginTop: 4, whiteSpace: "nowrap" }}>
             €{goalCurrent}k
-            <span style={{ fontSize: 13, color: "#78756E", fontFamily: "var(--font-dm-sans, 'DM Sans'), sans-serif", fontWeight: 400, marginLeft: 3 }}>
+            <span style={{ fontSize: 13, color: "#78756E", fontFamily: "var(--font-dm-sans, 'DM Sans'), sans-serif", fontWeight: 400, marginLeft: 4 }}>
               von €{goalTarget}k
             </span>
           </div>

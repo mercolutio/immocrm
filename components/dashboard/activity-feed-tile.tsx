@@ -8,7 +8,7 @@ export interface ActivityFeedItem {
   id: string;
   type: ActivityType;
   summary: string;
-  sub: string;
+  entities: string[];
   happenedAt: string;
 }
 
@@ -154,7 +154,12 @@ export default function ActivityFeedTile({ items }: Props) {
               </div>
               <div style={{ color: "#3F3D38", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 <strong style={{ color: "#18120E", fontWeight: 600 }}>{it.summary}</strong>
-                {it.sub && <> · {it.sub}</>}
+                {it.entities.map((e, idx) => (
+                  <span key={idx}>
+                    <span style={{ color: "#A8A49C" }}> · </span>
+                    <strong style={{ color: "#18120E", fontWeight: 600 }}>{e}</strong>
+                  </span>
+                ))}
               </div>
               <div
                 style={{

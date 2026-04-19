@@ -165,13 +165,14 @@
 .dashboard-layout .card-cta svg { width: 10px; height: 10px; }
 
 /* ROW 1: MAIN GRID */
-.dashboard-layout .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; }
+.dashboard-layout .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; align-items: start; }
 
 /* KI PANEL */
 .dashboard-layout .ki-panel {
   background: #0A1208; border-radius: 20px;
   border: 1px solid rgba(194,105,42,0.15);
   display: flex; flex-direction: column; overflow: hidden; position: relative;
+  align-self: start;
 }
 .dashboard-layout .ki-panel::before {
   content: ''; position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
@@ -184,13 +185,11 @@
 .dashboard-layout .ki-dot { width: 7px; height: 7px; border-radius: 50%; background: #E8955A; animation: breathe 2.4s ease-in-out infinite; }
 .dashboard-layout .ki-name { font-family: var(--font-playfair, 'Playfair Display'), serif; font-size: 16px; font-weight: 400; color: #FFF0E6; }
 .dashboard-layout .ki-tag { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(194,105,42,0.5); padding: 2px 6px; border: 1px solid rgba(194,105,42,0.18); border-radius: 4px; }
-.dashboard-layout .ki-cards { flex: 1; padding: 11px 11px 8px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; position: relative; z-index: 1; }
-.dashboard-layout .ki-cards::-webkit-scrollbar { width: 2px; }
-.dashboard-layout .ki-cards::-webkit-scrollbar-thumb { background: rgba(194,105,42,0.2); border-radius: 1px; }
+.dashboard-layout .ki-cards { padding: 12px 12px 0; display: flex; flex-direction: column; gap: 12px; position: relative; z-index: 1; }
 .dashboard-layout .ki-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 9px; padding: 14px 15px; cursor: pointer; transition: all 0.18s; }
 .dashboard-layout .ki-card:hover { background: rgba(194,105,42,0.07); border-color: rgba(194,105,42,0.22); transform: translateY(-1px); }
-.dashboard-layout .ki-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 9px; border-radius: 5px; margin-bottom: 9px; }
-.dashboard-layout .ki-chip svg { width: 8px; height: 8px; }
+.dashboard-layout .ki-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px 2px 6px; border-radius: 5px; margin-bottom: 9px; }
+.dashboard-layout .ki-chip svg { width: 11px; height: 11px; flex-shrink: 0; }
 .dashboard-layout .chip-alert  { background: rgba(201,59,46,0.22);  color: #FF8A80; border: 1px solid rgba(201,59,46,0.32); }
 .dashboard-layout .chip-chance { background: rgba(194,105,42,0.22); color: #E8955A; border: 1px solid rgba(194,105,42,0.35); }
 .dashboard-layout .chip-follow { background: rgba(96,165,250,0.14); color: #93C5FD; border: 1px solid rgba(96,165,250,0.24); }
@@ -200,7 +199,7 @@
 .dashboard-layout .ki-action { font-size: 12.5px; font-weight: 500; color: #E8955A; display: flex; align-items: center; gap: 4px; transition: gap 0.14s; }
 .dashboard-layout .ki-card:hover .ki-action { gap: 7px; }
 .dashboard-layout .ki-action svg { width: 11px; height: 11px; }
-.dashboard-layout .ki-input-wrap { padding: 9px 10px; border-top: 1px solid rgba(194,105,42,0.12); flex-shrink: 0; position: relative; z-index: 1; }
+.dashboard-layout .ki-input-wrap { padding: 12px; position: relative; z-index: 1; }
 .dashboard-layout .ki-input-row { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 7px 9px; transition: border-color 0.18s; }
 .dashboard-layout .ki-input-row:focus-within { border-color: rgba(194,105,42,0.35); }
 .dashboard-layout .ki-inp { flex: 1; background: transparent; border: none; outline: none; font-size: 12px; font-family: var(--font-dm-sans, 'DM Sans'), sans-serif; color: rgba(255,255,255,0.65); }

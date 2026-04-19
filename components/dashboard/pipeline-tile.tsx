@@ -23,14 +23,14 @@ interface Props {
 }
 
 const SHORT_NAMES: Record<string, string> = {
+  "Lead": "Lead",
   "Qualifizierung": "Qualifiz.",
   "Besichtigung": "Besich.",
   "Verhandlung": "Verhandl.",
   "Notariat": "Notariat",
   "Abschluss": "Abschluss",
-  "Verloren": "Verloren",
-  "Lead": "Lead",
   "Gewonnen": "Gewonnen",
+  "Verloren": "Verloren",
 };
 
 function shortName(name: string): string {
@@ -47,7 +47,7 @@ function Chevron({ size = 10 }: { size?: number }) {
 
 function WarnIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ width: 14, height: 14, color: "#C2692A", flexShrink: 0 }}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, color: "#C2692A", flexShrink: 0 }}>
       <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
       <line x1="12" y1="9" x2="12" y2="13" />
       <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -98,7 +98,7 @@ export default function PipelineTile({ stages, dealsByStage, stagnationAlert }: 
           Noch keine Pipeline-Stufen.
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${visible.length}, 1fr)`, padding: "0 16px 4px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${visible.length}, 1fr)`, padding: "0 16px 6px" }}>
           {visible.map((s, i) => {
             const count = dealsByStage[s.id] ?? 0;
             const width = Math.max(8, Math.round((count / maxCount) * 100));
@@ -155,7 +155,7 @@ export default function PipelineTile({ stages, dealsByStage, stagnationAlert }: 
         <Link
           href="/pipeline"
           style={{
-            margin: "0 16px 14px",
+            margin: "2px 16px 14px",
             padding: "10px 12px",
             background: "rgba(194,105,42,0.06)",
             borderLeft: "2px solid #C2692A",
