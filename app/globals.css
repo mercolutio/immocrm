@@ -524,30 +524,6 @@ body {
 .card-cta:hover { opacity: 0.75; gap: 5px; transition-duration: var(--dur-in); }
 .card-cta svg { width: 10px; height: 10px; }
 
-/* KPI STRIP (flat, SaaS-like) */
-.kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
-.kpi {
-  background: transparent; border-radius: 0; padding: 4px 24px;
-  display: flex; flex-direction: column;
-  border: none; border-right: 1px solid var(--border-strong);
-  cursor: default;
-}
-.kpi:last-child { border-right: none; }
-.kpi:first-child { padding-left: 0; }
-.kpi:hover { box-shadow: none; transform: none; }
-.kpi-label { font-size: 11px; font-weight: 500; color: var(--t3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
-.kpi-row { display: flex; align-items: baseline; gap: 4px; }
-.kpi-val { font-family: var(--font-display); font-size: 22px; font-weight: 500; color: var(--t1); line-height: 1.1; letter-spacing: -0.3px; }
-.kpi-unit { font-size: 13px; color: var(--t3); font-weight: 400; margin-left: 4px; }
-.kpi-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
-.kpi-trend { font-size: 11px; font-weight: 500; }
-.kpi-trend.up { color: var(--grn); }
-.kpi-trend.warn { color: var(--amb); }
-.kpi-trend.down { color: var(--red); }
-.kpi-sparkline { display: flex; align-items: flex-end; gap: 2px; height: 16px; }
-.spark-bar { width: 4px; border-radius: 2px 2px 0 0; background: var(--bg2); }
-.spark-bar.hi { background: var(--spark-color, rgba(194,105,42,0.45)); }
-
 /* MAIN GRID */
 .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 13px; }
 
@@ -598,39 +574,6 @@ body {
 .ki-send:hover { background: #D97D3A; filter: brightness(1.05); transition-duration: var(--dur-in); }
 .ki-send svg { width: 10px; height: 10px; }
 
-/* BOTTOM GRID */
-.bottom-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 13px; align-items: stretch; }
-
-/* PIPELINE */
-.pipe-chart { display: flex; align-items: flex-end; gap: 10px; flex: 1; min-height: 0; padding-top: 6px; }
-.pipe-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 5px; }
-.pipe-bar-wrap { width: 100%; display: flex; align-items: flex-end; justify-content: center; flex: 1; }
-.pipe-bar { width: 100%; border-radius: 5px 5px 0 0; cursor: pointer;
-  transition: height 1.2s var(--ease-out), filter var(--dur-out) var(--ease-out); }
-.pipe-bar:hover { filter: brightness(1.08); transition-duration: 1.2s, var(--dur-in); }
-.pipe-n { font-family: var(--font-playfair, 'Playfair Display'), serif; font-size: 15px; font-weight: 400; color: var(--t1); text-align: center; line-height: 1; }
-.pipe-eur { font-size: 11px; color: var(--t3); text-align: center; }
-.pipe-label { font-size: 11px; font-weight: 500; color: var(--t2); text-align: center; white-space: nowrap; }
-.pipe-card { display: flex; flex-direction: column; min-height: 0; }
-.pipe-card .card-hdr { flex-shrink: 0; }
-.funnel-alert { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 6px; background: var(--red-bg); border: 1px solid rgba(201,59,46,0.15); font-size: 11.5px; color: var(--red); font-weight: 500; margin-top: 8px; cursor: pointer; flex-shrink: 0;
-  transition: background-color var(--dur-out) var(--ease-out); }
-.funnel-alert:hover { background: rgba(201,59,46,0.12); transition-duration: var(--dur-in); }
-.funnel-alert svg { width: 12px; height: 12px; flex-shrink: 0; }
-
-/* FEED */
-.feed-list { display: flex; flex-direction: column; }
-.feed-item { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); cursor: pointer; align-items: flex-start;
-  transition: opacity var(--dur-out) var(--ease-out); }
-.feed-item:hover { opacity: 0.72; transition-duration: var(--dur-in); }
-.feed-item:last-child { border-bottom: none; padding-bottom: 0; }
-.feed-item:first-child { padding-top: 0; }
-.feed-ico { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.feed-ico svg { width: 13px; height: 13px; }
-.feed-title { font-size: 12.5px; font-weight: 500; color: var(--t1); line-height: 1.3; }
-.feed-sub { font-size: 11.5px; color: var(--t3); margin-top: 2px; }
-.feed-ts { font-size: 11px; color: var(--t3); margin-top: 3px; }
-
 /* PORTALE */
 .portal-list { display: flex; flex-direction: column; gap: 9px; }
 .portal-item { display: flex; align-items: center; gap: 9px; cursor: pointer; transition: opacity var(--dur-out) var(--ease-out); }
@@ -661,7 +604,6 @@ input::placeholder, textarea::placeholder { color: var(--placeholder); opacity: 
 /* ═══ LIST-PAGE STRUCTUR (Pipeline/Kontakte/Objekte) ══════════════════
  * Exakt nach design-reference/immo_crm_pipeline_redesign.html
  * Header → Stat-Strip → Toolbar → Content (table-wrap → table-footer)
- * Dashboard-KPIs (.kpi-strip/.kpi) bleiben davon unberührt.
  */
 
 /* Page-Header: nur Title/Subtitle + max 2 Buttons rechts */
@@ -671,7 +613,7 @@ input::placeholder, textarea::placeholder { color: var(--placeholder); opacity: 
 .page-title         { font-family: var(--font-display); font-size: 26px; font-weight: 500; color: var(--t1); letter-spacing: -0.5px; line-height: 1.15; }
 .page-subtitle      { font-size: 13px; color: var(--t3); margin-top: 4px; font-weight: 400; }
 
-/* Stat-Strip: flach, mit Trennlinien (nicht .kpi-strip, das gehört dem Dashboard) */
+/* Stat-Strip: flach, mit Trennlinien */
 .stat-strip         { display: flex; padding: 20px 36px 0; gap: 0; flex-shrink: 0; }
 .stat-item          { flex: 1; padding: 0 24px 0 0; min-width: 0; }
 .stat-item:not(:last-child) { border-right: 1px solid var(--border-strong); margin-right: 24px; }
@@ -765,8 +707,6 @@ input::placeholder, textarea::placeholder { color: var(--placeholder); opacity: 
 .anim-0 { animation: fadeUp 0.28s ease both; animation-delay: 0.02s; }
 .anim-1 { animation: fadeUp 0.30s ease both; animation-delay: 0.08s; }
 .anim-2 { animation: fadeUp 0.30s ease both; animation-delay: 0.14s; }
-.kpi { animation: fadeUp 0.28s ease both; }
-.kpi:nth-child(1){animation-delay:.03s} .kpi:nth-child(2){animation-delay:.07s} .kpi:nth-child(3){animation-delay:.11s} .kpi:nth-child(4){animation-delay:.15s}
 
 
 /* Skeleton → Content transition */
