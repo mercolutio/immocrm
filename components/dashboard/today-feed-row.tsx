@@ -9,9 +9,13 @@ interface Props {
   onCompleteTask?: (taskId: string) => void;
 }
 
+function startOfTodayMs(): number {
+  return new Date().setHours(0, 0, 0, 0);
+}
+
 function hasSpecificTime(iso: string): boolean {
   const d = new Date(iso);
-  return !(d.getHours() === 0 && d.getMinutes() === 0);
+  return !(d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0);
 }
 
 function formatHHMM(iso: string): string {
@@ -19,24 +23,32 @@ function formatHHMM(iso: string): string {
   return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
 }
 
-function relativeUntil(iso: string): string {
-  const diffMin = Math.round((new Date(iso).getTime() - Date.now()) / 60000);
-  if (diffMin < 0) return "vorbei";
-  if (diffMin < 1) return "jetzt";
-  if (diffMin < 60) return `in ${diffMin} Min`;
-  const h = Math.floor(diffMin / 60);
-  const m = diffMin % 60;
-  if (h < 24) return m === 0 ? `in ${h} h` : `in ${h} h ${m} m`;
-  return "heute";
+function daysOverdue(iso: string): number {
+  const due = new Date(iso);
+  due.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.round((today.getTime() - due.getTime()) / 86400000));
 }
 
-function overdueFragment(iso: string): { big: string; sub: string } {
-  const diffDays = Math.floor((Date.now() - new Date(iso).getTime()) / (24 * 60 * 60 * 1000));
-  if (diffDays <= 0) {
-    const diffH = Math.floor((Date.now() - new Date(iso).getTime()) / (60 * 60 * 1000));
-    return { big: diffH <= 0 ? "jetzt" : `${diffH} Std`, sub: "überfällig" };
+type TimeDisplay = {
+  text: string;
+  style: "time" | "overdue" | "muted";
+};
+
+function timeDisplay(item: TodayFeedItem): TimeDisplay {
+  if (item.kind === "appointment") {
+    return { text: formatHHMM(item.startsAt), style: "time" };
   }
-  return { big: `${diffDays} Tag${diffDays === 1 ? "" : "e"}`, sub: "überfällig" };
+  if (item.dueAt && new Date(item.dueAt).getTime() < startOfTodayMs()) {
+    const days = daysOverdue(item.dueAt);
+    const label = days <= 0 ? "heute zu spät" : `${days} Tag${days === 1 ? "" : "e"} zu spät`;
+    return { text: label, style: "overdue" };
+  }
+  if (item.dueAt && hasSpecificTime(item.dueAt)) {
+    return { text: formatHHMM(item.dueAt), style: "time" };
+  }
+  return { text: "heute", style: "muted" };
 }
 
 function TaskIcon({ priority }: { priority: "low" | "medium" | "high" }) {
@@ -70,50 +82,49 @@ function AppointmentIcon() {
 
 export default function TodayFeedRow({ item, isLast, onCompleteTask }: Props) {
   const isTask = item.kind === "task";
-  const isOverdue = isTask && !!item.dueAt && new Date(item.dueAt).getTime() < new Date().setHours(0, 0, 0, 0);
-
-  let timeBig: string;
-  let timeSub: string;
-  const timeUrgent = isOverdue;
-
-  if (isTask) {
-    if (isOverdue) {
-      const f = overdueFragment(item.dueAt!);
-      timeBig = f.big;
-      timeSub = f.sub;
-    } else if (item.dueAt && hasSpecificTime(item.dueAt)) {
-      timeBig = formatHHMM(item.dueAt);
-      timeSub = relativeUntil(item.dueAt);
-    } else {
-      timeBig = "heute";
-      timeSub = "";
-    }
-  } else {
-    timeBig = formatHHMM(item.startsAt);
-    timeSub = relativeUntil(item.startsAt);
-  }
+  const isOverdue = isTask && !!item.dueAt && new Date(item.dueAt).getTime() < startOfTodayMs();
+  const time = timeDisplay(item);
 
   const rowStyle: React.CSSProperties = {
     display: "grid",
-    gridTemplateColumns: "24px 30px 72px 1fr auto",
+    gridTemplateColumns: "24px 30px 110px 1fr auto",
     alignItems: "center",
     gap: 14,
     padding: "14px 18px",
-    minHeight: 76,
+    minHeight: 72,
     borderBottom: isLast ? undefined : "1px solid #EDEBE6",
     transition: "background 140ms ease",
   };
 
   const detailHref = isTask ? `/tasks` : `/`;
 
+  let timeColor = "#18120E";
+  let timeFont = "'DM Mono', ui-monospace, monospace";
+  let timeSize = 13;
+  let timeWeight: number | string = 500;
+  let timeCase: "uppercase" | "none" = "none";
+  let timeLetter = "0";
+  if (time.style === "overdue") {
+    timeColor = "var(--accent)";
+    timeFont = "var(--font-dm-sans, 'DM Sans'), sans-serif";
+    timeSize = 12.5;
+    timeWeight = 600;
+  } else if (time.style === "muted") {
+    timeColor = "#A8A49C";
+    timeFont = "var(--font-dm-sans, 'DM Sans'), sans-serif";
+    timeSize = 10.5;
+    timeWeight = 600;
+    timeCase = "uppercase";
+    timeLetter = "0.1em";
+  }
+
   return (
     <div
-      className="tf-row"
       style={rowStyle}
       onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(120,117,110,0.08)")}
       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
-      {/* Checkbox — only tasks */}
+      {/* First column: checkbox for tasks, Terra marker for appointments */}
       {isTask ? (
         <button
           type="button"
@@ -147,7 +158,17 @@ export default function TodayFeedRow({ item, isLast, onCompleteTask }: Props) {
           </svg>
         </button>
       ) : (
-        <div />
+        <div
+          aria-hidden
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            width: 24,
+          }}
+        >
+          <div style={{ width: 2, height: 24, background: "#C2692A", borderRadius: 1 }} />
+        </div>
       )}
 
       {/* Type icon */}
@@ -167,32 +188,21 @@ export default function TodayFeedRow({ item, isLast, onCompleteTask }: Props) {
         </div>
       </div>
 
-      {/* Time column */}
-      <div style={{ lineHeight: 1.1 }}>
-        <div
-          style={{
-            fontFamily: "'DM Mono', ui-monospace, monospace",
-            fontSize: 12.5,
-            fontWeight: 500,
-            color: timeUrgent ? "var(--accent)" : "#18120E",
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          {timeBig}
-        </div>
-        {timeSub && (
-          <div
-            style={{
-              fontSize: 10.5,
-              color: timeUrgent ? "rgba(194,105,42,0.72)" : "#A8A49C",
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
-              marginTop: 3,
-            }}
-          >
-            {timeSub}
-          </div>
-        )}
+      {/* Time / overdue label — single line */}
+      <div
+        style={{
+          fontFamily: timeFont,
+          fontSize: timeSize,
+          fontWeight: timeWeight,
+          color: timeColor,
+          textTransform: timeCase,
+          letterSpacing: timeLetter,
+          fontVariantNumeric: "tabular-nums",
+          whiteSpace: "nowrap",
+          lineHeight: 1,
+        }}
+      >
+        {time.text}
       </div>
 
       {/* Title + sub */}
@@ -227,22 +237,21 @@ export default function TodayFeedRow({ item, isLast, onCompleteTask }: Props) {
         )}
       </div>
 
-      {/* Actions */}
+      {/* Action */}
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <Link
           href={detailHref}
-          className="tf-btn"
           style={{
             fontSize: 13,
             fontWeight: 500,
-            color: isTask && isOverdue ? "var(--accent)" : "#3F3D38",
+            color: isOverdue ? "var(--accent)" : "#3F3D38",
             padding: "6px 10px",
             borderRadius: 6,
             textDecoration: "none",
             transition: "background 140ms ease, color 140ms ease",
           }}
           onMouseEnter={(e) => {
-            if (isTask && isOverdue) {
+            if (isOverdue) {
               e.currentTarget.style.background = "rgba(194,105,42,0.08)";
               e.currentTarget.style.color = "#A0561F";
             } else {
@@ -252,7 +261,7 @@ export default function TodayFeedRow({ item, isLast, onCompleteTask }: Props) {
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = isTask && isOverdue ? "var(--accent)" : "#3F3D38";
+            e.currentTarget.style.color = isOverdue ? "var(--accent)" : "#3F3D38";
           }}
         >
           Öffnen

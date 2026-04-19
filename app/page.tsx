@@ -177,8 +177,11 @@ export default function Dashboard() {
       const uid = auth.user?.id;
       if (!uid) return;
 
-      const fullName = String(auth.user?.user_metadata?.full_name ?? "");
-      setUserFirstName(fullName ? fullName.split(" ")[0] : (auth.user?.email?.split("@")[0] ?? ""));
+      const meta = auth.user?.user_metadata ?? {};
+      const firstMeta = String((meta.first_name as string | undefined) ?? "").trim();
+      const fullMeta = String((meta.full_name as string | undefined) ?? "").trim();
+      const derivedFirst = firstMeta || (fullMeta ? fullMeta.split(/\s+/)[0] : "");
+      setUserFirstName(derivedFirst);
 
       const endOfToday = new Date(); endOfToday.setHours(23, 59, 59, 999);
 
@@ -384,7 +387,7 @@ export default function Dashboard() {
     }
   }
 
-  const displayName = userFirstName || "willkommen";
+  const greetingText = userFirstName ? `${greeting}, ${userFirstName}.` : `${greeting}.`;
   const provisionTrendCls = kpis.provisionPct !== null
     ? (kpis.provisionPct >= 0 ? "up" : "down")
     : "up";
@@ -398,7 +401,7 @@ export default function Dashboard() {
         {/* HEADER */}
         <header className="page-header">
           <div className="page-header-left">
-            <h1 className="page-title">{greeting}, {displayName}.</h1>
+            <h1 className="page-title">{greetingText}</h1>
             <p className="page-subtitle">{formatDateDE(today)} · {urgentFragment}</p>
           </div>
           <div className="page-header-right">
