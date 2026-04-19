@@ -5,13 +5,12 @@ import Link from "next/link";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
 import DashboardLayout from "@/components/DashboardLayout";
 import NotificationBell from "@/components/NotificationBell";
+import TodayFeed from "@/components/dashboard/today-feed";
+import type { AppointmentItem } from "@/components/dashboard/types";
+import { getTodayAppointments } from "@/lib/mock/appointments";
 import { createClient } from "@/lib/supabase/client";
 import { shouldSpawnNextInstance } from "@/lib/recurrence";
-import type { Task, TaskPriority } from "@/lib/types";
-
-function priorityWeight(p: TaskPriority): number {
-  return p === "high" ? 3 : p === "medium" ? 2 : 1;
-}
+import type { Task } from "@/lib/types";
 
 // ---------- Helpers ----------
 
@@ -158,8 +157,7 @@ export default function Dashboard() {
   // User + task status
   const [userFirstName, setUserFirstName] = useState<string>("");
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [overdueCount, setOverdueCount] = useState(0);
-  const [dueTodayCount, setDueTodayCount] = useState(0);
+  const [appointments] = useState<AppointmentItem[]>(() => getTodayAppointments());
 
   // Dashboard raw data
   const [allDeals, setAllDeals] = useState<DealRow[]>([]);
@@ -182,12 +180,10 @@ export default function Dashboard() {
       const fullName = String(auth.user?.user_metadata?.full_name ?? "");
       setUserFirstName(fullName ? fullName.split(" ")[0] : (auth.user?.email?.split("@")[0] ?? ""));
 
-      const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
       const endOfToday = new Date(); endOfToday.setHours(23, 59, 59, 999);
 
       const [
-        dueTodayRes,
-        overdueRes,
+        dueUpToTodayRes,
         dealsRes,
         contactsRes,
         stagesRes,
@@ -198,17 +194,9 @@ export default function Dashboard() {
           .select("*")
           .neq("status", "done")
           .not("due_date", "is", null)
-          .gte("due_date", startOfToday.toISOString())
           .lte("due_date", endOfToday.toISOString())
           .or(`assigned_to.eq.${uid},and(assigned_to.is.null,user_id.eq.${uid})`)
-          .limit(50),
-        supabase
-          .from("tasks")
-          .select("id", { count: "exact", head: true })
-          .neq("status", "done")
-          .not("due_date", "is", null)
-          .lt("due_date", startOfToday.toISOString())
-          .or(`assigned_to.eq.${uid},and(assigned_to.is.null,user_id.eq.${uid})`),
+          .limit(100),
         supabase
           .from("deals")
           .select("id, stage_id, commission, created_at, updated_at, closed_at")
@@ -231,17 +219,7 @@ export default function Dashboard() {
           .limit(4),
       ]);
 
-      const dueToday = (dueTodayRes.data ?? []) as Task[];
-      const sortedToday = dueToday.sort((a, b) => {
-        const dw = priorityWeight(b.priority) - priorityWeight(a.priority);
-        if (dw !== 0) return dw;
-        const da = a.due_date ? new Date(a.due_date).getTime() : Infinity;
-        const db = b.due_date ? new Date(b.due_date).getTime() : Infinity;
-        return da - db;
-      }).slice(0, 5);
-      setTasks(sortedToday);
-      setDueTodayCount(dueToday.length);
-      setOverdueCount(overdueRes.count ?? 0);
+      setTasks((dueUpToTodayRes.data ?? []) as Task[]);
 
       setAllDeals((dealsRes.data ?? []) as DealRow[]);
       setAllContacts((contactsRes.data ?? []) as Array<{ created_at: string }>);
@@ -368,13 +346,30 @@ export default function Dashboard() {
 
   const today = useMemo(() => new Date(), []);
   const greeting = greetingFor(today.getHours());
+
+  const { overdueCount, dueTodayCount } = useMemo(() => {
+    const startMs = new Date().setHours(0, 0, 0, 0);
+    const endMs = new Date().setHours(23, 59, 59, 999);
+    let overdue = 0;
+    let dueToday = 0;
+    for (const t of tasks) {
+      if (!t.due_date) continue;
+      const ts = new Date(t.due_date).getTime();
+      if (ts < startMs) overdue++;
+      else if (ts <= endMs) dueToday++;
+    }
+    return { overdueCount: overdue, dueTodayCount: dueToday };
+  }, [tasks]);
+
   const urgentFragment = overdueCount > 0
     ? `${overdueCount} überfälliger Punkt${overdueCount === 1 ? "" : "e"}`
     : dueTodayCount > 0
       ? `${dueTodayCount} fällige${dueTodayCount === 1 ? "r Punkt" : " Punkte"} heute`
       : "alles klar heute";
 
-  async function completeTask(t: Task) {
+  async function completeTaskById(taskId: string) {
+    const t = tasks.find((x) => x.id === taskId);
+    if (!t) return;
     await supabase.from("tasks").update({ status: "done" }).eq("id", t.id);
     setTasks((prev) => prev.filter((x) => x.id !== t.id));
     const next = shouldSpawnNextInstance(t.due_date, t.recurrence, t.recurrence_end);
@@ -527,52 +522,13 @@ export default function Dashboard() {
           {/* MAIN GRID: HEUTE + KI */}
           <div className="main-grid anim-1">
 
-            {/* HEUTE */}
-            <div className="card heute-card">
-              <div className="card-hdr">
-                <div className="heute-hdr">
-                  <span className="card-title">Heute auf einen Blick</span>
-                  {tasks.length > 0 && <div className="urgency-badge">{tasks.length}</div>}
-                </div>
-                <Link className="card-cta" href="/tasks">
-                  Alle Aufgaben
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-                  </svg>
-                </Link>
-              </div>
-              <div className="heute-list">
-                {tasks.length === 0 && (
-                  <div style={{ padding: 20, fontSize: 13, color: "var(--t3)" }}>
-                    Keine fälligen Aufgaben. Alles klar heute.
-                  </div>
-                )}
-                {tasks.map((t) => {
-                  const accent = t.priority === "high" ? "var(--red)"
-                    : t.priority === "medium" ? "var(--blu)" : "var(--accent)";
-                  return (
-                    <div key={t.id} className="heute-item">
-                      <div className="h-priority" style={{ background: accent }} />
-                      <div className="h-check" onClick={() => completeTask(t)}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                      </div>
-                      <div className="h-body">
-                        <div className="h-title">{t.title}</div>
-                        {t.description && <div className="h-sub">{t.description}</div>}
-                      </div>
-                      <div className="h-right">
-                        <div className="h-time" style={{ color: accent }}>
-                          {t.due_date ? new Date(t.due_date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) : "—"}
-                        </div>
-                        <Link href="/tasks" className="h-btn">Öffnen →</Link>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            {/* TAGESSTART */}
+            <TodayFeed
+              tasks={tasks}
+              appointments={appointments}
+              onCompleteTask={completeTaskById}
+            />
+
 
             {/* KI-PANEL */}
             <div className="ki-panel">

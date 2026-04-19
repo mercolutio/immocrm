@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=1280"/>
+<title>Immo CRM · Dashboard · Tagesstart</title>
+<script src="https://unpkg.com/@tailwindcss/browser@4.0.9/dist/index.global.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style type="text/tailwindcss">
+  @theme {
+    --font-display: "Playfair Display", serif;
+    --font-sans: "DM Sans", ui-sans-serif, system-ui;
+    --font-mono: "DM Mono", ui-monospace, monospace;
+
+    --color-terra: #C2692A;
+    --color-terra-soft: #E2A477;
+    --color-warm: #F5F3EF;
+    --color-paper: #FBFAF7;
+    --color-ink: #18120E;
+
+    --color-stone-50:  #FAFAF9;
+    --color-stone-100: #F5F5F4;
+    --color-stone-150: #EDEBE6;
+    --color-stone-200: #E7E5E0;
+    --color-stone-300: #D4D1CA;
+    --color-stone-400: #A8A49C;
+    --color-stone-500: #78756E;
+    --color-stone-600: #57554F;
+    --color-stone-700: #3F3D38;
+    --color-stone-800: #2A2824;
+    --color-stone-900: #1A1814;
+
+    --tracking-capsed: 0.12em;
+  }
+</style>
+<style>
+  html, body { background: #F5F3EF; color: #2A2824; font-family: 'DM Sans', sans-serif; }
+  body { min-width: 1280px; }
+  .font-mono-sans { font-family: 'DM Mono', ui-monospace, monospace; font-feature-settings: 'tnum'; }
+  .tabular { font-variant-numeric: tabular-nums; }
+  /* Subtle dividers — warm, not gray */
+  .hair { border-color: #E7E5E0; }
+  .hair-w { border-color: #EDEBE6; }
+  /* Cursor affordance on clickable rows */
+  .row:hover { background: rgba(120,117,110,0.035); }
+  .row:hover .row-action { opacity: 1; transform: translateX(0); }
+  .row-action { opacity: 0.85; transform: translateX(-2px); transition: all 180ms cubic-bezier(.2,.6,.2,1); }
+  /* Checkbox */
+  .cb {
+    width: 16px; height: 16px; border-radius: 4px;
+    border: 1.5px solid #D4D1CA; background: #FBFAF7;
+    display: grid; place-items: center; flex-shrink: 0;
+    cursor: pointer; transition: all 140ms ease;
+  }
+  .cb:hover { border-color: #C2692A; }
+  .cb.done { background: #C2692A; border-color: #C2692A; }
+  .cb svg { width: 9px; height: 9px; color: #fff; opacity: 0; transition: opacity 140ms ease; }
+  .cb.done svg { opacity: 1; }
+
+  /* Text-button links */
+  .txt-btn {
+    font-size: 13px; font-weight: 500; color: #3F3D38;
+    padding: 6px 10px; border-radius: 6px;
+    transition: background 140ms ease, color 140ms ease;
+  }
+  .txt-btn:hover { background: rgba(42,40,36,0.06); color: #18120E; }
+  .txt-btn.primary { color: #C2692A; }
+  .txt-btn.primary:hover { background: rgba(194,105,42,0.08); color: #A0561F; }
+
+  /* Sidebar nav */
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px; border-radius: 6px;
+    color: rgba(255,255,255,0.62); font-size: 13px; font-weight: 400;
+    cursor: pointer; transition: color 140ms, background 140ms;
+  }
+  .nav-item:hover { color: #fff; background: rgba(255,255,255,0.045); }
+  .nav-item.active { color: #fff; background: rgba(255,255,255,0.07); }
+  .nav-item svg { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.75; }
+  .nav-item.active svg { opacity: 1; }
+  .nav-group {
+    font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.32);
+    text-transform: uppercase; letter-spacing: 0.14em;
+    padding: 0 10px; margin-bottom: 7px;
+  }
+  .kbd {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    padding: 2px 5px; border-radius: 4px;
+    background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.55);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* Atlas primary card */
+  .atlas-card {
+    background: linear-gradient(180deg, #18120E 0%, #221913 100%);
+    color: #FBFAF7;
+    border: 1px solid rgba(194,105,42,0.22);
+    border-radius: 10px;
+  }
+  .atlas-card .pill {
+    background: rgba(194,105,42,0.16);
+    color: #E2A477;
+    font-size: 10px; font-weight: 500; letter-spacing: 0.1em;
+    padding: 3px 7px; border-radius: 4px; text-transform: uppercase;
+  }
+  .atlas-card .btn-p {
+    background: #C2692A; color: #fff; font-weight: 500; font-size: 12.5px;
+    padding: 7px 12px; border-radius: 6px; transition: background 140ms;
+  }
+  .atlas-card .btn-p:hover { background: #A0561F; }
+  .atlas-card .btn-g {
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85);
+    font-weight: 500; font-size: 12.5px; padding: 7px 12px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: background 140ms;
+  }
+  .atlas-card .btn-g:hover { background: rgba(255,255,255,0.1); }
+
+  .atlas-mini {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 12px;
+    border-top: 1px solid #EDEBE6;
+    cursor: pointer; transition: background 140ms;
+  }
+  .atlas-mini:hover { background: rgba(120,117,110,0.04); }
+  .atlas-mini-ico {
+    width: 22px; height: 22px; border-radius: 5px;
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .atlas-mini-ico svg { width: 11px; height: 11px; }
+
+  /* Type icons in hero */
+  .type-ico {
+    width: 22px; height: 22px; border-radius: 5px;
+    display: grid; place-items: center; flex-shrink: 0;
+    color: #57554F;
+  }
+  .type-ico svg { width: 11px; height: 11px; }
+  .type-ico.task { background: rgba(120,117,110,0.08); }
+  .type-ico.term { background: rgba(120,117,110,0.08); }
+
+  /* Group label */
+  .group-label {
+    font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.14em; color: #A8A49C;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .group-label .count {
+    font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400;
+    color: #A8A49C; letter-spacing: 0;
+  }
+  .group-label.urgent { color: #C2692A; }
+  .group-label.urgent .count { color: #C2692A; }
+
+  /* Tile */
+  .tile {
+    background: #FBFAF7;
+    border: 1px solid #E7E5E0;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .tile-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 14px 16px 8px;
+  }
+  .tile-title {
+    font-size: 12px; font-weight: 600; color: #3F3D38;
+    text-transform: uppercase; letter-spacing: 0.12em;
+  }
+  .tile-link {
+    font-size: 12px; color: #78756E; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 3px;
+    transition: color 140ms;
+  }
+  .tile-link:hover { color: #18120E; }
+  .tile-link svg { width: 10px; height: 10px; }
+
+  /* Pipeline mini */
+  .phase {
+    display: grid; grid-template-rows: auto auto auto; gap: 4px;
+    padding: 10px 10px 10px 0;
+    border-right: 1px dashed #EDEBE6;
+    cursor: pointer;
+    transition: background 140ms;
+  }
+  .phase:hover { background: rgba(120,117,110,0.03); }
+  .phase:last-child { border-right: none; }
+  .phase-name {
+    font-size: 10.5px; color: #78756E; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap;
+  }
+  .phase-count {
+    font-family: 'Playfair Display', serif; font-size: 22px;
+    font-weight: 400; color: #18120E; letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums; line-height: 1;
+  }
+  .phase-bar {
+    height: 3px; background: #E7E5E0; border-radius: 2px; overflow: hidden;
+  }
+  .phase-bar-fill { height: 100%; background: #78756E; border-radius: 2px; }
+  .phase.acc .phase-bar-fill { background: #C2692A; }
+
+  .alert-row {
+    margin: 0 16px 14px;
+    padding: 10px 12px;
+    background: rgba(194,105,42,0.06);
+    border-left: 2px solid #C2692A;
+    border-radius: 4px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12.5px; color: #3F3D38;
+    cursor: pointer; transition: background 140ms;
+  }
+  .alert-row:hover { background: rgba(194,105,42,0.1); }
+  .alert-row svg { width: 14px; height: 14px; color: #C2692A; flex-shrink: 0; }
+  .alert-row strong { color: #18120E; font-weight: 600; }
+
+  /* Activity feed */
+  .feed {
+    display: grid; grid-template-columns: 18px 1fr auto;
+    gap: 10px; align-items: center;
+    padding: 8px 16px; font-size: 12.5px;
+    transition: background 140ms;
+  }
+  .feed:hover { background: rgba(120,117,110,0.04); }
+  .feed-ico { color: #A8A49C; }
+  .feed-ico svg { width: 12px; height: 12px; }
+  .feed-text { color: #3F3D38; }
+  .feed-text strong { color: #18120E; font-weight: 600; }
+  .feed-time {
+    font-family: 'DM Mono', monospace; font-size: 10.5px; color: #A8A49C;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Week stats */
+  .week-stat { padding: 10px 16px; border-top: 1px solid #EDEBE6; }
+  .week-stat:first-of-type { border-top: none; padding-top: 6px; }
+  .week-label { font-size: 11.5px; color: #78756E; font-weight: 500; }
+  .week-value {
+    font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 400;
+    color: #18120E; letter-spacing: -0.01em; line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .week-value .unit { font-size: 13px; color: #78756E; font-family: 'DM Sans'; font-weight: 400; margin-left: 3px; }
+  .week-bar {
+    margin-top: 7px; height: 3px;
+    background: #E7E5E0; border-radius: 2px; overflow: hidden;
+  }
+  .week-bar-fill { height: 100%; background: #C2692A; border-radius: 2px; }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #D4D1CA; border-radius: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* Subtle entry animation */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .an-1 { animation: fadeUp 420ms cubic-bezier(.2,.6,.2,1) both; }
+  .an-2 { animation: fadeUp 420ms 80ms cubic-bezier(.2,.6,.2,1) both; }
+  .an-3 { animation: fadeUp 420ms 160ms cubic-bezier(.2,.6,.2,1) both; }
+  .an-4 { animation: fadeUp 420ms 240ms cubic-bezier(.2,.6,.2,1) both; }
+
+  /* Header name */
+  .greeting {
+    font-family: 'Playfair Display', serif;
+    font-size: 30px; font-weight: 400; letter-spacing: -0.015em;
+    color: #18120E; line-height: 1.1;
+  }
+  .meta-line { font-size: 13px; color: #78756E; margin-top: 4px; }
+  .meta-dot { display: inline-block; margin: 0 7px; color: #D4D1CA; }
+  .urgent-link { color: #C2692A; font-weight: 500; cursor: pointer; }
+  .urgent-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  /* New + Button */
+  .new-btn {
+    background: #18120E; color: #FBFAF7;
+    font-size: 13px; font-weight: 500;
+    padding: 8px 14px; border-radius: 7px;
+    display: inline-flex; align-items: center; gap: 7px;
+    transition: background 140ms;
+  }
+  .new-btn:hover { background: #2A2824; }
+  .new-btn svg { width: 12px; height: 12px; }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 7px;
+    display: grid; place-items: center;
+    color: #57554F;
+    transition: background 140ms, color 140ms;
+  }
+  .icon-btn:hover { background: rgba(42,40,36,0.06); color: #18120E; }
+  .icon-btn svg { width: 15px; height: 15px; }
+  .notif-dot {
+    position: absolute; top: 7px; right: 8px;
+    width: 6px; height: 6px; border-radius: 50%; background: #C2692A;
+    border: 1.5px solid #F5F3EF;
+  }
+
+  /* Hero row heights */
+  .hero-row { min-height: 76px; }
+  .hero-row-title { font-size: 15px; color: #18120E; font-weight: 500; line-height: 1.35; }
+  .hero-row-title.done { color: #78756E; text-decoration: line-through; text-decoration-color: #D4D1CA; }
+  .hero-row-sub { font-size: 13px; color: #78756E; margin-top: 3px; line-height: 1.4; }
+  .hero-row-time {
+    font-family: 'DM Mono', monospace; font-size: 12.5px; font-weight: 500;
+    color: #18120E; letter-spacing: 0; font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .hero-row-time.urgent { color: #C2692A; }
+  .hero-row-time-sub {
+    font-family: 'DM Sans'; font-size: 10.5px; color: #A8A49C;
+    text-transform: uppercase; letter-spacing: 0.1em; margin-top: 3px;
+  }
+  .hero-row-time-sub.urgent { color: rgba(194,105,42,0.72); }
+</style>
+</head>
+<body>
+
+<template id="__bundler_thumbnail" data-bg-color="#F5F3EF">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#F5F3EF"/>
+    <rect x="0" y="0" width="240" height="800" fill="#18120E"/>
+    <rect x="32" y="44" width="18" height="18" rx="4" fill="#C2692A"/>
+    <rect x="60" y="48" width="110" height="10" rx="2" fill="#FBFAF7" opacity="0.9"/>
+    <rect x="32" y="100" width="176" height="24" rx="5" fill="#ffffff" opacity="0.05"/>
+    <rect x="32" y="160" width="60" height="7" rx="2" fill="#ffffff" opacity="0.3"/>
+    <rect x="32" y="182" width="176" height="10" rx="2" fill="#ffffff" opacity="0.12"/>
+    <rect x="32" y="202" width="176" height="10" rx="2" fill="#ffffff" opacity="0.08"/>
+    <rect x="32" y="222" width="176" height="10" rx="2" fill="#ffffff" opacity="0.08"/>
+    <text x="300" y="120" font-family="Playfair Display, serif" font-size="44" fill="#18120E">Guten Morgen, Maximilian.</text>
+    <rect x="300" y="145" width="320" height="8" rx="2" fill="#78756E" opacity="0.5"/>
+    <rect x="300" y="210" width="100" height="8" rx="2" fill="#C2692A"/>
+    <rect x="300" y="240" width="780" height="90" rx="8" fill="#FBFAF7" stroke="#E7E5E0"/>
+    <rect x="320" y="265" width="14" height="14" rx="3" stroke="#D4D1CA" fill="none"/>
+    <rect x="360" y="262" width="200" height="10" rx="2" fill="#18120E"/>
+    <rect x="360" y="282" width="260" height="8" rx="2" fill="#78756E" opacity="0.6"/>
+    <rect x="300" y="370" width="60" height="8" rx="2" fill="#78756E"/>
+    <rect x="300" y="395" width="780" height="260" rx="8" fill="#FBFAF7" stroke="#E7E5E0"/>
+    <rect x="1100" y="240" width="70" height="240" rx="8" fill="#18120E"/>
+    <rect x="1120" y="265" width="40" height="8" rx="2" fill="#C2692A"/>
+    <rect x="1120" y="290" width="50" height="6" rx="2" fill="#FBFAF7" opacity="0.8"/>
+    <rect x="1120" y="310" width="40" height="18" rx="4" fill="#C2692A"/>
+  </svg>
+</template>
+
+
+<div class="flex min-h-screen">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="w-60 flex-shrink-0 bg-ink text-white/80 flex flex-col" style="background: #18120E;">
+    <!-- Logo -->
+    <div class="px-5 pt-6 pb-4">
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-md grid place-items-center" style="background: linear-gradient(135deg,#C2692A,#8F4A1A);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="w-3.5 h-3.5 text-white"><path d="M3 12L12 3l9 9"/><path d="M5 10v10h14V10"/></svg>
+        </div>
+        <span class="font-display text-base text-white/95 tracking-tight" style="letter-spacing:-0.01em;">Immo CRM</span>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="px-4 pb-4">
+      <div class="flex items-center gap-2 px-2.5 py-2 rounded-md bg-white/5 hover:bg-white/[0.07] cursor-pointer transition">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5 text-white/50"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span class="text-[12.5px] text-white/50 flex-1">Suchen…</span>
+        <span class="kbd">⌘K</span>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 px-3 pb-4 space-y-5">
+      <div>
+        <div class="nav-group">Arbeit</div>
+        <div class="space-y-0.5">
+          <a class="nav-item active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            Dashboard
+          </a>
+          <a class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+            Pipeline
+          </a>
+          <a class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12L12 3l9 9"/><path d="M5 10v10h14V10"/></svg>
+            Objekte
+            <span class="ml-auto text-[10.5px] text-white/35 font-mono-sans">47</span>
+          </a>
+          <a class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Kontakte
+            <span class="ml-auto text-[10.5px] text-white/35 font-mono-sans">312</span>
+          </a>
+          <a class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            Aufgaben
+            <span class="ml-auto text-[10px] font-medium px-1.5 py-[2px] rounded" style="background:rgba(194,105,42,0.2); color:#E2A477;">2</span>
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <div class="nav-group">Kommunikation</div>
+        <div class="space-y-0.5">
+          <a class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Posteingang
+            <span class="ml-auto text-[10.5px] text-white/35 font-mono-sans">12</span>
+          </a>
+          <a class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Kalender
+          </a>
+          <a class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+            Nachrichten
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <div class="nav-group">Daten</div>
+        <div class="space-y-0.5">
+          <a class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Berichte
+          </a>
+          <a class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+            Portale
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Atlas status + Profile -->
+    <div class="px-3 pb-4 border-t border-white/[0.06] pt-4 space-y-3">
+      <div class="flex items-start gap-2.5 px-2.5 py-2.5 rounded-md cursor-pointer transition hover:bg-white/[0.04]" style="background: rgba(194,105,42,0.09); border: 1px solid rgba(194,105,42,0.18);">
+        <div class="w-1.5 h-1.5 rounded-full mt-[5px] flex-shrink-0" style="background:#E2A477; box-shadow: 0 0 0 3px rgba(226,164,119,0.22);"></div>
+        <div class="min-w-0 flex-1">
+          <div class="text-[11.5px] text-white font-medium leading-tight">Atlas</div>
+          <div class="text-[11px] leading-tight mt-0.5" style="color:#E2A477;">3 proaktive Hinweise bereit</div>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" class="w-3 h-3 flex-shrink-0 mt-[3px]" style="color:#E2A477;"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>
+      <div class="flex items-center gap-2.5 px-1">
+        <div class="w-7 h-7 rounded-full grid place-items-center text-[11px] font-semibold text-white" style="background:linear-gradient(135deg,#57554F,#2A2824);">MK</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[12.5px] text-white leading-tight">Maximilian Klein</div>
+          <div class="text-[10.5px] text-white/45 leading-tight">Einzelmakler</div>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3 h-3 text-white/40"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN ═══ -->
+  <main class="flex-1 min-w-0">
+
+    <!-- Header-Band -->
+    <header class="px-10 pt-9 pb-6 flex items-start justify-between">
+      <div>
+        <h1 class="greeting an-1">Guten Morgen, Maximilian.</h1>
+        <div class="meta-line an-1">
+          Freitag, 17. April 2026<span class="meta-dot">·</span>Woche 16<span class="meta-dot">·</span><span class="urgent-link">2 dringende Punkte</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5 an-1">
+        <button class="new-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Neu
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" class="w-2.5 h-2.5 opacity-70"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <button class="icon-btn relative ml-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span class="notif-dot"></span>
+        </button>
+        <button class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h0a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h0a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v0a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Body: Hero + Atlas -->
+    <div class="px-10 pb-6 grid" style="grid-template-columns: 1fr 320px; gap: 28px;">
+
+      <!-- ═══ HERO: DEIN TAG ═══ -->
+      <section class="an-2">
+
+        <!-- Group: Überfällig -->
+        <div class="group-label urgent px-1" style="margin-bottom: 10px;">
+          <span>Überfällig</span>
+          <span class="flex-1 h-px" style="background: rgba(194,105,42,0.18);"></span>
+          <span class="count">2</span>
+        </div>
+
+        <div class="rounded-[10px] overflow-hidden border hair" style="background:#FBFAF7;">
+
+          <!-- Overdue 1 -->
+          <div class="row hero-row grid items-center border-b hair-w" style="grid-template-columns: 24px 30px 72px 1fr auto; gap: 14px; padding: 14px 18px;">
+            <div class="cb" onclick="toggleCheck(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="type-ico task">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2A19.79 19.79 0 0111 19.28a19.5 19.5 0 01-6-6A19.79 19.79 0 012.09 4.18 2 2 0 014.08 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+            </div>
+            <div>
+              <div class="hero-row-time urgent">2 Tage</div>
+              <div class="hero-row-time-sub urgent">überfällig</div>
+            </div>
+            <div>
+              <div class="hero-row-title">Dr. Wagner · Follow-up nach Besichtigung</div>
+              <div class="hero-row-sub">Villa am See · +49 171 2244‑881 · Besichtigung am 15.04.</div>
+            </div>
+            <div class="row-action flex items-center gap-1">
+              <button class="txt-btn primary">Anrufen</button>
+              <button class="txt-btn">Mail</button>
+            </div>
+          </div>
+
+          <!-- Overdue 2 -->
+          <div class="row hero-row grid items-center" style="grid-template-columns: 24px 30px 72px 1fr auto; gap: 14px; padding: 14px 18px;">
+            <div class="cb" onclick="toggleCheck(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="type-ico task">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+            </div>
+            <div>
+              <div class="hero-row-time urgent">5 Tage</div>
+              <div class="hero-row-time-sub urgent">überfällig</div>
+            </div>
+            <div>
+              <div class="hero-row-title">Exposé für Penthouse Charlottenburg freigeben</div>
+              <div class="hero-row-sub">Druckfreigabe steht noch aus · Portal-Listing wartet</div>
+            </div>
+            <div class="row-action flex items-center gap-1">
+              <button class="txt-btn primary">Öffnen</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Group: Heute -->
+        <div class="group-label px-1" style="margin-top: 26px; margin-bottom: 10px;">
+          <span>Heute</span>
+          <span class="flex-1 h-px" style="background: #E7E5E0;"></span>
+          <span class="count">5</span>
+        </div>
+
+        <div class="rounded-[10px] overflow-hidden border hair" style="background:#FBFAF7;">
+
+          <!-- 10:30 -->
+          <div class="row hero-row grid items-center border-b hair-w" style="grid-template-columns: 24px 30px 72px 1fr auto; gap: 14px; padding: 14px 18px;">
+            <div></div>
+            <div class="type-ico term">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div>
+              <div class="hero-row-time">10:30</div>
+              <div class="hero-row-time-sub">in 42 Min</div>
+            </div>
+            <div>
+              <div class="hero-row-title">Beratungsgespräch · Sarah König</div>
+              <div class="hero-row-sub">Telefontermin · Budget 1.2–1.5M · Zielbezirk Mitte</div>
+            </div>
+            <div class="row-action flex items-center gap-1">
+              <button class="txt-btn">Öffnen</button>
+            </div>
+          </div>
+
+          <!-- 11:00 -->
+          <div class="row hero-row grid items-center border-b hair-w" style="grid-template-columns: 24px 30px 72px 1fr auto; gap: 14px; padding: 14px 18px;">
+            <div class="cb" onclick="toggleCheck(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="type-ico task">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </div>
+            <div>
+              <div class="hero-row-time">11:00</div>
+              <div class="hero-row-time-sub">heute</div>
+            </div>
+            <div>
+              <div class="hero-row-title">Angebots‑Mail an Bauträger Huber senden</div>
+              <div class="hero-row-sub">Grundstück Tempelhofer Weg · Vorlage „Erstkontakt B2B"</div>
+            </div>
+            <div class="row-action flex items-center gap-1">
+              <button class="txt-btn primary">Mail</button>
+            </div>
+          </div>
+
+          <!-- 15:00 -->
+          <div class="row hero-row grid items-center border-b hair-w" style="grid-template-columns: 24px 30px 72px 1fr auto; gap: 14px; padding: 14px 18px;">
+            <div></div>
+            <div class="type-ico term">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div>
+              <div class="hero-row-time">15:00</div>
+              <div class="hero-row-time-sub">in 4 h 12 m</div>
+            </div>
+            <div>
+              <div class="hero-row-title">Besichtigung Loft Hamburg · Thomas Brandt</div>
+              <div class="hero-row-sub">Jungfernstieg 12, 20354 Hamburg · 218 m² · €1,85M</div>
+            </div>
+            <div class="row-action flex items-center gap-1">
+              <button class="txt-btn">Route</button>
+              <button class="txt-btn">Öffnen</button>
+            </div>
+          </div>
+
+          <!-- 17:30 -->
+          <div class="row hero-row grid items-center border-b hair-w" style="grid-template-columns: 24px 30px 72px 1fr auto; gap: 14px; padding: 14px 18px;">
+            <div class="cb" onclick="toggleCheck(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="type-ico task">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div>
+              <div class="hero-row-time">17:30</div>
+              <div class="hero-row-time-sub">heute</div>
+            </div>
+            <div>
+              <div class="hero-row-title">Vertragsentwurf Fam. Reuter gegenzeichnen</div>
+              <div class="hero-row-sub">Notarvorlage aus gestern · 3 Änderungsvermerke offen</div>
+            </div>
+            <div class="row-action flex items-center gap-1">
+              <button class="txt-btn">Öffnen</button>
+            </div>
+          </div>
+
+          <!-- 18:00 — urgent deadline -->
+          <div class="row hero-row grid items-center" style="grid-template-columns: 24px 30px 72px 1fr auto; gap: 14px; padding: 14px 18px;">
+            <div class="cb" onclick="toggleCheck(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="type-ico task">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div>
+              <div class="hero-row-time urgent">18:00</div>
+              <div class="hero-row-time-sub urgent">Deadline</div>
+            </div>
+            <div>
+              <div class="hero-row-title">Finanzierungsnachweis Fam. Müller läuft ab</div>
+              <div class="hero-row-sub">EFH Potsdam · Nachweis von Sparkasse Berlin anfordern</div>
+            </div>
+            <div class="row-action flex items-center gap-1">
+              <button class="txt-btn primary">Anrufen</button>
+              <button class="txt-btn">Öffnen</button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══ ATLAS SPALTE ═══ -->
+      <aside class="an-3" style="width:320px;">
+
+        <!-- Header -->
+        <div class="flex items-baseline justify-between px-1 mb-3">
+          <div class="flex items-baseline gap-2">
+            <span class="font-display text-[20px] text-ink leading-none" style="letter-spacing:-0.01em;">Atlas</span>
+            <span class="text-[11px] text-stone-500 font-medium" style="letter-spacing: 0.02em;">
+              <span class="inline-block w-1.5 h-1.5 rounded-full mr-1.5 translate-y-[-1px]" style="background:#C2692A; box-shadow:0 0 0 3px rgba(194,105,42,0.18);"></span>
+              Proaktiv · 3 Hinweise
+            </span>
+          </div>
+        </div>
+
+        <!-- Primary card -->
+        <div class="atlas-card p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="pill">Handlung nötig</span>
+            <span class="text-[11px] font-mono-sans tabular" style="color:rgba(226,164,119,0.7);">Konfidenz 94%</span>
+          </div>
+          <div class="text-[14px] font-medium leading-snug mb-1.5" style="color:#FBFAF7;">
+            Preis für Penthouse Charlottenburg anpassen
+          </div>
+          <div class="text-[12.5px] leading-snug mb-3" style="color:rgba(251,250,247,0.58);">
+            14 Tage ohne Besichtigungsanfrage · Markt-Ø: 5.2 Anfragen in dem Zeitraum · Preis liegt 5,4% über Vergleichsobjekten.
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="btn-p">Vorschlag prüfen</button>
+            <button class="btn-g">Ignorieren</button>
+          </div>
+        </div>
+
+        <!-- Minimized list -->
+        <div class="mt-1 rounded-[10px] border hair overflow-hidden" style="background:#FBFAF7;">
+          <div class="atlas-mini">
+            <div class="atlas-mini-ico" style="background:rgba(16,109,75,0.1); color:#106D4B;">
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-[12.5px] text-stone-800 font-medium leading-tight">Chance · Sarah König</div>
+              <div class="text-[11px] text-stone-500 leading-tight mt-0.5">94% Match · 2 passende Objekte</div>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="w-3 h-3 text-stone-400"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="atlas-mini">
+            <div class="atlas-mini-ico" style="background:rgba(184,128,46,0.1); color:#B8802E;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-[12.5px] text-stone-800 font-medium leading-tight">Follow-up · Dr. Wagner</div>
+              <div class="text-[11px] text-stone-500 leading-tight mt-0.5">48h still · Kontaktrate fällt auf 62%</div>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="w-3 h-3 text-stone-400"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+
+        <!-- Prompt input -->
+        <div class="mt-3 flex items-center gap-2 px-3 py-2.5 rounded-[9px] border hair bg-paper" style="background:#FBFAF7;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3 h-3 text-stone-400"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+          <input type="text" class="flex-1 bg-transparent outline-none text-[12.5px] text-stone-800 placeholder:text-stone-400" placeholder="Frage Atlas etwas…"/>
+          <span class="kbd" style="background:rgba(42,40,36,0.06); color:#78756E; border-color:#E7E5E0;">⌘/</span>
+        </div>
+      </aside>
+    </div>
+
+    <!-- ═══ UNTERER BEREICH: 3 KACHELN ═══ -->
+    <!-- (Pin-widget grid: cols-3 gerüstet, noch kein "+"-slot) -->
+    <div class="px-10 pb-10 grid grid-cols-3 gap-5 an-4">
+
+      <!-- Tile A: Pipeline -->
+      <div class="tile">
+        <div class="tile-head">
+          <span class="tile-title">Pipeline</span>
+          <a class="tile-link">Board öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 6 15 12 9 18"/></svg></a>
+        </div>
+        <div class="grid px-4 pb-1" style="grid-template-columns: repeat(6, 1fr);">
+          <div class="phase">
+            <div class="phase-name">Lead</div>
+            <div class="phase-count">24</div>
+            <div class="phase-bar"><div class="phase-bar-fill" style="width:100%"></div></div>
+          </div>
+          <div class="phase">
+            <div class="phase-name">Qualifiz.</div>
+            <div class="phase-count">85</div>
+            <div class="phase-bar"><div class="phase-bar-fill" style="width:100%"></div></div>
+          </div>
+          <div class="phase">
+            <div class="phase-name">Besich.</div>
+            <div class="phase-count">32</div>
+            <div class="phase-bar"><div class="phase-bar-fill" style="width:76%"></div></div>
+          </div>
+          <div class="phase acc">
+            <div class="phase-name">Verhandl.</div>
+            <div class="phase-count">14</div>
+            <div class="phase-bar"><div class="phase-bar-fill" style="width:58%"></div></div>
+          </div>
+          <div class="phase">
+            <div class="phase-name">Abschluss</div>
+            <div class="phase-count">6</div>
+            <div class="phase-bar"><div class="phase-bar-fill" style="width:38%"></div></div>
+          </div>
+          <div class="phase">
+            <div class="phase-name">Gewonnen</div>
+            <div class="phase-count">11</div>
+            <div class="phase-bar"><div class="phase-bar-fill" style="width:72%"></div></div>
+          </div>
+        </div>
+        <div class="alert-row" style="margin-top: 8px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span><strong>3 Deals</strong> in Verhandlung stagnieren seit 21+ Tagen</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="ml-auto text-stone-400" style="width:11px; height:11px;"><polyline points="9 6 15 12 9 18"/></svg>
+        </div>
+      </div>
+
+      <!-- Tile B: Aktivitäten -->
+      <div class="tile">
+        <div class="tile-head">
+          <span class="tile-title">Aktivitäten</span>
+          <a class="tile-link">Alle <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 6 15 12 9 18"/></svg></a>
+        </div>
+        <div class="pb-3">
+          <div class="feed">
+            <div class="feed-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="feed-text"><strong>Besichtigung abgeschlossen</strong> · Villa am See</div>
+            <div class="feed-time">12m</div>
+          </div>
+          <div class="feed">
+            <div class="feed-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+            <div class="feed-text"><strong>Sarah König</strong> antwortete auf Angebot</div>
+            <div class="feed-time">1 h</div>
+          </div>
+          <div class="feed">
+            <div class="feed-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></div>
+            <div class="feed-text">Neuer Lead · <strong>Thomas Brandt</strong> via ImmoScout</div>
+            <div class="feed-time">3 h</div>
+          </div>
+          <div class="feed">
+            <div class="feed-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 8.5 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 9 8.5 12 2"/></svg></div>
+            <div class="feed-text">Exposé-Download · <strong>Villa am See</strong></div>
+            <div class="feed-time">gestern</div>
+          </div>
+          <div class="feed">
+            <div class="feed-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="feed-text">Vertrag unterzeichnet · <strong>Fam. Reuter</strong></div>
+            <div class="feed-time">gestern</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tile C: Diese Woche -->
+      <div class="tile">
+        <div class="tile-head">
+          <span class="tile-title">Diese Woche</span>
+          <a class="tile-link">Berichte <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 6 15 12 9 18"/></svg></a>
+        </div>
+        <div class="pb-2">
+          <div class="week-stat">
+            <div class="week-label">Zielumsatz</div>
+            <div class="week-value mt-1">€284k <span class="unit">von €320k</span></div>
+            <div class="week-bar"><div class="week-bar-fill" style="width:88%"></div></div>
+          </div>
+          <div class="week-stat">
+            <div class="week-label">Besichtigungen absolviert</div>
+            <div class="week-value mt-1">8</div>
+          </div>
+          <div class="week-stat">
+            <div class="week-label">Neue Leads</div>
+            <div class="week-value mt-1">3</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<script>
+  function toggleCheck(el) {
+    el.classList.toggle('done');
+    const row = el.closest('.row');
+    const title = row && row.querySelector('.hero-row-title');
+    if (title) title.classList.toggle('done', el.classList.contains('done'));
+  }
+</script>
+
+</body>
+</html>
